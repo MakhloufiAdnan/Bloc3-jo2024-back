@@ -1,0 +1,2 @@
+-e "logs/\ntarget/\nnode_modules/\ndist/\npostgres_data/\n.env" 
+-e "logs/\ntarget/\nnode_modules/\ndist/\npostgres_data/\n.env" 

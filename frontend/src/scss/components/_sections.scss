@@ -1,0 +1,97 @@
+.section{
+  padding-top: 2rem;
+  @include respond-to(desktop) { 
+    padding-top: 4rem;
+  }
+
+  .title-section{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 1.5rem;
+    box-shadow: 2px 6px 6px 0px rgba(0, 0, 0, 0.25);
+    color: white;
+    width: 100%;
+    font-size: 2rem;
+    padding: .5rem;
+    margin-bottom: 2rem;
+
+    @include respond-to(desktop) { 
+      justify-content: flex-start;
+      width: 55%;
+      font-size: 2.5rem;
+      padding: 1rem;
+      margin-bottom: 3rem;
+    }
+
+  }
+
+  .title-section-1{
+    background: $blue-linear;
+  }
+
+  .title-section-3{
+    background: $yellow-linear;
+  }
+
+  .title-section-4{
+    background: $black-linear;
+  }
+
+  .title-section-5{
+    background: $green-linear;
+  }
+
+  .paragraphs{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    width: 100%;
+    font-size: 1.5rem;
+
+    @include respond-to(desktop) { 
+      display: grid;
+      grid-template-columns: 50% 50%;
+      justify-content: space-between;
+      align-items: start;
+      gap: 2rem;
+      font-size: 2.5rem;
+    }
+
+    p{
+      font-size: 1.25rem;
+      padding-bottom: 1.5rem;
+      line-height: 1.5rem;
+      text-align: justify;
+      padding: 1rem;
+      border-radius: .5rem;
+      border: 2px solid black;
+
+      @include respond-to(desktop) { 
+        font-size: 1.5rem;
+        padding-bottom: 2rem;
+        line-height: 2rem;
+        padding: 1.5rem;
+      }
+    }
+  }
+
+  .image-itinery{
+    width: 100%;
+    height: auto;
+    padding: 1rem 0 1rem 0;
+    border-radius: 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+
+    @include respond-to(desktop) { 
+      height: auto;
+      padding: 3rem 0 1.5rem 0;
+      width: 100%;
+      position: relative;
+    }
+  }
+}

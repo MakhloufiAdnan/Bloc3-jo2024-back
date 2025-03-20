@@ -1,0 +1,97 @@
+.offer-cards{
+  display: grid;
+  grid-template-columns: 70% 30%;
+  justify-content: center;
+  align-items: center;
+  background: $grey-light;
+  border-radius: 2rem;
+  padding: 1.5rem;
+  gap: 1rem;
+  font-size: 1.25rem;
+  margin: 2rem 0 2.5rem 0;
+
+  .box-offers{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 2rem;
+    height: 18rem;
+    margin: 1.5rem;
+
+    .box-offer{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .container-type{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+
+        .offre{
+          color: red;
+        }
+
+        .prix{
+          color: green;
+        }
+
+        .country-name{
+          display: flex;
+        }
+
+        .title-offre{
+          font-size: 1.5rem;
+        }
+
+        .test-medal{
+          background: $grey-light;
+          padding: .5rem;
+          border-radius: .5rem;
+        }
+      }
+    }
+
+    .box-quantity{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: .25rem;
+
+      .btn-quantity{
+        width: 40px;
+        height: 40px;
+        background: $grey-light;
+      }
+
+      .quantity{
+        width: 60px;
+        height: 40px;
+        text-align: center;
+        background: $red-ring;
+      }
+    }
+  } 
+
+  .container-choice-offers{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    .offers-icons{
+
+      .offer-icons{
+        display: flex;
+        flex-direction: rows;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+  }
+}

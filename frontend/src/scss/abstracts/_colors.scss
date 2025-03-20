@@ -1,0 +1,79 @@
+$black:rgba(0, 0, 0, 0);
+$black-light: rgba(0, 0, 0, .6);
+$white: rgba(255, 255, 255, 1);
+$grey:  rgba(153, 153, 153, 1);
+$grey-light:  rgb(217, 217, 217);
+
+$shadow: 3px 4px 5px 2px rgba(0, 0, 0, 0.5);
+
+$footer: rgba(45, 44, 44, .7);
+
+$primary: rgba(215, 195, 120, 1);
+$secondary: conic-gradient(white 25%, grey 85%, black 100%); //couleur conique
+
+$blue-linear: linear-gradient(
+    270deg,
+    rgba(67, 116, 246, 0.5) 28%,
+    rgba(44, 76, 161, 0.75) 50%,
+    rgba(39, 68, 144, 1) 70%
+    ); 
+$yellow-linear: linear-gradient(to left, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)),
+linear-gradient(
+  270deg,
+  rgba(245, 237, 49, 0.5) 28%,
+  rgba(210, 203, 42, 0.75) 50%,
+  rgba(143, 138, 28, 1) 70%
+);
+$black-linear:linear-gradient(
+  270deg,
+  rgba(35, 35, 35, 0.5) 28%,
+  rgba(35, 35, 35, 0.75) 50%,
+  rgba(102, 102, 102, 1) 70%
+);
+$green-linear: linear-gradient(
+  -90deg,
+  rgba(43, 141, 8, 0.5) 28%,
+  rgba(43, 141, 8, 0.75) 50%,
+  rgba(22, 74, 4, 1) 70%
+);
+
+$yallow-ring: conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(245, 237, 49, 0) 40%,
+    rgba(143, 138, 28, 1) 100%
+  );
+$blue-ring: linear-gradient(
+    270deg,
+    rgba(67, 116, 246, 0.5) 30%,
+    rgba(44, 76, 161, 0.75) 50%,
+    rgba(39, 68, 144, 1) 75%
+  );
+$black-ring: conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(102, 102, 102, 1) 100%
+  );
+$green-ring: conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(53, 176, 10, 0) 40%,
+    rgba(22, 74, 4, 1) 100%
+  );
+$red-ring: conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(199, 136, 136, .8) 0%,
+    rgb(201, 136, 136) 100%
+  );
+
+// couleur sidebar
+$color-white: rgba(255, 255, 255, 0.8);
+$color-white-light: rgba(255, 255, 255, 0.3);
+$color-black-strong: rgba(0, 0, 0, 0.82);
+$color-gray-dark: rgba(102, 102, 102, 0.82);
+$color-gray-light: #696868;
+$color-gray-lighter: #605f5f;
+$color-gray-medal: #595858;
+$color-gray-calendar: #4a4949;
+$color-gray-JOP: #414040;
+$color-gray-shop: #3a3939;
+$color-gray-login: #292929;
+$cardsColor: linear-gradient(180deg, $color-black-strong 0%, $color-gray-dark 100%);

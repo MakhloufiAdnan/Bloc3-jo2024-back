@@ -1,0 +1,305 @@
+// Btn icons top
+.box-icons {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  padding-left: .5rem;
+
+  .icons-top {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    z-index: 2;
+
+    .icon-top {
+      cursor: pointer;
+      position: relative;
+
+      img {
+        transition: opacity 0.3s ease;
+        transform: scale(0.7);
+      }
+    }
+  }
+
+  .hover-icons {
+    position: absolute;
+    top: 50%; 
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    width: 100%;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 1;
+    width: 6.25rem;
+
+    .ellipse-icons {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0.25rem;
+
+      .ellipse-icon {
+        background-color: $primary;
+        border-radius: 50%;
+        width: 3rem;
+        height: 3rem;
+        border: 2px solid $white;
+      }
+
+      .hover-icon-top {
+        position: absolute;
+      }
+    }
+
+    .hover-text {
+      display:flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem;
+      background-color: $primary;
+      border-radius: 0.5rem;
+      border: 2px solid $white;
+      font-size: 0.75rem;
+
+      .dividing-line {
+        width: 100%;
+        height: 2px;
+        background-color: $white;
+        margin: 0.25rem;
+      }
+    }
+  }
+
+  .icon-top:hover .hover-icons {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+
+// Btn submit
+.submit-btn{
+  background-color: white;
+  color: black;
+  border: 2px solid $black;
+  border-radius: 5px;
+  box-shadow: 3px 4px 5px 2px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  font-size: .75rem;
+  align-self: flex-end;
+  padding: .25rem 1.5rem;
+  font-weight: bold;
+
+  &:hover{
+    background-color: $primary;
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.5rem;
+  background: transparent;
+  border: none;
+  color: black;
+  cursor: pointer;
+  transition: color 0.3s;
+
+  &:hover {
+    color: $black-light;
+  }
+}
+
+// Contraste élevé
+.high-contrast {
+  background-color: black !important;
+  color: white !important;
+  * {
+    background-color: black !important;
+    color: white !important;
+    border-color: white !important;
+  }
+}
+
+// Mode Dyslexie (police adaptée)
+.dyslexia-mode {
+  font-family: "OpenDyslexic", Arial, sans-serif !important;
+}
+
+// Suppression des animations
+.no-animation * {
+  animation: none !important;
+  transition: none !important;
+}
+
+.btn-more{
+  display: none;
+
+  @include respond-to(desktop) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: .75rem 1rem;
+    border-radius: 1rem;
+    background: $primary;
+    border: solid 2px black;
+    box-shadow: 0px 1px 2px 1px rgba(0, 0, 0, 0.5);
+    font-size: 1rem;
+    font-weight: bold;
+    
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover{
+      background: rgba(215, 195, 120, .5);
+      border: solid 2px white;
+    }
+  }
+}
+
+.btn-shop{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: .75rem 1rem;
+  border-radius: 1rem;
+  background: $primary;
+  border: solid 2px black;
+  box-shadow: 0px 1px 2px 1px rgba(0, 0, 0, 0.5);
+  font-size: 1rem;
+  font-weight: bold;
+  
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover{
+    background: rgba(215, 195, 120, .5);
+    border: solid 2px white;
+  }
+}
+
+.btn-switch{
+  display: inline-block;
+	position: relative;
+	width: 50px;
+	height: 28px;
+	cursor: pointer;
+	overflow: hidden;
+
+  .checkbox-btn-swith {
+    position: absolute;
+    top: -30px;
+    left: -30px;
+    width: 0;
+    height: 0;
+  }
+
+  .checkbox-btn-swith + .span-btn-switch {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: $yellow-linear;
+    border-radius: 20px;
+    border: 2px solid black;
+  }
+
+  .checkbox-btn-swith:checked + .span-btn-switch {
+    background: $green-linear;
+  }
+
+  .checkbox-btn-swith + .span-btn-switch:before {
+    content: "";
+    display: inline-block;
+    position: absolute;
+    top: 50%;
+    left: 4px;
+    width: 20px;
+    height: 20px;
+    background: black;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    transition: all .5s;
+  }
+
+  .checkbox-btn-swith:checked + .span-btn-switch:before {
+    left: 24px;
+  }
+}
+
+.container-btn-filters{
+  width: 60%;
+  background: $grey-light;
+  padding: .75rem 1.5rem;
+  border-radius: 1rem;
+  margin: 2rem 0 2rem 0;
+
+  .flexBox-filters{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    @include respond-to(desktop) {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .btn-filters{
+      display:inline-flex;
+      justify-content: flex-start;
+      align-items: center;
+      white-space: nowrap;
+      scale: .75;
+      @include respond-to(desktop) {
+        scale: 1;
+      }
+
+      .btn-filter{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+
+    .time-zone{
+      display:inline-flex;
+      white-space: nowrap;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+
+      .text-time-zone{
+        font-size: .75rem;
+
+        @include respond-to(desktop) {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}
+
+.box-quantity{
+  
+  .less-btn, .more-btn, .quantity{
+    display: inline-block;
+    padding: .5rem 1rem;
+    border: 2px solid black;
+    border-radius: 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+}

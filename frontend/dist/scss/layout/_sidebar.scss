@@ -1,0 +1,146 @@
+.nav-sidebars {
+  display: none;
+  padding: .75rem .75rem .75rem 0;
+  gap: 1rem;
+  align-items: center;
+  justify-content: flex-start;
+  position: fixed;
+  left: 0;
+  top: 75%;
+  transform: translateY(-50%);
+  height: 100vh;
+  z-index: 10;
+
+  @include respond-to(desktop) { 
+    display: block;
+  }
+
+  .nav-sideBar {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    width: 100%;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  
+    .header-menu-sidebar {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      padding: 1.5rem;
+      background: $cardsColor;
+      border-radius: 0 1rem 1rem 0;
+      width: auto;
+      height: 70vh;
+  
+      .logo-olympique {
+        width: 5rem;
+        height: 5rem;
+        background-color: $color-white-light;
+        border-radius: 50%;
+        padding: 1rem;
+      }
+  
+      .icons-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        align-items: center;
+        justify-content: center;
+  
+        .icon-sidebar {
+          width: $icon-size;
+          height: $icon-size;
+        }
+      }
+  
+      .contact-sidebar {
+        width: $icon-size;
+        height: $icon-size;
+      }
+    }
+  }
+
+  // Menu fermé
+  .nav-sideBar-off {
+    @extend .nav-sideBar;
+    display: flex;
+  }
+
+  // Menu ouvert
+  .nav-sideBar-on {
+    @extend .nav-sideBar;
+    display: none;
+
+    .logo-olympique {
+      background-color: $color-white;
+    }
+
+    .icons-sidebar {
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+
+      .box-menu-sidebare {
+        border-radius: .75rem;
+        padding: .5rem 1rem;
+        display: flex;
+        flex-direction: row;
+        gap: 2.5rem;
+        align-items: center;
+        justify-content: flex-start;
+        flex-shrink: 0;
+        width: 19rem;
+        height: 2.5rem;
+        position: relative;
+
+        .icon-sidebar {
+          width: $icon-small;
+          height: $icon-small;
+        }
+
+        .box-title {
+          flex: 1;
+          color: white;
+          text-align: left;
+        }
+      }
+
+      // Backgrounds spécifiques
+      .home-sidebare { background: $color-gray-light; }
+      .good-moment-sidebare { background: $color-gray-lighter; }
+      .medal-sidebare { background: $color-gray-medal; }
+      .calendar-sidebare { background: $color-gray-calendar; }
+      .JOP-sidebare { background: $color-gray-JOP; }
+      .shop-sidebare { background: $color-gray-shop; }
+    }
+
+    .login-sidebare {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: $color-gray-login;
+      border-radius: .75rem;
+      padding: .5rem;
+      gap: 1rem;
+
+      .box-login {
+        display: flex;
+        flex-direction: row;
+        gap: .5rem;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 19rem;
+        height: 2.5rem;
+        position: relative;
+
+        .btn-up-white {
+          color: white;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+### docker-compose.yml
+services:
+  db:
+    image: postgres:17
+    container_name: db_jo2024
+    environment:
+      POSTGRES_DB: Bloc3_jo2024
+      POSTGRES_USER: ADNMAK
+      POSTGRES_PASSWORD: AikidoSankyo73
+    ports:
+      - "6000:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - backend_data:/appJo
+      - frontend_data:/usr/share/nginx/html
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/Bloc3_jo2024
+      SPRING_DATASOURCE_USERNAME: ADNMAK
+      SPRING_DATASOURCE_PASSWORD: AikidoSankyo73
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+
+volumes:
+  db_data:
+  backend_data:
+  frontend_data:
+

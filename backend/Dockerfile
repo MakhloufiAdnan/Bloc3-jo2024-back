@@ -1,22 +1,28 @@
 # backend/Dockerfile
-# étape 1 : Build avec Maven
-FROM maven:3.9-eclipse-temurin-21 AS build
+# étape 1 : téléchargement de Maven (version alpine pour réduire la taille de l'image)
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
 
-# Création du répertoire de travail
-WORKDIR /appJo
+# Création du répertoire de travail app && cd
+WORKDIR /app
 
-# Correction des chemins de copie
-COPY pom.xml .
-COPY src ./src
+# Copie du projet
+COPY . .
 
+# Téléchargement des dépendances et compilation
 RUN mvn clean package -DskipTests
 
-# étape 2 : Exécution avec OpenJDK
-# image java slim pour réduire la taille de l'image.
-FROM openjdk:21-jdk-slim
+# étape 2 : Utilisation d'un JRE pour executer le code (version alpine pour réduire la taille de l'image)
+FROM eclipse-temurin:21-jre-alpine
 
-# copie du jar
-COPY --from=build /appJo/target/*.jar appJo.jar
+# Création du dossier app && cd
+WORKDIR /app
 
-ENTRYPOINT ["java", "-jar", "appJo.jar", "--server.port=8080"]
+# copie de l'appli compilé dans l'image du JRE
+COPY --from=build /app/target/*.jar app.jar
+
+#Expose du porte 8080
 EXPOSE 8080
+
+#La commande qui sera executée lors de lancement du container
+ENTRYPOINT ["java", "-jar", "app.jar"]
+

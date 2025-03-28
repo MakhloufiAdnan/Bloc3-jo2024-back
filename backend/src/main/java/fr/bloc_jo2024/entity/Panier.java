@@ -1,9 +1,14 @@
+package fr.bloc_jo2024.entity;
+import fr.bloc_jo2024.entity.Utilisateur;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
+
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -23,14 +28,14 @@ public class Panier {
     private StatutPanier statut;
 
     @Column(nullable = false)
-    private LocalDateTime dateAjout;
+    private LocalDateTime dateAjout = LocalDateTime.now();
 
     @ManyToOne
     @JoinColumn(name = "idUtilisateur", nullable = false)
     private Utilisateur utilisateur;
 
-    @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL)
-    private Set<Offre> offres;
+    @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Offre> offres = new HashSet<>();
 
     public void setMontantTotal(double montantTotal) {
         if (montantTotal < 0) {

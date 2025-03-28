@@ -1,9 +1,12 @@
+package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import lombok.Builder;
+
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -26,10 +29,18 @@ public class Evenement {
     @Min(value = 0, message = "Il n'y a plus de place disponible.")
     private int nbPlaceDispo;
 
-    @ManyToOne
-    @JoinColumn(name = "idAdresse", nullable = false, onDelete = ForeignKeyAction.CASCADE)
+    @ManyToOne(cascade = CascadeType.PERSIST)  // Pour garantir l'existence d'une adresse
+    @JoinColumn(name = "idAdresse", nullable = false)
     private Adresse adresse;
 
-    @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL)
-    private Set<Offre> offres;
+    @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Offre> offres = new HashSet<>();
+
+    // Méthode pour mettre à jour les places disponibles
+    public void decrementerPlaces(int nb) {
+        if (this.nbPlaceDispo - nb < 0) {
+            throw new IllegalArgumentException("Pas assez de places disponibles.");
+        }
+        this.nbPlaceDispo -= nb;
+    }
 }

@@ -1,4 +1,8 @@
+package fr.bloc_jo2024.entity;
+import fr.bloc_jo2024.entity.Utilisateur;
+
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -12,16 +16,18 @@ import lombok.Builder;
 public class Telephone {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idPhone;
+    private Long idTelephone; // Renommé pour plus de clarté
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TelEnum typeTel;
 
     @Column(nullable = false, unique = true, length = 20)
+    @Pattern(regexp = "^(\\+\\d{1,3}[- ]?)?\\d{10}$", message = "Numéro de téléphone invalide")
     private String numeroTelephone;
 
-    @ManyToOne
-    @JoinColumn(name = "idUtilisateur", nullable = false, onDelete = ForeignKeyAction.CASCADE)
+    @ManyToOne(cascade = CascadeType.REMOVE)
+    @JoinColumn(name = "idUtilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur"))
     private Utilisateur utilisateur;
 }
 

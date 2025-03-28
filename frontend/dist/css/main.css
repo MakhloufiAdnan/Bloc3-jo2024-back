@@ -283,7 +283,7 @@ body {
   animation: moveX 0.5s linear forwards;
 }
 .header-menu-desktop:hover::after {
-  content: url("/image/logo-etat-2.webp");
+  content: url("/assets/image/logo-etat-2.webp");
   position: absolute;
   padding: 3rem 4.5rem;
   top: 0;

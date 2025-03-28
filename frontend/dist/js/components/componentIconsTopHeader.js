@@ -26,7 +26,7 @@ const iconTopElements = document.querySelectorAll(".icon-top");
     const hoverIconTop = document.createElement("div");
     hoverIconTop.classList.add("hover-icon-top");
     const hoverIconImage = document.createElement("img");
-    hoverIconImage.src = `icons/${iconTop[index]}`;
+    hoverIconImage.src = `/assets/icons/${iconTop[index]}`;
     hoverIconImage.alt = iconTop[index].replace(".svg", "");
     hoverIconImage.classList.add("icon");
     hoverIconTop.appendChild(hoverIconImage);

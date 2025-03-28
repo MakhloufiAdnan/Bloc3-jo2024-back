@@ -1,17 +1,19 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:17-alpine
     container_name: db_jo2024
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: Bloc3_jo2024
-      POSTGRES_USER: ADNMAK
-      POSTGRES_PASSWORD: AikidoSankyo73
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "6000:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - backend_data:/appJo
-      - frontend_data:/usr/share/nginx/html
+    networks:
+      - jo_network
 
   backend:
     build:
@@ -19,12 +21,20 @@ services:
     container_name: back_jo2024
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/Bloc3_jo2024
-      SPRING_DATASOURCE_USERNAME: ADNMAK
-      SPRING_DATASOURCE_PASSWORD: AikidoSankyo73
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:${DB_PORT}/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EMAIL_USERNAME: ${EMAIL_USERNAME}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
     depends_on:
       - db
+    networks:
+      - jo_network
 
   frontend:
     build:
@@ -34,9 +44,11 @@ services:
       - "80:80"
     depends_on:
       - backend
+    networks:
+      - jo_network
 
 volumes:
   db_data:
-  backend_data:
-  frontend_data:
 
+networks:
+  jo_network:

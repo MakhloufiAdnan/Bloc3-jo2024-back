@@ -50,12 +50,12 @@ document.addEventListener("DOMContentLoaded", () => {
       textContent.classList.add("text-content-cards-feed");
 
       const img = document.createElement("img");
-      img.src = `image/${imageSrc}`;
+      img.src = `/assets/image/${imageSrc}`;
       img.alt = textArray[index].title;
       img.classList.add("illustration");
       img.onerror = () => {
         console.error(`Image non trouvée: ${img.src}`);
-        img.src = "image/default.jpg";
+        img.src = "/assets/image/default.jpg";
       };
 
       const title = document.createElement("h2");

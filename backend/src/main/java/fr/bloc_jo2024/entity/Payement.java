@@ -1,4 +1,6 @@
+package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -14,13 +16,16 @@ public class Payement {
     private Long idPayement;
 
     @Column(nullable = false)
-    private LocalDateTime datePayement;
-    private boolean statutPayement;
+    private LocalDateTime datePayement = LocalDateTime.now(); // Initialisation automatique
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
+    private boolean paiementReussi; // Nom plus clair
+
+    @Column(nullable = false, unique = true, length = 100) // Ajout d'une contrainte de longueur
     private String transactionId;
 
     @Column(nullable = false)
+    @Min(value = 0, message = "Le montant payé doit être positif.") // Validation sur montant
     private double montantPaye;
 
     @ManyToOne
@@ -28,6 +33,6 @@ public class Payement {
     private MethodePayement methodePayement;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "idPanier", nullable = false, referencedColumnName = "idPanier", onDelete = ReferentialAction.CASCADE)
+    @JoinColumn(name = "idPanier", nullable = false, referencedColumnName = "idPanier", foreignKey = @ForeignKey(name = "fk_panier"))
     private Panier panier;
 }

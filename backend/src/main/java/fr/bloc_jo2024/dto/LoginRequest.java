@@ -1,6 +1,6 @@
 package fr.bloc_jo2024.dto;
 
-public class RegisterRequest {
+public class LoginRequest {
     private String email;
     private String password;
 
@@ -11,7 +11,6 @@ public class RegisterRequest {
     public void setEmail(String email) {
         this.email = email;
     }
-
     public String getPassword() {
         return password;
     }

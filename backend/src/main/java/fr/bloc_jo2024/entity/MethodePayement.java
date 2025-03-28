@@ -1,3 +1,4 @@
+package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -13,7 +14,7 @@ public class MethodePayement {
     private Long idMethode;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 50)
     private MethodePayementEnum nomMethode;
 }
 

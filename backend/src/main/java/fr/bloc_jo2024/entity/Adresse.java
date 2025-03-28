@@ -1,3 +1,6 @@
+package fr.bloc_jo2024.entity;
+import fr.bloc_jo2024.entity.Utilisateur;
+
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
@@ -21,10 +24,10 @@ public class Adresse {
     private String ville;
 
     @Column(nullable = false, length = 50)
-    private String codePostale;
+    private String codePostal;
 
     @ManyToOne
-    @JoinColumn(name = "idPays", nullable = false, onDelete = ForeignKeyAction.CASCADE)
+    @JoinColumn(name = "idPays", nullable = false)
     private Pays pays;
 
     @OneToMany(mappedBy = "adresse", cascade = CascadeType.ALL, orphanRemoval = true)

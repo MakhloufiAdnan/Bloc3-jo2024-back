@@ -1,4 +1,12 @@
-import lombok.*;
+package fr.bloc_jo2024.entity;
+import fr.bloc_jo2024.entity.Utilisateur;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Entity
 @Data
@@ -6,17 +14,16 @@ import lombok.*;
 @AllArgsConstructor
 public class Oauth {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String idOAuth;
+    @GeneratedValue(strategy = GenerationType.AUTO) // Correction de la génération d'UUID
+    private UUID idOAuth;
 
-    @Column(unique = true)
+    @Column(unique = true, length = 100)  // Précision de la longueur maximale
     private String googleId;
 
-    @Column(unique = true)
+    @Column(unique = true, length = 100)  // Précision de la longueur maximale
     private String facebookId;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "idUtilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur"))
-    @OnDelete(action = OnDeleteAction.CASCADE)
     private Utilisateur utilisateur;
 }

@@ -67,9 +67,9 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="offers-icons">
           <p>Choix de l'offre</p>
           <div class="offer-icons">
-            <img class="offer-icon" src="icons/icon-1ticket.svg" alt="Icone de l'offre solo">
-            <img class="offer-icon" src="icons/icon-2tickets.svg" alt="Icone de l'offre duo">
-            <img class="offer-icon" src="icons/icon-4tickets.svg" alt="Icone de l'offre famille">
+            <img class="offer-icon" src="dist/assets/icons/icon-1ticket.svg" alt="Icone de l'offre solo">
+            <img class="offer-icon" src="dist/assets/icons/icon-2tickets.svg" alt="Icone de l'offre duo">
+            <img class="offer-icon" src="dist/assets/icons/icon-4tickets.svg" alt="Icone de l'offre famille">
           </div>
         </div>
         <div class="box-quantity">

@@ -1,3 +1,4 @@
+package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -27,21 +28,23 @@ public class Utilisateur {
     private String prenom;
 
     @Column(nullable = false)
-    @Temporal(TemporalType.DATE)
     private LocalDate dateNaissance;
 
     @Column(nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime dateCreation;
 
     @ManyToOne
-    @JoinColumn(name = "idRole", nullable = false, onDelete = ForeignKeyAction.CASCADE)
+    @JoinColumn(name = "idRole", nullable = false)
     private Role role;
 
     @ManyToOne
-    @JoinColumn(name = "idAdresse", nullable = false, onDelete = ForeignKeyAction.CASCADE)
+    @JoinColumn(name = "idAdresse", nullable = false)
     private Adresse adresse;
 
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Telephone> telephones;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "id_authentification", referencedColumnName = "idAuthentification")
+    private Authentification authentification;
 }

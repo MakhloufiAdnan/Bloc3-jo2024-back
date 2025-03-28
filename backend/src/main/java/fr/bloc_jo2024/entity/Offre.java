@@ -1,3 +1,4 @@
+package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -29,21 +30,31 @@ public class Offre {
     @Column(nullable = false)
     private StatutOffre statutOffre;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "idPanier", nullable = false, onDelete = ReferentialAction.CASCADE)
+    @ManyToOne
+    @JoinColumn(name = "idPanier", nullable = false)
     private Panier panier;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "idEvenement", nullable = false, onDelete = ReferentialAction.CASCADE)
+    @ManyToOne
+    @JoinColumn(name = "idEvenement", nullable = false)
     private Evenement evenement;
 
     public void setQuantite(int quantite) {
-        if (quantite < 0) throw new IllegalArgumentException("La quantité ne peut pas être négative");
+        if (quantite < 0) {
+            throw new IllegalArgumentException("La quantité ne peut pas être négative");
+        }
         this.quantite = quantite;
     }
 
     public void setPrix(double prix) {
-        if (prix < 0) throw new IllegalArgumentException("Le prix ne peut pas être négatif");
+        if (prix < 0) {
+            throw new IllegalArgumentException("Le prix ne peut pas être négatif");
+        }
         this.prix = prix;
     }
+}
+
+enum StatutOffre {
+    DISPONIBLE,
+    EPUISE,
+    ANNULE
 }

@@ -11,4 +11,9 @@
 6. Initialisation et configuration de Docker.
 7. Création de l'architecture du dossier backend
 8. Implémentation des entités (utilisation de LOMBOK pour simplifier le code) suivant le MLD.
-9. Implémentation de : application propoperties.
+9. Implémentation de : application.properties.
+10. Implémentation des scripts pour la gestion de l'insciption, la connexion et la récupération du mot de passe + ajout d'un fichier env pour les variables
+11. Correction de Dockerfile frontend, package.json et nginx.conf.
+12. Correction du code html suite au changement de l'arboréscence.
+13. Relance du build et correction des erreurs 
+14. Les images démarrent et le localhost affiche la page du site.

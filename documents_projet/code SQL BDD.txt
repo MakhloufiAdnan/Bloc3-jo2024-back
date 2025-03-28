@@ -163,14 +163,6 @@ CREATE TABLE Participer (
    FOREIGN KEY(idEvenement) REFERENCES Evenements(idEvenement) ON DELETE CASCADE
 );
 
-CREATE TABLE Selectionner (
-   IdUtilisateur_UUID UUID NOT NULL,
-   idOffre INT NOT NULL,
-   PRIMARY KEY(IdUtilisateur_UUID, idOffre),
-   FOREIGN KEY(IdUtilisateur_UUID) REFERENCES Utilisateurs(IdUtilisateur_UUID) ON DELETE CASCADE,
-   FOREIGN KEY(idOffre) REFERENCES Offres(idOffre) ON DELETE CASCADE
-);
-
 -- Ajout des index pour optimiser les performances
 CREATE INDEX idx_utilisateurs_email ON Utilisateurs(email);
 CREATE INDEX idx_evenements_date ON Evenements(date_evenement);

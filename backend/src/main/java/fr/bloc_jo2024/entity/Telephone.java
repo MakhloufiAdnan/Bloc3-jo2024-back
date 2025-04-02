@@ -16,7 +16,7 @@ import lombok.Builder;
 public class Telephone {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idTelephone; // Renommé pour plus de clarté
+    private Long idTelephone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -26,7 +26,7 @@ public class Telephone {
     @Pattern(regexp = "^(\\+\\d{1,3}[- ]?)?\\d{10}$", message = "Numéro de téléphone invalide")
     private String numeroTelephone;
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "idUtilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur"))
     private Utilisateur utilisateur;
 }

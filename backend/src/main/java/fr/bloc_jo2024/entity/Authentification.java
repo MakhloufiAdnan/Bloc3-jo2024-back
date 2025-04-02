@@ -1,5 +1,4 @@
 package fr.bloc_jo2024.entity;
-import fr.bloc_jo2024.entity.Utilisateur;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,6 +33,10 @@ public class Authentification {
     @JoinColumn(name = "idUtilisateur", nullable = false, unique = true)
     private Utilisateur utilisateur;
 
+    public void setMotPasseHache(String motPasseHache) {
+        this.motPasseHache = motPasseHache;
+    }
+
     // @PrePersist va s'exécuter avant d'enregistrer l'entité dans la base de données
     @PrePersist
     public void hacherMotPasse() {
@@ -52,4 +55,5 @@ public class Authentification {
         return encoder.matches(motPasseSaisi + this.salt, this.motPasseHache);
     }
 }
+
 

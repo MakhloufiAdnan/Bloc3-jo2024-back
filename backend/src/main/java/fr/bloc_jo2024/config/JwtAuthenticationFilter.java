@@ -1,6 +1,6 @@
 package fr.bloc_jo2024.config;
-import fr.bloc_jo2024.service.JwtService;
 
+import fr.bloc_jo2024.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,16 +40,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         SecurityContextHolder.getContext().setAuthentication(authentication);
+                    } else {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write("{\"error\": \"Token JWT invalide ou expiré. Veuillez vous reconnecter.\"}");
+                        return;
                     }
                 }
             } catch (Exception e) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("{\"error\": \"Token JWT invalide ou expiré\"}");
+                response.getWriter().write("{\"error\": \"Token JWT invalide ou expiré. Veuillez vérifier le token fourni.\"}");
                 return;
             }
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\": \"Token JWT manquant ou mal formé.\"}");
+            return;
         }
+
         filterChain.doFilter(request, response);
     }
 }
+
 
 

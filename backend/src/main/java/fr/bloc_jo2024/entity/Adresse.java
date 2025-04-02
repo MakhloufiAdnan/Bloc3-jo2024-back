@@ -1,5 +1,6 @@
 package fr.bloc_jo2024.entity;
 import fr.bloc_jo2024.entity.Utilisateur;
+import fr.bloc_jo2024.entity.Evenement;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,4 +33,7 @@ public class Adresse {
 
     @OneToMany(mappedBy = "adresse", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Utilisateur> utilisateurs;
+
+    @OneToMany(mappedBy = "adresse", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Evenement> evenements;
 }

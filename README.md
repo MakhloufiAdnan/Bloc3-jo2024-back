@@ -17,3 +17,12 @@
 12. Correction du code html suite au changement de l'arboréscence.
 13. Relance du build et correction des erreurs 
 14. Les images démarrent et le localhost affiche la page du site.
+15. Modification arborescence frontend. 
+16. Modification Html (balises link et script)
+17. Correction Dockerfile frontend+ nginx.conf+ package.json
+18. Correction bug css (problème type mime)
+19. Correction html balises scripte et img
+20. Ajout api frontend login et register + ajout fichier gestion api authService
+21. Modification + correction scripte managementPopup
+22. Modif securityConfig
+23. 

@@ -42,8 +42,12 @@ public class JwtTokenUtil {
 
     // Validation du token
     public boolean validateToken(String token, String email) {
-        final String username = extractUsername(token);
-        return (username.equals(email) && !isTokenExpired(token));
+        try {
+            final String username = extractUsername(token);
+            return (username.equals(email) && !isTokenExpired(token));
+        } catch (Exception e) {
+            return false;  // Si une exception est levée, le token est invalide
+        }
     }
 
     // Vérification de l'expiration du token
@@ -56,4 +60,5 @@ public class JwtTokenUtil {
         return extractClaim(token, Claims::getExpiration);
     }
 }
+
 

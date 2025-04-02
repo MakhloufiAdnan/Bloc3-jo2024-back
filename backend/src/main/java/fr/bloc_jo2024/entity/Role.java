@@ -13,7 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Table(name = "roles")
+@Table(name = "roles", indexes = @Index(name = "idx_role_type", columnList = "typeRole"))
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,10 +23,6 @@ public class Role {
     @Column(nullable = false, unique = true)
     private RoleEnum typeRole;
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST)
     private Set<Utilisateur> utilisateurs;
-}
-
-enum RoleEnum {
-    ADMIN, USER
 }

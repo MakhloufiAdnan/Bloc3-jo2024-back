@@ -1,20 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!--*************  Scripts  *************-->  
-    <script src="dist/js/components/componentIconsTopHeader.js" defer></script>
-    <script src="dist/js/components/managmentPopUps.js" defer></script>
-    <script src="dist/js/pages/accessibility.js" defer></script>
-    <script src="dist/js/components/componentBtnDropdown.js" defer></script>
-    <script src="dist/js/components/ComponentShopOffer.js" defer></script>
-    <script src="dist/js/api/login.js" defer></script>
-    <script src="dist/js/api/register.js" defer></script>
+    <script src="/js/components/componentBtnDropdown.js" defer></script>
+    <script src="/js/pages/accessibility.js" defer></script>
+    <script src="/js/pages/animationBurgerMenu.js" defer></script>
+    <script src="/js/components/componentIconsTopHeader.js" defer></script>
+    <script type="module" src="/js/pages/favoriteService.js" defer></script>
+    <script type="module" src="/js/api/authService.js" defer></script>
+    <script type="module" src="/js/api/authUtils.js" defer></script>
+    <script type="module" src="/js/api/register.js" defer></script>
+    <script type="module" src="/js/components/managmentPopUps.js" defer></script>
 
     <!--*************  Links  *************--> 
-    <link rel="stylesheet" href="dist/scss/main.css">
+    <link rel="stylesheet" href="/scss/main.css">
     <title>Boutique</title>
 </head>
 <body>
@@ -34,40 +36,40 @@
             <div class="search">
               <div class="search-bar-mobile">
                 <div class="div-search-mobile"></div>
-                <div><img class="icon-search-mobile" src="dist/assets/icons/icon-search-svg.svg" /></div>
+                <div><img class="icon-search-mobile" src="/assets/icons/icon-search-svg.svg" /></div>
               </div>
             </div>
             <div class="line-white"></div>
-            <div id="icon-user-mobile"><img src="dist/assets/icons/icon-user-mobile.svg" alt="icon-user"></div>
+            <div id="icon-user-mobile"><img src="/assets/icons/icon-user-mobile.svg" alt="icon-user"></div>
             <div class="line-white"></div>
             <div class="nav-item-mobile nav-item-active">
-              <span class="icon-nav-mobile"><img src="dist/assets/icons/icon-home-mobile.svg" /></span>
+              <span class="icon-nav-mobile"><img src="/assets/icons/icon-home-mobile.svg" /></span>
               <span><a href="#presentation">Accueil</a></span>
             </div>
             <div class="nav-item-mobile">
-              <span class="icon-nav-mobile"><img src="dist/assets/icons/icon-moment-mobile.svg" /></span>
+              <span class="icon-nav-mobile"><img src="/assets/icons/icon-moment-mobile.svg" /></span>
               <span><a href="#good-moment">Meilleurs moments</a></span>
             </div>
             <div class="nav-item-mobile">
-              <span class="icon-nav-mobile"><img src="dist/assets/icons/icon-medal-mobile.svg" /></span>
+              <span class="icon-nav-mobile"><img src="/assets/icons/icon-medal-mobile.svg" /></span>
               <a href="#medal">Médailles</a>
             </div>
             <div class="nav-item-mobile">
-              <span class="icon-nav-mobile"><img src="dist/assets/icons/icone-calendar-mobile.svg" /></span>
+              <span class="icon-nav-mobile"><img src="/assets/icons/icone-calendar-mobile.svg" /></span>
               <a href="#calendar">Calendrier</a>
             </div>
             <div class="nav-item-mobile">
-              <span class="icon-nav-mobile"><img src="dist/assets/icons/icone-parlyJO-mobile.svg" /></span>
+              <span class="icon-nav-mobile"><img src="/assets/icons/icone-parlyJO-mobile.svg" /></span>
               <a href="#jo-para">Jeux Paralympiques</a>
             </div>
             <div class="nav-item-mobile">
-              <span class="icon-nav-mobile"><img src="dist/assets/icons/icon-Business-mobile.svg" /></span>
-              <a href="shop.html">Boutique</a>
+              <span class="icon-nav-mobile"><img src="/assets/icons/icon-Business-mobile.svg" /></span>
+              <a href="pages/shop.html#basket">Boutique</a>
             </div>
             <div class="line-black"></div>
             <div class="icons-nav-bottom-mobile">
-              <span id="icon-accessibility-mobile"><img src="dist/assets/icons/icon-accessibility.svg" alt="icon-accessibility"></span>
-              <span id="icon-love-mobile"><img src="dist/assets/icons/icon-love.svg" alt="icon-love"></span>
+              <span id="icon-accessibility-mobile"><img src="/assets/icons/icon-accessibility.svg" alt="icon-accessibility"></span>
+              <span id="icon-love-mobile"><img src="/assets/icons/icon-love.svg" alt="icon-love"></span>
             </div>
             <div class="footer-nav-mobile">
               <p>&copy Jeux Olympiques 2024</p>
@@ -78,10 +80,10 @@
           </div>
         </nav>
         <div class="logo-mobile">
-          <img src="dist/assets/image/logo-etat-1.webp" alt="Logo jeux olympiques">
+          <img src="/assets/image/logo-etat-1.webp" alt="Logo jeux olympiques">
         </div>
         <div class="icon-shop-mobile">
-          <a href="dist/pages/shop.html#basket"><img class="icon-shop" src="dist/assets/assets/icons/icon-basket.svg" alt="logo panier"></a>
+          <a href="/pages/shop.html#basket"><img class="icon-shop" src="/assets/icons/icon-basket.svg" alt="logo panier"></a>
         </div>
       </div>
     </div>
@@ -89,13 +91,13 @@
     <div class="header-menu-desktop">
       <div class="container-logo-move">
         <div class="box-logo">
-          <img class="logo-JO" src="dist/assets/image/logo-etat-1.webp" />
+          <img class="logo-JO" src="/assets/image/logo-etat-1.webp" />
           <div class="anneaux">
-            <img class="ellipse" src="dist/assets/image/Ellipse 1.svg">
-            <img class="ellipse" src="dist/assets/image/Ellipse 5.svg">
-            <img class="ellipse" src="dist/assets/image/Ellipse 4.svg">
-            <img class="ellipse" src="dist/assets/image/Ellipse 3.svg">
-            <img class="ellipse" src="dist/assets/image/Ellipse 2.svg">
+            <img class="ellipse" src="/assets/image/Ellipse 1.svg">
+            <img class="ellipse" src="/assets/image/Ellipse 5.svg">
+            <img class="ellipse" src="/assets/image/Ellipse 4.svg">
+            <img class="ellipse" src="/assets/image/Ellipse 3.svg">
+            <img class="ellipse" src="/assets/image/Ellipse 2.svg">
           </div>
         </div>
       </div>
@@ -104,53 +106,159 @@
           <div class="box-search-icons">
             <div class="search-bar">
               <div class="div-search"></div>
-              <div><img class="icon-search" src="dist/assets/icons/icon-search-svg.svg" /></div>
+              <div><img class="icon-search" src="/assets/icons/icon-search-svg.svg" /></div>
             </div>
             <div class="box-icons">
               <div class="icons-top">
                 <div class="icon-top">
-                  <img src="dist/assets/icons/icon-user.svg" alt="User">
+                  <img src="/assets/icons/icon-user.svg" alt="User">
                 </div>
                 <div class="icon-top">
-                  <img src="dist/assets/icons/icon-accessibility.svg" alt="Accessibility">
+                  <img src="/assets/icons/icon-accessibility.svg" alt="Accessibility">
                 </div>
                 <div class="icon-top">
-                  <img src="dist/assets/icons/icon-love.svg" alt="Love">
+                  <img src="/assets/icons/icon-love.svg" alt="Love">
                 </div>
                 <div class="icon-top">
-                  <img src="dist/assets/icons/icon-basket.svg" alt="Basket">
+                  <a href="/pages/shop.html#basket"><img class="icon-shop" src="/assets/icons/icon-basket.svg" alt="logo panier"></a>
                 </div>
               </div>
             </div>
         </div>
         <ul class="nav-bar">
             <li class="nav-item">
-              <span class="icon-nav icon-home"><img src="dist/assets/icons/home.svg" /></span>
-              <span class="text-wrapper"><a href="../index.html#presentation">Accueil</a></span>
+              <span class="icon-nav icon-home"><img src="/assets/icons/home.svg" /></span>
+              <span class="text-wrapper"><a href="index.html#presentation">Accueil</a></span>
             </li>
             <li class="nav-item">
-              <span class="icon-nav icon-calendar"><img src="dist/assets/icons/calendar.svg" /></span>
-              <span class="text-wrapper"><a href="../index.html#calendar">Calendrier</a></span>
+              <span class="icon-nav icon-calendar"><img src="/assets/icons/calendar.svg" /></span>
+              <span class="text-wrapper"><a href="index.html#calendar">Calendrier</a></span>
             </li>
             <li class="nav-item">
-              <span class="icon-nav icon-medal"><img src="dist/assets/icons/medal.svg" /></span>
-              <span class="text-wrapper"><a href="../index.html#medal">Médailles</a></span>
+              <span class="icon-nav icon-medal"><img src="/assets/icons/medal.svg" /></span>
+              <span class="text-wrapper"><a href="index.html#medal">Médailles</a></span>
             </li>
             <li class="nav-item">
-              <span class="icon-nav icon-good-mement"><img src="dist/assets/icons/good-moment.svg" /></span>
-              <span class="text-wrapper"><a href="../index.html#good-moment">Meilleurs moments</a></span>
+              <span class="icon-nav icon-good-mement"><img src="/assets/icons/good-moment.svg" /></span>
+              <span class="text-wrapper"><a href="index.html#good-moment">Meilleurs moments</a></span>
             </li>
             <li class="nav-item">
-              <span class="icon-nav icon-paralympique"><img src="dist/assets/icons/paralympique.svg" /></span>
+              <span class="icon-nav icon-paralympique"><img src="/assets/icons/paralympique.svg" /></span>
               <span class="text-wrapper"><a href="#jo-para">Paralympiques</a></span>
             </li>
         </ul>
         </div>
       </div>
     </div>
-
-    
   </header>
+
+  <!-- Popups : Conteneur des popups -->
+  <div id="popups-container" class="pops-container">
+    <!-- Popup Connexion -->
+    <div id="popup-Connection" class="popup">
+      <div class="form-group">
+        <h2>Connexion</h2>
+        <button class="close-btn">&times;</button>
+        <div class="popup-content">
+          <div class="connected">
+            <p>Vous êtes connecté.</p>
+            <button id="logout-btn" class="submit-btn">Se déconnecter</button>
+          </div>
+          <div class="disconnected">
+            <form class="form" id="auth-form" method="post">
+              <label for="email">Email</label>
+              <input type="text" id="email-connection" name="email" required>
+              <label for="password">Mot de passe</label>
+              <input type="password" id="password-connection" name="password" required>
+              <p class="mdp-forget"><a href="#">Mot de passe oublié ?</a></p>
+              <div class="checkbox">
+                <div class="remember-me">
+                  <input class="input-checkbox" type="checkbox" id="remember-me"/>
+                  <label for="remember-me">Se souvenir de moi</label>
+                </div>
+                <div class="subscribe">
+                  <input class="input-checkbox" type="checkbox" id="subscribeNews" name="subscribe" value="newsletter"/>
+                  <label for="subscribeNews">Souhaitez-vous vous abonner à la newsletter ?</label>
+                </div>
+              </div>
+              <button type="submit" class="submit-btn">Se connecter</button>
+            </form>
+            <div class="new-account">
+              <p class="link-new-account"><a href="#signup-form">Créer un compte</a></p>
+            </div>
+            <div class="social-login">
+              <div class="google-btn social-btn" onclick="handleGoogleLogin()">
+                <img src="/assets/icons/btn-connection-google.png" alt="Connexion Google">
+              </div>
+              <div class="facebook-btn social-btn" onclick="handleFacebookLogin()">
+                <img src="/assets/icons/btn-connection-facebook.png" alt="Connexion Facebook">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup Inscription -->
+    <div id="popup-inscription" class="popup">
+      <div class="form-group">
+        <h2>Formulaire d’inscription</h2>
+        <button class="close-btn">&times;</button>
+        <form class="form" id="signup-form" method="post">
+          <div class="form-div form-identity">
+            <input type="text" id="username" name="username" placeholder="Nom" required>
+            <input type="text" id="firstname" name="firstname" placeholder="Prénom" required>
+          </div>
+          <input type="date" id="date" name="date" placeholder="Date de naissance" required>
+          <div class="form-div form-contact">
+            <input type="text" id="email" name="email" placeholder="Email" required>
+            <input type="number" id="phonenumber" name="phonenumber" placeholder="N° de téléphone" required>
+          </div>
+          <div class="form-div form-address">
+            <input type="text" id="address" name="adresse" placeholder="Adresse" required>
+          </div>
+          <div class="form-div form-adress2">
+            <input type="number" id="postalcode" name="postalcode" placeholder="Code postale" required>
+            <input type="text" id="city" name="city" placeholder="Ville" required>
+          </div>
+          <div class="form-password">
+            <input type="password" id="password" name="password" placeholder="Mot de passe" required>
+            <input type="password" id="confirmPassword" name="ConfirmPassword" placeholder="Confirmation du mot de passe" required>
+          </div>
+          <div class="form-checkbox">
+            <input class="input-form-checkbox" type="checkbox" id="terms" name="terms" required />
+            <label for="terms">J’accepte la Politique de confidentialité et confirme avoir plus de 16 ans.</label>
+          </div>
+          <button type="submit" class="submit-btn">S'inscrire</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Popup Accessibilité -->
+    <div id="popup-Accessibility" class="popup">
+      <div class="form-group">
+        <h2>Accessibilité</h2>
+        <button class="close-btn">&times;</button>
+        <ul>
+          <li><button onclick="increaseFontSize()">🔍 Augmenter la taille du texte</button></li>
+          <li><button onclick="decreaseFontSize()">🔎 Diminuer la taille du texte</button></li>
+          <li><button onclick="toggleContrast()">🌗 Mode contraste élevé</button></li>
+          <li><button onclick="toggleDyslexiaMode()">🧠 Mode Dyslexie</button></li>
+          <li><button onclick="toggleTextToSpeech()">🔊 Lecture vocale</button></li>
+          <li><button onclick="disableAnimations()">🌀 Désactiver les animations</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Popup Mes Favoris -->
+    <div id="popup-My-favorit" class="popup">
+      <div class="form-group">
+        <h2>Mes Favoris</h2>
+        <button class="close-btn">&times;</button>
+        <div id="favorites-list">Chargement...</div>
+      </div>
+    </div>
+  </div>
 
   <!--*************   Main   *************-->
   <main>
@@ -293,21 +401,21 @@
             <button class="btn-payment btn-shop">Procéder au payement</button>
             <div class="line-black"></div>
             <p>Ou</p>
-            <button class="btn-payment-amazon btn-pay-other"><img src="dist/assets/icons/btn-pay-amazon.svg" alt="bouton payement amazon"></button>
-            <button class="btn-payment-google btn-pay-other"><img src="dist/assets/icons/btn-pay-google.svg" alt="bouton de payement google"></button>
-            <button class="btn-payment-paypal btn-pay-other"><img src="dist/assets/icons/btn-pay-paypal.svg" alt="bouton de payement paypal"></button>
+            <button class="btn-payment-amazon btn-pay-other"><img src="/assets/icons/btn-pay-amazon.svg" alt="bouton payement amazon"></button>
+            <button class="btn-payment-google btn-pay-other"><img src="/assets/icons/btn-pay-google.svg" alt="bouton de payement google"></button>
+            <button class="btn-payment-paypal btn-pay-other"><img src="/assets/icons/btn-pay-paypal.svg" alt="bouton de payement paypal"></button>
           </div>
         </div>
       </div>
     </div>
     <div class="advense-paypal">
-      <img src="dist/assets/image/pub-paypal.svg" alt="pub-paypal">
+      <img src="/assets/image/pub-paypal.svg" alt="pub-paypal">
     </div>
     <div class="advense">
       <div class="title-advense">
         <span class="line-black"></span><h2>PARTENAIRES OFFICIELS</h2><span class="line-black"></span>
       </div>
-      <img class="image-advense" src="dist/assets/image/partenaires -jo.webp" alt="partenaires jo 2024">
+      <img class="image-advense" src="/assets/image/partenaires -jo.webp" alt="partenaires jo 2024">
     </div>
     
   </main>
@@ -315,10 +423,10 @@
   <!--*************  Footer  *************-->
   <footer class="container-footer">
     <div class ="icons">
-      <img class ="icon" src="dist/assets/icons/Facebook.png" alt="logo Facebook">
-      <img class ="icon" src="dist/assets/icons/Instagram.png" alt="logo Instagram">
-      <img class ="icon" src="dist/assets/icons/X.png" alt="logo X">
-      <img class ="icon" src="dist/assets/icons/Youtube.png" alt="logo Youtube">
+      <img class ="icon" src="/assets/icons/Facebook.png" alt="logo Facebook">
+      <img class ="icon" src="/assets/icons/Instagram.png" alt="logo Instagram">
+      <img class ="icon" src="/assets/icons/X.png" alt="logo X">
+      <img class ="icon" src="/assets/icons/Youtube.png" alt="logo Youtube">
     </div>
     <div class="rgpd">
       <a class ="rgpd-link" href="#">Conditions d'utilistations</a>
@@ -330,6 +438,6 @@
       <p>© 2024 Jeux olympiques de PARIS. Tous droits réservés.</p>
     </div>
   </footer>
-  <script src="dist/js/pages/animationBurgerMenu.js"></script>
+  <script src="/js/pages/animationBurgerMenu.js"></script>
 </body>
 </html>

@@ -14,13 +14,13 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Oauth {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO) // Correction de la génération d'UUID
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID idOAuth;
 
-    @Column(unique = true, length = 100)  // Précision de la longueur maximale
+    @Column(unique = true, length = 100)
     private String googleId;
 
-    @Column(unique = true, length = 100)  // Précision de la longueur maximale
+    @Column(unique = true, length = 100)
     private String facebookId;
 
     @ManyToOne(cascade = CascadeType.REMOVE)

@@ -1,58 +1,69 @@
 package fr.bloc_jo2024.service;
+
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
+import java.util.Base64;
 import java.util.Date;
+import java.util.function.Function;
 
-@Component
+@Service
 public class JwtService {
 
+    // Clé secrète chargée depuis application.properties
     @Value("${jwt.secret}")
     private String secretKey;
 
+    // Durée d'expiration du token (en millisecondes)
     @Value("${jwt.expiration}")
-    private long expirationTime; // En millisecondes
+    private long expirationTime;
 
+    // Génère un token JWT à partir de l'email de l'utilisateur.
     public String generateToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationTime)) // Utilisation de la durée d'expiration configurée
-                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    // Extrait l'email (subject) contenu dans un token JWT.
     public String extractEmail(String token) {
-        try {
-            return Jwts.parser()
-                    .setSigningKey(secretKey)
-                    .parseClaimsJws(token)
-                    .getBody()
-                    .getSubject();
-        } catch (ExpiredJwtException e) {
-            throw new RuntimeException("Le token JWT est expiré.");
-        } catch (JwtException e) {
-            throw new RuntimeException("Token JWT invalide.");
-        }
+        return extractClaim(token, Claims::getSubject);
     }
 
+    // Vérifie si un token JWT est valide.
     public boolean isTokenValid(String token, String email) {
         try {
-            String extractedEmail = extractEmail(token);
-            return extractedEmail.equals(email) && !isTokenExpired(token);
-        } catch (Exception e) {
+            return email.equals(extractEmail(token)) && !isTokenExpired(token);
+        } catch (JwtException e) {
             return false;
         }
     }
 
     private boolean isTokenExpired(String token) {
-        Date expiration = Jwts.parser()
-                .setSigningKey(secretKey)
+        return extractClaim(token, Claims::getExpiration).before(new Date());
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getExpiration();
-        return expiration.before(new Date());
+                .getBody();
+    }
+
+    // Génère une clé de signature sécurisée à partir de la clé secrète.
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(Base64.getDecoder().decode(secretKey));
     }
 }
-

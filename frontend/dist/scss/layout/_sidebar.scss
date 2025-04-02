@@ -1,12 +1,12 @@
 .nav-sidebars {
   display: none;
   padding: .75rem .75rem .75rem 0;
-  gap: 1rem;
+  gap: .75rem;
   align-items: center;
   justify-content: flex-start;
   position: fixed;
   left: 0;
-  top: 77%;
+  top: 78%;
   transform: translateY(-50%);
   height: 100vh;
   z-index: 10;
@@ -20,7 +20,7 @@
     display: flex;
     flex-direction: column; 
     align-items: center;
-    width: 100%;
+    width: 95%;
     transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
   
     .header-menu-sidebar {
@@ -46,7 +46,7 @@
       .icons-sidebar {
         display: flex;
         flex-direction: column;
-        gap: 2rem;
+        gap: 1.75rem;
         align-items: center;
         justify-content: center;
   
@@ -118,24 +118,19 @@
     }
 
     .login-sidebare {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: $color-gray-login;
-      border-radius: .75rem;
-      padding: .5rem;
-      gap: 1rem;
-
-      .box-login {
+        border-radius: .75rem;
+        padding: .5rem 1rem;
         display: flex;
         flex-direction: row;
-        gap: .5rem;
+        gap: 2.5rem;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         flex-shrink: 0;
         width: 19rem;
         height: 2.5rem;
         position: relative;
+
+      .box-login {
 
         .btn-up-white {
           color: white;

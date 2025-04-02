@@ -1,5 +1,6 @@
 package fr.bloc_jo2024.entity;
 import fr.bloc_jo2024.entity.Utilisateur;
+import fr.bloc_jo2024.entity.Offre;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -37,6 +38,28 @@ public class Panier {
     @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Offre> offres = new HashSet<>();
 
+    // Méthode pour recalculer le montant total
+    public void recalculerMontantTotal() {
+        double total = 0.0;
+        for (Offre offre : offres) {
+            total += offre.getPrix() * offre.getQuantite();
+        }
+        this.montantTotal = total; // Met à jour le montant total
+    }
+
+    // Méthode pour ajouter une offre au panier
+    public void ajouterOffre(Offre offre) {
+        offres.add(offre);
+        recalculerMontantTotal();
+    }
+
+    // Méthode pour retirer une offre du panier
+    public void retirerOffre(Offre offre) {
+        offres.remove(offre);
+        recalculerMontantTotal();
+    }
+
+    // Méthode pour définir le montant total
     public void setMontantTotal(double montantTotal) {
         if (montantTotal < 0) {
             throw new IllegalArgumentException("Le montant total ne peut pas être négatif.");

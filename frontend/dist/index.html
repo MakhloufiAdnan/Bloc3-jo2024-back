@@ -1,20 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!--*************  Scripts  *************-->  
-  <script src="/js/components/componentIconsTopHeader.js" defer></script>
-  <script src="/js/components/managmentPopUps.js" defer></script>
+
+  <!--*************  Scripts  *************-->
   <script src="/js/components/carousels.js" defer></script>
   <script src="/js/components/componentCardsNews.js" defer></script>
   <script src="/js/components/componentCardsNewsFeed.js" defer></script>
   <script src="/js/components/componentBtnDropdown.js" defer></script>
   <script src="/js/pages/animationSideBare.js" defer></script>
   <script src="/js/pages/accessibility.js" defer></script>
-  <script src="/js/api/login.js" defer></script>
-  <script src="/js/api/register.js" defer></script>
+  <script src="/js/pages/animationBurgerMenu.js" defer></script>
+  <script src="/js/components/componentIconsTopHeader.js" defer></script>
+  <script type="module" src="/js/pages/favoriteService.js" defer></script>
+  <script type="module" src="/js/api/authService.js" defer></script>
+  <script type="module" src="/js/api/authUtils.js" defer></script>
+  <script type="module" src="/js/api/register.js" defer></script>
+  <script type="module" src="/js/components/managmentPopUps.js" defer></script>
 
   <!--*************  Links  *************-->
   <link rel="stylesheet" href="/css/main.css">
@@ -65,7 +68,7 @@
             </div>
             <div class="nav-item-mobile">
               <span class="icon-nav-mobile"><img src="/assets/icons/icon-Business-mobile.svg" /></span>
-              <a href="pages/shop.html#basket">Boutique</a>
+              <a href="pages/shop.html">Boutique</a>
             </div>
             <div class="line-black"></div>
             <div class="icons-nav-bottom-mobile">
@@ -152,6 +155,115 @@
       </div>
     </div>
   </header>
+
+  <!-- Popups : Conteneur des popups -->
+  <div id="popups-container" class="pops-container">
+    <!-- Popup Connexion -->
+    <div id="popup-Connection" class="popup">
+      <div class="form-group">
+        <h2>Connexion</h2>
+        <button class="close-btn">&times;</button>
+        <div class="popup-content">
+          <div class="connected">
+            <p>Vous êtes connecté.</p>
+            <button id="logout-btn" class="submit-btn">Se déconnecter</button>
+          </div>
+          <div class="disconnected">
+            <form class="form" id="auth-form" method="post">
+              <label for="email">Email</label>
+              <input type="text" id="email-connection" name="email" required>
+              <label for="password">Mot de passe</label>
+              <input type="password" id="password-connection" name="password" required>
+              <p class="mdp-forget"><a href="#">Mot de passe oublié ?</a></p>
+              <div class="checkbox">
+                <div class="remember-me">
+                  <input class="input-checkbox" type="checkbox" id="remember-me"/>
+                  <label for="remember-me">Se souvenir de moi</label>
+                </div>
+                <div class="subscribe">
+                  <input class="input-checkbox" type="checkbox" id="subscribeNews" name="subscribe" value="newsletter"/>
+                  <label for="subscribeNews">Souhaitez-vous vous abonner à la newsletter ?</label>
+                </div>
+              </div>
+              <button type="submit" class="submit-btn">Se connecter</button>
+            </form>
+            <div class="new-account">
+              <p class="link-new-account"><a href="#signup-form">Créer un compte</a></p>
+            </div>
+            <div class="social-login">
+              <div class="google-btn social-btn" onclick="handleGoogleLogin()">
+                <img src="/assets/icons/btn-connection-google.png" alt="Connexion Google">
+              </div>
+              <div class="facebook-btn social-btn" onclick="handleFacebookLogin()">
+                <img src="/assets/icons/btn-connection-facebook.png" alt="Connexion Facebook">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup Inscription -->
+    <div id="popup-inscription" class="popup">
+      <div class="form-group">
+        <h2>Formulaire d’inscription</h2>
+        <button class="close-btn">&times;</button>
+        <form class="form" id="signup-form" method="post">
+          <div class="form-div form-identity">
+            <input type="text" id="username" name="username" placeholder="Nom" required>
+            <input type="text" id="firstname" name="firstname" placeholder="Prénom" required>
+          </div>
+          <input type="date" id="date" name="date" placeholder="Date de naissance" required>
+          <div class="form-div form-contact">
+            <input type="text" id="email" name="email" placeholder="Email" required>
+            <input type="number" id="phonenumber" name="phonenumber" placeholder="N° de téléphone" required>
+          </div>
+          <div class="form-div form-address">
+            <input type="text" id="address" name="adresse" placeholder="Adresse" required>
+          </div>
+          <div class="form-div form-adress2">
+            <input type="number" id="postalcode" name="postalcode" placeholder="Code postale" required>
+            <input type="text" id="city" name="city" placeholder="Ville" required>
+          </div>
+          <div class="form-password">
+            <input type="password" id="password" name="password" placeholder="Mot de passe" required>
+            <input type="password" id="confirmPassword" name="ConfirmPassword" placeholder="Confirmation du mot de passe" required>
+          </div>
+          <div class="form-checkbox">
+            <input class="input-form-checkbox" type="checkbox" id="terms" name="terms" required />
+            <label for="terms">J’accepte la Politique de confidentialité et confirme avoir plus de 16 ans.</label>
+          </div>
+          <button type="submit" class="submit-btn">S'inscrire</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Popup Accessibilité -->
+    <div id="popup-Accessibility" class="popup">
+      <div class="form-group">
+        <h2>Accessibilité</h2>
+        <button class="close-btn">&times;</button>
+        <ul>
+          <li><button onclick="increaseFontSize()">🔍 Augmenter la taille du texte</button></li>
+          <li><button onclick="decreaseFontSize()">🔎 Diminuer la taille du texte</button></li>
+          <li><button onclick="toggleContrast()">🌗 Mode contraste élevé</button></li>
+          <li><button onclick="toggleDyslexiaMode()">🧠 Mode Dyslexie</button></li>
+          <li><button onclick="toggleTextToSpeech()">🔊 Lecture vocale</button></li>
+          <li><button onclick="disableAnimations()">🌀 Désactiver les animations</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Popup Mes Favoris -->
+    <div id="popup-My-favorit" class="popup">
+      <div class="form-group">
+        <h2>Mes Favoris</h2>
+        <button class="close-btn">&times;</button>
+        <div id="favorites-list">Chargement...</div>
+      </div>
+    </div>
+  </div>
+
   <!--**********************   Main   **********************-->
   <main>
     <!-- hero-image-top -->
@@ -237,8 +349,8 @@
               <div class="login-sidebare">
                 <img class="icon-sidebar" src="/assets/icons/icon-contact-sidebar.svg"/>
                 <div class="box-login">
-                  <button class="btn-up-white" id="login-sidebar">Se connecte |</button>
-                  <button class="btn-up-white" id="incription-sidebar"> S'inscrire</button>
+                  <button class="btn-up-white" id="login-sidebar">Se connecter |</button>
+                  <button class="btn-up-white" id="inscription-sidebar"> S'inscrire</button>
                 </div>
               </div>
             </div>
@@ -341,7 +453,7 @@
                 <div class="btn-filter btn-filter-countries sec4btn"></div>
                 <div class="image-btn">
                   <img class="image-medals" src="/assets/image/medailles-olympiques-2024.webp" alt="medailles olympiques 2024">
-                  <button class="btn-shop">Accéder à la boutique</button>
+                  <a href="/pages/shop.html#basket"><button class="btn-shop">Accéder à la boutique</button></a>
                 </div>
               </div>
               <div class="table-medals">
@@ -417,7 +529,6 @@
       <p>© 2024 Jeux olympiques de PARIS. Tous droits réservés.</p>
     </div>
   </footer>
-  <script src="/js/pages/animationBurgerMenu.js"></script>
 </body>
 
 </html>

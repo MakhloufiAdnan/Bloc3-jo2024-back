@@ -36,6 +36,14 @@ public class Evenement {
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Offre> offres = new HashSet<>();
 
+    @ManyToMany
+    @JoinTable(
+            name = "evenement_epreuve",
+            joinColumns = @JoinColumn(name = "idEvenement"),
+            inverseJoinColumns = @JoinColumn(name = "idEpreuve")
+    )
+    private Set<Epreuve> epreuves = new HashSet<>();
+
     // Méthode pour mettre à jour les places disponibles
     public void decrementerPlaces(int nb) {
         if (this.nbPlaceDispo - nb < 0) {
@@ -43,4 +51,13 @@ public class Evenement {
         }
         this.nbPlaceDispo -= nb;
     }
+
+    // Méthode pour vérifier que la date de l'événement n'est pas dans le passé
+    @PrePersist
+    public void checkDate() {
+        if (this.dateEvenement.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("La date de l'événement ne peut pas être dans le passé.");
+        }
+    }
 }
+

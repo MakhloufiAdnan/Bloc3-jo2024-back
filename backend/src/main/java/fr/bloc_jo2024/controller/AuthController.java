@@ -1,11 +1,12 @@
 package fr.bloc_jo2024.controller;
+
+import fr.bloc_jo2024.entity.RoleEnum;
 import fr.bloc_jo2024.dto.RegisterRequest;
 import fr.bloc_jo2024.dto.LoginRequest;
 import fr.bloc_jo2024.dto.AuthResponse;
 import fr.bloc_jo2024.service.UtilisateurService;
 import fr.bloc_jo2024.service.JwtService;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,53 +21,74 @@ import org.springframework.http.HttpStatus;
 @RequestMapping("/auth")
 public class AuthController {
 
-    @Autowired
-    private UtilisateurService utilisateurService;
+    private final UtilisateurService utilisateurService;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JwtService jwtService;
+    // Injection des dépendances via le constructeur
+    public AuthController(UtilisateurService utilisateurService,
+                          JwtService jwtService,
+                          AuthenticationManager authenticationManager,
+                          BCryptPasswordEncoder passwordEncoder) {
+        this.utilisateurService = utilisateurService;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
-
-    // Inscription de l'utilisateur avec encodage du mot de passe
+    /**
+     * Route pour l'inscription d'un nouvel utilisateur.
+     * @param request Objet contenant l'email et le mot de passe de l'utilisateur
+     * @return Une réponse HTTP avec un message indiquant le succès ou l'échec de l'inscription
+     */
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
-        // Vérifier si l'email est déjà utilisé
-        if (utilisateurService.findByEmail(request.getEmail()) != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cette email existe.");
+
+        // Vérifie si l'email est déjà utilisé avant d'inscrire l'utilisateur
+        if (utilisateurService.existsByEmail(request.getEmail())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cet email est déjà utilisé.");
         }
 
-        // Inscrire l'utilisateur avec l'email et le mot de passe encodé
-        utilisateurService.registerUser(request.getEmail(), passwordEncoder.encode(request.getPassword()));
+        // Définir un rôle par défaut si aucun rôle n'est fourni
+        RoleEnum roleEnum = (request.getRole() != null && !request.getRole().isEmpty())
+                ? RoleEnum.valueOf(request.getRole().toUpperCase())
+                : RoleEnum.USER;  // Rôle par défaut
+
+        // Encode le mot de passe et enregistre l'utilisateur dans la base de données
+        utilisateurService.registerUser(request.getEmail(), passwordEncoder.encode(request.getPassword()), roleEnum);
         return ResponseEntity.status(HttpStatus.CREATED).body("Inscription réussie !");
     }
 
-    // Connexion de l'utilisateur et génération du token JWT
+    /**
+     * Route pour la connexion d'un utilisateur.
+     * Vérifie les identifiants et retourne un token JWT si la connexion est réussie.
+     * @param request Objet contenant l'email et le mot de passe de l'utilisateur
+     * @return Un token JWT ou une erreur si la connexion échoue
+     */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            // Authentification de l'utilisateur avec les identifiants fournis
+
+            // Authentifie l'utilisateur avec les identifiants fournis
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
 
-            // Récupérer les détails de l'utilisateur après l'authentification réussie
+            // Récupère les détails de l'utilisateur après authentification réussie
             UserDetails user = (UserDetails) authentication.getPrincipal();
 
-            // Générer un token JWT
+            // Génère un token JWT valide pour l'utilisateur
             String token = jwtService.generateToken(user.getUsername());
 
-            // Retourner le token JWT dans la réponse
+            // Retourne le token JWT dans la réponse
             return ResponseEntity.ok(new AuthResponse(token));
 
         } catch (AuthenticationException e) {
-
-            // Si une erreur d'authentification un message est retourné
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthResponse("Email ou mot de passe invalide."));
+            // Si l'authentification échoue, retourne une réponse HTTP 401 (Unauthorized)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email ou mot de passe invalide.");
         }
     }
 }
+
+

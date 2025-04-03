@@ -18,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
 @RestController
+
+// Préfixe commun pour tous les endpoints d'authentification
 @RequestMapping("/auth")
 public class AuthController {
 
@@ -57,6 +59,8 @@ public class AuthController {
 
         // Encode le mot de passe et enregistre l'utilisateur dans la base de données
         utilisateurService.registerUser(request.getEmail(), passwordEncoder.encode(request.getPassword()), roleEnum);
+
+        // Retourne une réponse 201 CREATED avec un message de succès
         return ResponseEntity.status(HttpStatus.CREATED).body("Inscription réussie !");
     }
 
@@ -90,5 +94,3 @@ public class AuthController {
         }
     }
 }
-
-

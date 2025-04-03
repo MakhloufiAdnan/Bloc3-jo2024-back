@@ -29,14 +29,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     try {
-      const response = await fetch('/register', {
+      const response = await fetch('http://localhost:8080/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error("Erreur lors de l'inscription. Vérifiez vos informations.");
+        const errorText = await response.text();  // Récupère le message d'erreur du backend
+        throw new Error(errorText || "Erreur lors de l'inscription.");
       }
 
       showPopup("Inscription réussie ! Vous pouvez maintenant vous connecter.", "success");
@@ -44,8 +46,8 @@ document.addEventListener('DOMContentLoaded', function () {
         window.location.href = "/index.html";
       }, 1000);
     } catch (error) {
-      console.error(error);
-      showPopup(error.message, "error");
+        console.error("Erreur lors de l'inscription :", error);
+        showPopup(error.message || "Erreur lors de l'inscription.", "error");
     }
   });
 

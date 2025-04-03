@@ -14,15 +14,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class SecurityConfig {
+public class SecurityConfig implements WebMvcConfigurer {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final UserDetailsService userDetailsService;
 
-    // Injection par constructeur des dépendances
+    // Injection des dépendances
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
                           UserDetailsService userDetailsService) {
@@ -31,22 +33,21 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-    // Définition de la chaîne de filtres de sécurité
+    // Configuration de la chaîne de filtres de sécurité
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/auth/register", "/auth/login").permitAll() // Autorisation pour l'enregistrement et la connexion
-                        .anyRequest().authenticated());
+        http.csrf().disable()
+                .authorizeRequests()
+                .requestMatchers("/auth/register", "/auth/login").permitAll()
+                .anyRequest().authenticated()
+                .and()
+                .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .cors(); // Active la configuration CORS
 
-        // Ajout du filtre JWT avant le filtre d'authentification standard
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
-    // Définition du provider d'authentification qui utilise UserDetailsService et le PasswordEncoder
+    // Définition du provider d'authentification
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -61,10 +62,18 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    // Définition du bean PasswordEncoder
+    // Définition du PasswordEncoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-}
 
+    // Ajout de la configuration CORS pour permettre les requêtes de http://localhost
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:80") // Autorise l'origine de ton frontend
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Méthodes autorisées, y compris OPTIONS pour les pré-demandes
+                .allowedHeaders("*"); // Autorise tous les en-têtes
+    }
+}

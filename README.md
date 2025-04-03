@@ -25,4 +25,4 @@
 20. Ajout api frontend login et register + ajout fichier gestion api authService
 21. Modification + correction scripte managementPopup
 22. Modif securityConfig
-23. 
+23. Ajout du fichier CorsConfig pour autoriser CORS pour tous les Endpoints

@@ -1,9 +1,9 @@
 name: CI/CD Pipeline
 
-on:
+on: # Déclenchement sur un push vers la branche `main`
   push:
     branches:
-      - main  # Déclenchement sur un push vers la branche `main`
+      - main  
 
 jobs:
   build:
@@ -11,54 +11,66 @@ jobs:
 
     steps:
       # 1. Checkout du code
-      - name: Checkout repository
-        uses: actions/checkout@v2
+       - name: Checkout code
+         uses: actions/checkout@v3
 
       # 2. Se connecter à Docker Hub 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
+       - name: Log in to Docker Hub
+         uses: docker/login-action@v2
+         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # 3. Build des images Docker pour le backend
-      - name: Build backend Docker image
-        run: |
+       - name: Build backend image
+         run: |
           cd backend
           mvn clean install -DskipTests
-          docker build -t myapp-backend .
-
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/jo2024-backend
+          
       # 4. Build des images Docker pour le frontend
-      - name: Build frontend Docker image
-        run: |
+       - name: Build frontend image
+         run: |
           cd frontend
-          docker build -t myapp-frontend .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend .
 
-      # 5. Build des images Docker pour la base de données
-      - name: Build PostgreSQL Docker image (si nécessaire)
-        run: |
-          docker pull postgres:17-alpine
+      # 5. Push des images sur Docker Hub
+       - name: Push backend image
+         run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/jo2024-backend
 
-      # 6. Push des images Docker sur Docker Hub (ou autre registre)
-      - name: Push backend Docker image
-        run: |
-          docker tag myapp-backend:latest mydockerhubusername/myapp-backend:latest
-          docker push mydockerhubusername/myapp-backend:latest
+       - name: Push frontend image
+         run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend
 
-      - name: Push frontend Docker image
-        run: |
-          docker tag myapp-frontend:latest mydockerhubusername/myapp-frontend:latest
-          docker push mydockerhubusername/myapp-frontend:latest
+      # 6. Déploiement sur le serveur distant
+       - name: Deploy on remote server via SSH
+         uses: appleboy/ssh-action@v1.0.3
+         with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd jo2024  # dossier où se trouve docker-compose.yml
+            echo "Création du .env sur le serveur distant"
+            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" > .env
+            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+            echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }}" >> .env
+            echo "ID_GOOGLE=${{ secrets.ID_GOOGLE }}" >> .env
+            echo "MDP_GOOGLE=${{ secrets.MDP_GOOGLE }}" >> .env
+            echo "EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }}" >> .env
+            echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> .env
+            echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
+            echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
+            echo "BACKEND_PORT=${{ secrets.BACKEND_PORT }}" >> .env
 
-      # 7. Déployer sur un serveur distant via SSH
-      - name: Deploy to server
-        run: |
-          ssh -o StrictHostKeyChecking=no user@your-server-ip "
-          docker pull mydockerhubusername/myapp-backend:latest &&
-          docker pull mydockerhubusername/myapp-frontend:latest &&
-          docker-compose down && 
-          docker-compose up -d
-          "
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            echo "Récupération des images Docker à jour"
+            docker pull ${{ secrets.DOCKER_USERNAME }}/jo2024-backend
+            docker pull ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend
 
+            echo "Redémarrage de l'application"
+            docker-compose down
+            docker-compose up -d --build

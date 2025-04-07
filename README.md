@@ -26,3 +26,4 @@
 21. Modification + correction scripte managementPopup
 22. Modif securityConfig
 23. Ajout du fichier CorsConfig pour autoriser CORS pour tous les Endpoints
+

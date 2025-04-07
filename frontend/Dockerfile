@@ -10,6 +10,9 @@ COPY package.json package-lock.json ./
 #Installer les dépendances du projet
 RUN npm install
 
+# Installer sass globalement
+RUN npm install -g sass
+
 # Copier tous les fichiers source du frontend
 COPY . .
 

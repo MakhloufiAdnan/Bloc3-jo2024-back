@@ -1,10 +1,13 @@
 # Étape 1 : Construire l'application avec Node.js
-FROM node:23.0-alpine AS build
+FROM node:lts-alpine3.19 AS build
 
+# Définir le répertoire de travail
 WORKDIR /app
 
+# Copier le package.json et package-lock.json
 COPY package.json package-lock.json ./
 
+#Installer les dépendances du projet
 RUN npm install
 
 # Copier tous les fichiers source du frontend

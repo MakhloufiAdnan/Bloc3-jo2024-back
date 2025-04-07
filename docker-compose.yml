@@ -2,8 +2,6 @@ services:
   db:
     image: postgres:17-alpine
     container_name: db_jo2024
-    env_file:
-      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -21,8 +19,6 @@ services:
     container_name: back_jo2024
     ports:
       - "8080:8080"
-    env_file:
-      - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:${POSTGRES_PORT}/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -52,4 +48,3 @@ volumes:
 
 networks:
   jo_network:
-

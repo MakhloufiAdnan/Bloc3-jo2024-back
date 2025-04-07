@@ -18,11 +18,10 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # copie de l'appli compilé dans l'image du JRE
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/*.war app.war
 
 #Expose du porte 8080
 EXPOSE 8080
 
 #La commande qui sera executée lors de lancement du container
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
+ENTRYPOINT ["java", "-jar", "app.war"]

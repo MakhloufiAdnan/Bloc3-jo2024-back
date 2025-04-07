@@ -14,7 +14,7 @@
     <groupId>fr.JeuxOlympiques</groupId>
     <artifactId>bloc3_Jo2024</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>war</packaging>
 
     <properties>
         <java.version>21</java.version>
@@ -22,15 +22,31 @@
 
     <dependencies>
 
-        <!-- Dépendances Spring Boot -->
+        <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
+
+        <!-- Spring Web exclusion du Tomcat embarqué-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+        <!-- Tomcat fourni par le conteneur application -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -53,14 +69,14 @@
             <version>6.2.3</version>
         </dependency>
 
-        <!-- Driver PostgreSQL -->
+        <!-- PostgreSQL Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.0</version>
         </dependency>
 
-        <!-- Lombok pour simplifier le code -->
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -68,11 +84,11 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- JSON Web Tokens (JWT) -->
+        <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version> 0.11.5</version>
+            <version>0.11.5</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -85,14 +101,14 @@
             <version>0.11.5</version>
         </dependency>
 
-        <!-- Permet de gérer les connexions externes OAuth (comme Google et Facebook). -->
+        <!-- OAuth2 -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-client</artifactId>
             <version>6.4.3</version>
         </dependency>
 
-        <!-- Tests unitaires avec JUnit et Mockito -->
+        <!-- Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -108,14 +124,13 @@
 
     <build>
         <plugins>
-
-            <!-- Plugin Spring Boot pour la construction du JAR exécutable -->
+            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- Plugin Maven Compiler pour Java 21 -->
+            <!-- Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -135,3 +150,4 @@
         </plugins>
     </build>
 </project>
+

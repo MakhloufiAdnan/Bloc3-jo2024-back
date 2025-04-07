@@ -1,0 +1,84 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: VPS
+
+    steps:
+      # 1. Checkout du code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Docker Hub Login
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 3. Tests backend
+      - name: Run backend tests
+        run: |
+          if [ -d "backend" ]; then
+            cd backend
+            mvn test
+          else
+            echo "Dossier backend introuvable"; exit 1
+          fi
+
+      # 4. Tests frontend
+      - name: Run frontend tests
+        run: |
+          if [ -d "frontend" ]; then
+            cd frontend
+            npm install
+            npm run test
+          else
+            echo "Dossier frontend introuvable"; exit 1
+          fi
+
+      # 5. Build & push backend
+      - name: Build & push backend Docker image
+        run: |
+          cd backend
+          mvn clean install -DskipTests
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/jo2024-backend .
+          docker push ${{ secrets.DOCKER_USERNAME }}/jo2024-backend
+
+      # 6. Build & push frontend
+      - name: Build & push frontend Docker image
+        run: |
+          cd frontend
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend .
+          docker push ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend
+
+      # 7. Déploiement via SSH
+      - name: Deploy on remote server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_PORT,JWT_SECRET,JWT_EXPIRATION,EMAIL_USERNAME,EMAIL_PASSWORD
+          script: |
+            echo "Backup de l'état actuel"
+            docker-compose logs > deploy-backup-logs.txt || echo "Aucun log à sauvegarder"
+            docker ps -a > deploy-backup-containers.txt
+
+            echo "Pull des dernières images"
+            docker pull ${{ secrets.DOCKER_USERNAME }}/jo2024-backend
+            docker pull ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend
+
+            echo "Restart des services"
+            docker-compose down
+            docker-compose up -d --build
+
+            echo "Vérification de la santé du backend"
+            sleep 10
+            curl --fail http://localhost:8080/actuator/health || (echo "Le backend ne répond pas correctement" && exit 1)

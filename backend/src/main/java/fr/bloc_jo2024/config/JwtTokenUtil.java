@@ -60,5 +60,3 @@ public class JwtTokenUtil {
         return extractClaim(token, Claims::getExpiration);
     }
 }
-
-

@@ -26,4 +26,7 @@
 21. Modification + correction scripte managementPopup
 22. Modif securityConfig
 23. Ajout du fichier CorsConfig pour autoriser CORS pour tous les Endpoints
+24. Ajout cicd et suppression des infos importantes de .env vers github secret
+25. déploiement du projet sur heroku
+26. 
 

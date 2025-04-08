@@ -27,11 +27,20 @@ document.addEventListener('DOMContentLoaded', function () {
       showPopup("Les mots de passe ne correspondent pas.", "error");
       return;
     }
+    // Récupère le token JWT (si disponible)
+      const tokenJWT = isAuthenticated();
+
+      if (!tokenJWT) {
+          showPopup("Token JWT manquant ou non valide.", "error");
+          return;
+      }
 
     try {
       const response = await fetch('http://localhost:8080/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json',
+        headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + tokenJWT
         },
         body: JSON.stringify(data),
       });

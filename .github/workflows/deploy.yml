@@ -65,20 +65,37 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_PORT,JWT_SECRET,JWT_EXPIRATION,EMAIL_USERNAME,EMAIL_PASSWORD
+          envs: |
+            POSTGRES_DB,
+            POSTGRES_USER,
+            POSTGRES_PASSWORD,
+            POSTGRES_PORT,
+            JWT_SECRET,
+            JWT_EXPIRATION,
+            EMAIL_USERNAME,
+            EMAIL_PASSWORD
           script: |
             echo "Backup de l'état actuel"
+            
+            # Sauvegarde les containers actifs seulement
+            docker ps --filter "status=running" > deploy-backup-containers.txt || echo "Aucun container actif"
             docker-compose logs > deploy-backup-logs.txt || echo "Aucun log à sauvegarder"
-            docker ps -a > deploy-backup-containers.txt
-
+            
             echo "Pull des dernières images"
             docker pull ${{ secrets.DOCKER_USERNAME }}/jo2024-backend
             docker pull ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend
+
+            echo "Vérification de la disponibilité de la base de données"
+            
+            # Vérifie que la base de données est accessible avant de continuer
+            nc -zv db 5432 || (echo "Base de données non disponible" && exit 1)
 
             echo "Restart des services"
             docker-compose down
             docker-compose up -d --build
 
             echo "Vérification de la santé du backend"
-            sleep 10
+            
+            # Temps de sommeil pour s'assurer que le backend est prêt
+            sleep 30  # Attendre 30 secondes
             curl --fail http://localhost:8080/actuator/health || (echo "Le backend ne répond pas correctement" && exit 1)

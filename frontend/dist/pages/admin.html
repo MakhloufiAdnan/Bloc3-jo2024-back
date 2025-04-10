@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,10 +15,13 @@
         </div>
         <div class="psw-admin">
             <p class="title-log">Compte Administrateur</p>
-            <form class="form-admin" action="admin.java" method="post">
+            <form class="form-admin" action="/admin/login" method="post">
                 <input class="input-admin" type="password" name="password" placeholder="Mot de passe" id="password" required>
                 <input class="submit-btn" type="submit" value="Connexion">
             </form>
+            <div>
+                <p th:if="${error}" th:text="${error}" class="error-message"></p>
+            </div>
         </div>
     </main>
 </body>

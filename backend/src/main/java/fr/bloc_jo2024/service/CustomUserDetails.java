@@ -17,8 +17,13 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Préfixe "ROLE_" nécessaire pour que Spring Security reconnaisse le rôle
-        return List.of(new SimpleGrantedAuthority("ROLE_" + utilisateur.getRole().getTypeRole().name()));
+        // Si le rôle stocké est ADMIN, alors retourne ROLE_ADMIN, sinon ROLE_USER.
+        String role = utilisateur.getRole().getTypeRole().name();
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        } else {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
     }
 
     @Override
@@ -32,14 +37,22 @@ public class CustomUserDetails implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return true;
+    }
 }

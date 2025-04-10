@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, UUID> {
 
     // Recherche un utilisateur par email
-    Utilisateur findByEmail(String email);
+    Optional<Utilisateur> findByEmail(String email);
 
     // Vérifie si un utilisateur existe par email
     boolean existsByEmail(String email);

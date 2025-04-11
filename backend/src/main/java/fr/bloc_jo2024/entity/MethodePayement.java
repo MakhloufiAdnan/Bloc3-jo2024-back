@@ -1,4 +1,5 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MethodePayement {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idMethode;
 
     @Enumerated(EnumType.STRING)

@@ -20,6 +20,7 @@ import java.util.UUID;
 )
 public class Utilisateur {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID idUtilisateur;
 
     @Column(nullable = false, unique = true, length = 250)
@@ -64,4 +65,3 @@ public class Utilisateur {
         this.authentification = authentification;
     }
 }
-

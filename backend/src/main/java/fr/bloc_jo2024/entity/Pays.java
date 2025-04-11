@@ -1,4 +1,5 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -13,7 +14,7 @@ import lombok.Builder;
 @Builder
 public class Pays {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idPays;
 
     @Column(nullable = false, unique = true, length = 100)

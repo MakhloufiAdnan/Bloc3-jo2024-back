@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:17-alpine
     container_name: db_jo2024
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -27,6 +28,8 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       EMAIL_USERNAME: ${EMAIL_USERNAME}
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     depends_on:
       - db
     networks:

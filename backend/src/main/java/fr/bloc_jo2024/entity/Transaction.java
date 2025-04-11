@@ -1,10 +1,10 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Transaction {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idTransaction;
 
     @Column(nullable = false)

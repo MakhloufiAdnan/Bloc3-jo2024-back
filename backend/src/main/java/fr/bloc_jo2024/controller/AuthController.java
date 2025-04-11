@@ -6,7 +6,6 @@ import fr.bloc_jo2024.dto.LoginRequest;
 import fr.bloc_jo2024.dto.AuthResponse;
 import fr.bloc_jo2024.service.UtilisateurService;
 import fr.bloc_jo2024.service.JwtService;
-
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -52,10 +51,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cet email est déjà utilisé.");
         }
 
-        // Définir un rôle par défaut si aucun rôle n'est fourni
-        RoleEnum roleEnum = (request.getRole() != null && !request.getRole().isEmpty())
-                ? RoleEnum.valueOf(request.getRole().toUpperCase())
-                : RoleEnum.USER;  // Rôle par défaut
+        // Force le rôle "USER"
+        RoleEnum roleEnum = RoleEnum.USER;
 
         // Encode le mot de passe et enregistre l'utilisateur dans la base de données
         utilisateurService.registerUser(request.getEmail(), passwordEncoder.encode(request.getPassword()), roleEnum);

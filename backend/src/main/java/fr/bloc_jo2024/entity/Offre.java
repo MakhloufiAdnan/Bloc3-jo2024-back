@@ -1,4 +1,5 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -9,11 +10,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Offre {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idOffre;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String typeOffre;
+    private TypeOffre typeOffre;
 
     @Column(nullable = false)
     private int quantite;
@@ -37,24 +39,4 @@ public class Offre {
     @ManyToOne
     @JoinColumn(name = "idEvenement", nullable = false)
     private Evenement evenement;
-
-    public void setQuantite(int quantite) {
-        if (quantite < 0) {
-            throw new IllegalArgumentException("La quantité ne peut pas être négative");
-        }
-        this.quantite = quantite;
-    }
-
-    public void setPrix(double prix) {
-        if (prix < 0) {
-            throw new IllegalArgumentException("Le prix ne peut pas être négatif");
-        }
-        this.prix = prix;
-    }
-}
-
-enum StatutOffre {
-    DISPONIBLE,
-    EPUISE,
-    ANNULE
 }

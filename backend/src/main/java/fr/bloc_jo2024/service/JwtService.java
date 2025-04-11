@@ -4,7 +4,6 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import javax.crypto.SecretKey;
 import java.util.Base64;
 import java.util.Date;
@@ -36,7 +35,13 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Vérifie si un token JWT est valide.
+    // Extraction d'un claim spécifique, utilisable pour l'expiration par exemple.
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    // Vérifie si le token JWT est valide pour l'email fourni.
     public boolean isTokenValid(String token, String email) {
         try {
             return email.equals(extractEmail(token)) && !isTokenExpired(token);
@@ -45,21 +50,23 @@ public class JwtService {
         }
     }
 
+    // Vérifie si le token est expiré.
     private boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-
+    // Extraction de toutes les claims pour un token.
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    // Extraction de la date d'expiration
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 
     // Génère une clé de signature sécurisée à partir de la clé secrète.

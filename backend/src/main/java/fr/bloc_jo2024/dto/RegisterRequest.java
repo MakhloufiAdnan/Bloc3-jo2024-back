@@ -13,5 +13,5 @@ public class RegisterRequest {
     private String postalcode;
     private String city;
     private String password;
-    private String role;
+    private String role= "USER";
 }

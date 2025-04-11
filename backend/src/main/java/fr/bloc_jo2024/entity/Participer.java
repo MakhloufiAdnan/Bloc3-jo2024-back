@@ -1,4 +1,5 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;

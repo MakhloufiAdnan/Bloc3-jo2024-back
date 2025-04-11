@@ -40,9 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null) {
             try {
                 String email = jwtService.extractEmail(token);
-                if (email != null
-                        && SecurityContextHolder.getContext().getAuthentication() == null
-                        && jwtService.isTokenValid(token, email)) {
+                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null &&
+                        jwtService.isTokenValid(token, email)) {
 
                     // Charge l'utilisateur complet depuis la BDD
                     UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);

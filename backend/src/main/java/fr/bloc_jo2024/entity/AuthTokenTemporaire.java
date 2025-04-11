@@ -3,7 +3,6 @@ package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -32,7 +31,7 @@ public class AuthTokenTemporaire {
     private LocalDateTime dateExpiration;
 
     @ManyToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(name = "idUtilisateur", nullable = false)
+    @JoinColumn(name = "idUtilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur_token"))
     private Utilisateur utilisateur;
 
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -49,5 +48,3 @@ public class AuthTokenTemporaire {
 enum AuthTokenTempEnum {
     CONNEXION, RESET_PASSWORD;
 }
-
-

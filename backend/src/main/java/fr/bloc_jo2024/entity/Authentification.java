@@ -3,7 +3,6 @@ package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -29,8 +28,7 @@ public class Authentification {
     @Builder.Default
     private String salt = "defaultValue";
 
-    @OneToOne
-    @JoinColumn(name = "idUtilisateur", nullable = false, unique = true)
+    @OneToOne(mappedBy = "authentification")
     private Utilisateur utilisateur;
 
     public void setMotPasseHache(String motPasseHache) {

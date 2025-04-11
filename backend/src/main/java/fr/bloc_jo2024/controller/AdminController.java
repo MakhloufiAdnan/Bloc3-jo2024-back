@@ -3,81 +3,75 @@ package fr.bloc_jo2024.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/auth")
 public class AdminController {
 
-    // Le mot de passe administrateur est défini en dur via les propriétés
-    @Value("${admin.password}")
+    @Value("${ADMIN_EMAIL}")
+    private String adminEmail;
+
+    @Value("${ADMIN_PASSWORD}")
     private String adminPassword;
 
-    // Affiche la page de connexion administrateur.
+    private static final String SESSION_ADMIN_LOGGED_IN = "ADMIN_LOGGED_IN";
+    private static final String JSON_KEY_MESSAGE = "message";
 
-    @GetMapping("/admin/login")
-    public String adminLoginPage() {
-        return "admin-login"; // Renvoie au template admin-login.html
-    }
+    @PostMapping("/login")
+    public ResponseEntity<?> adminLogin(@RequestBody Map<String, String> credentials, HttpServletRequest request) {
+        String email = credentials.get("email");
+        String password = credentials.get("password");
 
-    /**
-     * Traitement de la connexion administrateur.
-     * Si le mot de passe est correct, un attribut de session "ADMIN_LOGGED_IN" est défini.
-     * Sinon, on renvoie sur la page de login avec un message d'erreur.
-     *
-     * @param password Mot de passe saisi par l'administrateur.
-     * @param request  Permet de gérer la session.
-     * @param model    Pour ajouter un message d'erreur éventuel.
-     * @return Redirection vers le dashboard admin en cas de succès, ou la page login en cas d'erreur.
-     */
-    @PostMapping("/admin/login")
-    public String adminLogin(@RequestParam("password") String password, HttpServletRequest request, Model model) {
-        if (password.equals(adminPassword)) {
+        if (email == null || password == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(JSON_KEY_MESSAGE, "Email et mot de passe requis."));
+        }
 
-            // Connexion réussie : on définit le flag dans la session.
+        if (email.equals(adminEmail) && password.equals(adminPassword)) {
             HttpSession session = request.getSession();
-            session.setAttribute("ADMIN_LOGGED_IN", true);
+            session.setAttribute(SESSION_ADMIN_LOGGED_IN, true);
 
-            // Redirige vers le dashboard
-            return "redirect:/admin/dashboard";
+            Map<String, String> response = new HashMap<>();
+            response.put("token", "dummy-jwt-token");
+            response.put(JSON_KEY_MESSAGE, "Connexion réussie.");
+            return ResponseEntity.ok(response);
         } else {
-
-            // En cas d'erreur, on renvoie sur le login avec un message
-            model.addAttribute("error", "Mot de passe invalide.");
-            return "admin-login";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(JSON_KEY_MESSAGE, "Identifiants invalides."));
         }
     }
 
-    /**
-     * Déconnexion de l'administrateur.
-     * Invalide la session en cours.
-     *
-     * @param request Pour accéder à la session.
-     * @return Redirige vers la page de connexion.
-     */
-    @PostMapping("/admin/logout")
-    public String adminLogout(HttpServletRequest request) {
+    @GetMapping("/check-session")
+    public ResponseEntity<?> checkAdminSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        boolean isLoggedIn = session != null && Boolean.TRUE.equals(session.getAttribute(SESSION_ADMIN_LOGGED_IN));
+
+        return ResponseEntity.ok(Map.of("authenticated", isLoggedIn));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> adminLogout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
         }
-        return "redirect:/admin/login?logout";
+        return ResponseEntity.ok(Map.of(JSON_KEY_MESSAGE, "Déconnexion réussie."));
     }
 
-    /**
-     * Affiche la page du dashboard administrateur.
-     * Si l'administrateur n'est pas connecté (flag absent dans la session), il est redirigé vers la page de login.
-     *
-     * @param request Pour vérifier la session.
-     * @return Le template du dashboard admin.
-     */
-    @GetMapping("/admin/dashboard")
-    public String adminDashboard(HttpServletRequest request) {
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> adminDashboard(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("ADMIN_LOGGED_IN") == null) {
-            return "redirect:/admin/login";
+        if (session == null || session.getAttribute(SESSION_ADMIN_LOGGED_IN) == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(JSON_KEY_MESSAGE, "Non autorisé."));
         }
-        return "admin-dashboard";
+
+        return ResponseEntity.ok(Map.of(JSON_KEY_MESSAGE, "Bienvenue sur le dashboard admin."));
     }
 }

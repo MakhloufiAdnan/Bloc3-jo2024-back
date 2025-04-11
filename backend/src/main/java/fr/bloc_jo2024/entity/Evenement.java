@@ -1,10 +1,10 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,11 +15,11 @@ import java.util.Set;
 @AllArgsConstructor
 @Table(
         name = "evenements",
-        indexes = {@Index(name = "idx_evenements_date", columnList = "date_evenement")}
+        indexes = {@Index(name = "idx_evenements_date", columnList = "dateEvenement")}
 )
 public class Evenement {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idEvenement;
 
     @Column(nullable = false)
@@ -29,8 +29,8 @@ public class Evenement {
     @Min(value = 0, message = "Il n'y a plus de place disponible.")
     private int nbPlaceDispo;
 
-    @ManyToOne(cascade = CascadeType.PERSIST)  // Pour garantir l'existence d'une adresse
-    @JoinColumn(name = "idAdresse", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "idAdresse", nullable = false, foreignKey = @ForeignKey(name = "fk_evenement_adresse"))
     private Adresse adresse;
 
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -44,20 +44,34 @@ public class Evenement {
     )
     private Set<Epreuve> epreuves = new HashSet<>();
 
-    // Méthode pour mettre à jour les places disponibles
-    public void decrementerPlaces(int nb) {
-        if (this.nbPlaceDispo - nb < 0) {
+    @PrePersist
+    public void verifierDateEvenement() {
+        if (this.dateEvenement.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("La date de l'événement ne peut pas être dans le passé.");
+        }
+    }
+
+    // Diminue les places restantes
+    public void retirerPlaces(int nb) {
+        if (nb <= 0) throw new IllegalArgumentException("Le nombre à retirer doit être positif.");
+        if (nb > this.nbPlaceDispo) {
             throw new IllegalArgumentException("Pas assez de places disponibles.");
         }
         this.nbPlaceDispo -= nb;
     }
 
-    // Méthode pour vérifier que la date de l'événement n'est pas dans le passé
-    @PrePersist
-    public void checkDate() {
-        if (this.dateEvenement.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("La date de l'événement ne peut pas être dans le passé.");
+    // Ajoute des places (utile en cas d’annulation d’un panier)
+    public void ajouterPlaces(int nb) {
+        if (nb <= 0) throw new IllegalArgumentException("Le nombre à ajouter doit être positif.");
+        this.nbPlaceDispo += nb;
+    }
+
+    // Mise à jour de la date (ex. en cas de reprogrammation)
+    public void updateDate(LocalDateTime nouvelleDate) {
+        if (nouvelleDate.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("La nouvelle date ne peut pas être dans le passé.");
         }
+        this.dateEvenement = nouvelleDate;
     }
 }
 

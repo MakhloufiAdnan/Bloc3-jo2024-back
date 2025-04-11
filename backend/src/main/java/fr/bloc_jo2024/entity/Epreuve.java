@@ -1,4 +1,5 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -12,7 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class Epreuve {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idEpreuve;
 
     @Column(nullable = false, length = 50)

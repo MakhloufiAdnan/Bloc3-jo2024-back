@@ -1,4 +1,5 @@
 package fr.bloc_jo2024.entity;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Payement {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idPayement;
 
     @Column(nullable = false)
@@ -21,7 +22,7 @@ public class Payement {
     @Column(nullable = false)
     private boolean paiementReussi; // Nom plus clair
 
-    @Column(nullable = false, unique = true, length = 100) // Ajout d'une contrainte de longueur
+    @Column(nullable = false, unique = true, length = 100)
     private String transactionId;
 
     @Column(nullable = false)

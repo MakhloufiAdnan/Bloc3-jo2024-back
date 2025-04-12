@@ -1,7 +1,5 @@
 package fr.bloc_jo2024.entity;
 
-import fr.bloc_jo2024.entity.Utilisateur;
-
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;

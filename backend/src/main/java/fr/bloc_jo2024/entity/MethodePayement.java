@@ -1,5 +1,6 @@
 package fr.bloc_jo2024.entity;
 
+import fr.bloc_jo2024.entity.enums.MethodePayementEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -11,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MethodePayement {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idMethode;
 
     @Enumerated(EnumType.STRING)
@@ -19,8 +20,3 @@ public class MethodePayement {
     private MethodePayementEnum nomMethode;
 }
 
-enum MethodePayementEnum {
-    CARTE_BANCAIRE,
-    PAYPAL,
-    STRIPE
-}

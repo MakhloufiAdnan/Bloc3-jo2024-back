@@ -24,7 +24,7 @@ public class AdminController {
     private static final String JSON_KEY_MESSAGE = "message";
 
     @PostMapping("/login")
-    public ResponseEntity<?> adminLogin(@RequestBody Map<String, String> credentials, HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> adminLogin(@RequestBody Map<String, String> credentials, HttpServletRequest request) {
         String email = credentials.get("email");
         String password = credentials.get("password");
 
@@ -48,7 +48,7 @@ public class AdminController {
     }
 
     @GetMapping("/check-session")
-    public ResponseEntity<?> checkAdminSession(HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> checkAdminSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         boolean isLoggedIn = session != null && Boolean.TRUE.equals(session.getAttribute(SESSION_ADMIN_LOGGED_IN));
 
@@ -56,7 +56,7 @@ public class AdminController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> adminLogout(HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> adminLogout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
@@ -65,7 +65,7 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<?> adminDashboard(HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> adminDashboard(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute(SESSION_ADMIN_LOGGED_IN) == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

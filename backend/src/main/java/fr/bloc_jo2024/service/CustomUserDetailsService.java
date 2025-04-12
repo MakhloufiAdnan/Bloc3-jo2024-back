@@ -2,7 +2,6 @@ package fr.bloc_jo2024.service;
 
 import fr.bloc_jo2024.entity.Utilisateur;
 import fr.bloc_jo2024.repository.UtilisateurRepository;
-import fr.bloc_jo2024.service.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

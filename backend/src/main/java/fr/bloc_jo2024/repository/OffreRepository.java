@@ -1,7 +1,7 @@
 package fr.bloc_jo2024.repository;
 
 import fr.bloc_jo2024.entity.Offre;
-import fr.bloc_jo2024.entity.TypeOffre;
+import fr.bloc_jo2024.entity.enums.TypeOffre;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;

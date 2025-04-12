@@ -19,7 +19,7 @@ import java.util.Set;
 )
 public class Evenement {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idEvenement;
 
     @Column(nullable = false)
@@ -74,4 +74,3 @@ public class Evenement {
         this.dateEvenement = nouvelleDate;
     }
 }
-

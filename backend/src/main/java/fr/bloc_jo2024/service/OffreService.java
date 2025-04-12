@@ -1,7 +1,7 @@
 package fr.bloc_jo2024.service;
 
 import fr.bloc_jo2024.entity.Offre;
-import fr.bloc_jo2024.entity.StatutOffre;
+import fr.bloc_jo2024.entity.enums.StatutOffre;
 import fr.bloc_jo2024.repository.OffreRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;

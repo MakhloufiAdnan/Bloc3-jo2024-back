@@ -1,5 +1,6 @@
 package fr.bloc_jo2024.entity;
 
+import fr.bloc_jo2024.entity.enums.StatutTransaction;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Transaction {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idTransaction;
 
     @Column(nullable = false)
@@ -40,8 +41,3 @@ public class Transaction {
     }
 }
 
-enum StatutTransaction {
-    REUSSI,
-    ECHEC,
-    EN_ATTENTE
-}

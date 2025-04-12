@@ -1,7 +1,5 @@
 package fr.bloc_jo2024.entity;
 
-import fr.bloc_jo2024.entity.Utilisateur;
-import fr.bloc_jo2024.entity.Evenement;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
@@ -12,7 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 public class Adresse {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idAdresse;
 
     @Column(nullable = false)

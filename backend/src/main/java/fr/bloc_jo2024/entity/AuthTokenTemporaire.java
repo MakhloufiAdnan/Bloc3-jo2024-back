@@ -1,5 +1,6 @@
 package fr.bloc_jo2024.entity;
 
+import fr.bloc_jo2024.entity.enums.AuthTokenTempEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -45,6 +46,3 @@ public class AuthTokenTemporaire {
     }
 }
 
-enum AuthTokenTempEnum {
-    CONNEXION, RESET_PASSWORD;
-}

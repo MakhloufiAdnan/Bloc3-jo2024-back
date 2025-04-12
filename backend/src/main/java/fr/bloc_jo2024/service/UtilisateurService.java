@@ -2,7 +2,7 @@ package fr.bloc_jo2024.service;
 
 import fr.bloc_jo2024.entity.Authentification;
 import fr.bloc_jo2024.entity.Role;
-import fr.bloc_jo2024.entity.RoleEnum;
+import fr.bloc_jo2024.entity.enums.RoleEnum;
 import fr.bloc_jo2024.entity.Utilisateur;
 import fr.bloc_jo2024.exception.ResourceNotFoundException;
 import fr.bloc_jo2024.repository.UtilisateurRepository;

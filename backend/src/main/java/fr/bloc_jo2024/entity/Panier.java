@@ -1,5 +1,6 @@
 package fr.bloc_jo2024.entity;
 
+import fr.bloc_jo2024.entity.enums.StatutPanier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class Panier {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPanier;
 
     @Column(nullable = false)
@@ -41,8 +42,3 @@ public class Panier {
     }
 }
 
-enum StatutPanier {
-    EN_ATTENTE,
-    PAYE,
-    SAUVEGARDE
-}

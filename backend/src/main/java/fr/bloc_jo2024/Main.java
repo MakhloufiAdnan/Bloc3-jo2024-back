@@ -17,4 +17,3 @@ public class Main extends SpringBootServletInitializer {
         return builder.sources(Main.class);
     }
 }
-

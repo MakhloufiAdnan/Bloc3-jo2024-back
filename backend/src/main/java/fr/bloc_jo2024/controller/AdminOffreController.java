@@ -1,9 +1,8 @@
 package fr.bloc_jo2024.controller;
 
 import fr.bloc_jo2024.entity.Offre;
-import fr.bloc_jo2024.entity.TypeOffre;
+import fr.bloc_jo2024.entity.enums.TypeOffre;
 import fr.bloc_jo2024.service.AdminOffreService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,8 +11,11 @@ import java.util.List;
 @RequestMapping("/admin/offres")
 public class AdminOffreController {
 
-    @Autowired
-    private AdminOffreService adminOffreService;
+    private final AdminOffreService adminOffreService;
+
+    public AdminOffreController(AdminOffreService adminOffreService) {
+        this.adminOffreService = adminOffreService;
+    }
 
     // Ajouter une nouvelle offre
     @PostMapping

@@ -1,7 +1,7 @@
 package fr.bloc_jo2024.service;
 
 import fr.bloc_jo2024.entity.Offre;
-import fr.bloc_jo2024.entity.TypeOffre;
+import fr.bloc_jo2024.entity.enums.TypeOffre;
 import fr.bloc_jo2024.repository.OffreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

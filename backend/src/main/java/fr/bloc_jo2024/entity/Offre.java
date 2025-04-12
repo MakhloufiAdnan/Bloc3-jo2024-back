@@ -1,5 +1,7 @@
 package fr.bloc_jo2024.entity;
 
+import fr.bloc_jo2024.entity.enums.StatutOffre;
+import fr.bloc_jo2024.entity.enums.TypeOffre;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -10,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Offre {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idOffre;
 
     @Enumerated(EnumType.STRING)

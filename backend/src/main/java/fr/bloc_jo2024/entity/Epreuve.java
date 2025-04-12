@@ -13,7 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class Epreuve {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idEpreuve;
 
     @Column(nullable = false, length = 50)

@@ -1,6 +1,6 @@
 package fr.bloc_jo2024.entity;
 
-import fr.bloc_jo2024.entity.Utilisateur;
+import fr.bloc_jo2024.entity.enums.TelEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -15,7 +15,7 @@ import lombok.Builder;
 @Builder
 public class Telephone {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idTelephone;
 
     @Enumerated(EnumType.STRING)
@@ -27,10 +27,6 @@ public class Telephone {
     private String numeroTelephone;
 
     @ManyToOne
-    @JoinColumn(name = "idUtilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur_telephone"))
+    @JoinColumn(name = "idUtilisateur", referencedColumnName = "idUtilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur_telephone"))
     private Utilisateur utilisateur;
-}
-
-enum TelEnum {
-    MOBILE, FIXE;
 }

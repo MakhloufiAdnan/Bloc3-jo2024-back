@@ -1,6 +1,6 @@
 package fr.bloc_jo2024.entity;
 
-import fr.bloc_jo2024.entity.Utilisateur;
+import fr.bloc_jo2024.entity.enums.RoleEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -16,7 +16,7 @@ import java.util.Set;
 @Table(name = "roles", indexes = @Index(name = "idx_role_type", columnList = "typeRole"))
 public class Role {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idRole;
 
     @Enumerated(EnumType.STRING)

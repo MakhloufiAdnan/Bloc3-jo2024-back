@@ -49,7 +49,7 @@ jobs:
           heroku --version  # Vérifier que la CLI est installée
 
       # Connexion à Heroku avec la clé API
-      - name: Heroku Login
+      - name: Login to Heroku
         run: echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
 
       # Déployer le backend sur Heroku

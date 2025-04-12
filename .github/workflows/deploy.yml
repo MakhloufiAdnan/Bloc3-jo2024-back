@@ -23,33 +23,14 @@ jobs:
       - name: Check Java version
         run: java -version
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build & push backend Docker image
-        run: |
-          cd backend
-          mvn clean install -DskipTests
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/jo2024-backend . 
-          docker push ${{ secrets.DOCKER_USERNAME }}/jo2024-backend
-
-      - name: Build & push frontend Docker image
-        run: |
-          cd frontend
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend . 
-          docker push ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend
-
       # Installer Heroku CLI
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
-          heroku --version  # Vérifier que la CLI est installée
+          heroku --version
 
-      # Configurer Heroku avec .netrc et vérifier l'authentification
-      - name: Set up Heroku login using .netrc
+      # Authentification Heroku avec .netrc
+      - name: Set up Heroku auth with .netrc
         run: |
           echo "machine api.heroku.com" > ~/.netrc
           echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
@@ -57,16 +38,16 @@ jobs:
           echo "machine git.heroku.com" >> ~/.netrc
           echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
           echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          heroku auth:whoami
 
-          # Tester la connexion
-          heroku auth:whoami  # Cela devrait retourner l'email si l'authentification est réussie
-
-      # Déployer le backend sur Heroku
-      - name: Deploy backend to Heroku
+      # BACKEND - Build, Push & Release to Heroku
+      - name: Build & Deploy Backend to Heroku
         run: |
-          # Assurez-vous que le stack est bien configuré pour Docker
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          cd backend
+          mvn clean install -DskipTests
+          heroku container:login
+          docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web .
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       - name: Set backend Heroku config vars
@@ -85,12 +66,13 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
-      # Déployer le frontend sur Heroku
-      - name: Deploy frontend to Heroku
+      # FRONTEND - Build, Push & Release to Heroku
+      - name: Build & Deploy Frontend to Heroku
         run: |
-          # Assurez-vous que le stack est bien configuré pour Docker
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          cd frontend
+          heroku container:login
+          docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web .
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       - name: Set frontend Heroku config vars
@@ -109,9 +91,8 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
-      # Arrêter les dynos pour éviter les frais
+      # Stop dynos to avoid charges
       - name: Stop Heroku dynos to avoid charges
         run: |
-          # Arrêter le backend et le frontend (si ce sont des applications Docker)
-          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_FE }}

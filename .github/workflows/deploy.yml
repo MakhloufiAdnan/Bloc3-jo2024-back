@@ -65,53 +65,53 @@ jobs:
       - name: Deploy backend to Heroku
         run: |
           # Assurez-vous que le stack est bien configuré pour Docker
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       - name: Set backend Heroku config vars
         run: |
-          heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set SMTP_HOST=${{ secrets.SMTP_HOST }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set SMTP_PORT=${{ secrets.SMTP_PORT }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
+          heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set SMTP_HOST=${{ secrets.SMTP_HOST }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set SMTP_PORT=${{ secrets.SMTP_PORT }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       # Déployer le frontend sur Heroku
       - name: Deploy frontend to Heroku
         run: |
           # Assurez-vous que le stack est bien configuré pour Docker
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       - name: Set frontend Heroku config vars
         run: |
-          heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set SMTP_HOST=${{ secrets.SMTP_HOST }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set SMTP_PORT=${{ secrets.SMTP_PORT }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
-          heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
+          heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set SMTP_HOST=${{ secrets.SMTP_HOST }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set SMTP_PORT=${{ secrets.SMTP_PORT }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       # Arrêter les dynos pour éviter les frais
       - name: Stop Heroku dynos to avoid charges
         run: |
           # Arrêter le backend et le frontend (si ce sont des applications Docker)
-          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
-          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
+          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_FE }}

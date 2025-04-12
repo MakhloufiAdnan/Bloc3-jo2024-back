@@ -46,7 +46,11 @@ jobs:
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
-          echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
+          heroku --version  # Vérifier que la CLI est installée
+
+      # Connexion à Heroku avec la clé API
+      - name: Heroku Login
+        run: echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
 
       # Déployer le backend sur Heroku
       - name: Deploy backend to Heroku
@@ -91,3 +95,9 @@ jobs:
           heroku config:set SMTP_PORT=${{ secrets.SMTP_PORT }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
+
+      # Arrêter les dynos sur Heroku pour éviter les frais
+      - name: Stop Heroku dynos to avoid charges
+        run: |
+          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
+          heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend

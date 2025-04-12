@@ -64,6 +64,8 @@ jobs:
       # Déployer le backend sur Heroku
       - name: Deploy backend to Heroku
         run: |
+          # Assurez-vous que le stack est bien configuré pour Docker
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
           heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
 
@@ -86,6 +88,8 @@ jobs:
       # Déployer le frontend sur Heroku
       - name: Deploy frontend to Heroku
         run: |
+          # Assurez-vous que le stack est bien configuré pour Docker
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
           heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
 
@@ -108,5 +112,6 @@ jobs:
       # Arrêter les dynos pour éviter les frais
       - name: Stop Heroku dynos to avoid charges
         run: |
+          # Arrêter le backend et le frontend (si ce sont des applications Docker)
           heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
           heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend

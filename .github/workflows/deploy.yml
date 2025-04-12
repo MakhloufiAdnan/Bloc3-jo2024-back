@@ -48,11 +48,18 @@ jobs:
           curl https://cli-assets.heroku.com/install.sh | sh
           heroku --version  # Vérifier que la CLI est installée
 
-      # Connexion à Heroku via API Key
-      - name: Login to Heroku with API Key
+      # Configurer Heroku avec .netrc et vérifier l'authentification
+      - name: Set up Heroku login using .netrc
         run: |
-          echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
-          heroku auth:whoami  # Vérifier que l'authentification fonctionne
+          echo "machine api.heroku.com" > ~/.netrc
+          echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
+          echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          echo "machine git.heroku.com" >> ~/.netrc
+          echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
+          echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+
+          # Tester la connexion
+          heroku auth:whoami  # Cela devrait retourner l'email si l'authentification est réussie
 
       # Déployer le backend sur Heroku
       - name: Deploy backend to Heroku
@@ -98,7 +105,7 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend
 
-      # Arrêter les dynos sur Heroku pour éviter les frais
+      # Arrêter les dynos pour éviter les frais
       - name: Stop Heroku dynos to avoid charges
         run: |
           heroku ps:stop web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend

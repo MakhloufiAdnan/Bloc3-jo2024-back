@@ -1,4 +1,4 @@
-package fr.bloc_jo2024.config;
+package fr.bloc_jo2024;
 
 import fr.bloc_jo2024.service.JwtService;
 import fr.bloc_jo2024.service.CustomUserDetailsService;

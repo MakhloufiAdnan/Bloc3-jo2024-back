@@ -1,4 +1,4 @@
-package fr.bloc_jo2024.config;
+package fr.bloc_jo2024;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

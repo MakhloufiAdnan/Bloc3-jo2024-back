@@ -42,11 +42,13 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend . 
           docker push ${{ secrets.DOCKER_USERNAME }}/jo2024-frontend
 
-      - name: Heroku Login
-        uses: akshnz/heroku-login@v6
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+      # Installer Heroku CLI
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+          echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
 
+      # Déployer le backend sur Heroku
       - name: Deploy backend to Heroku
         run: |
           heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
@@ -68,6 +70,7 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}-backend
 
+      # Déployer le frontend sur Heroku
       - name: Deploy frontend to Heroku
         run: |
           heroku container:push web --app ${{ secrets.HEROKU_APP_NAME_FE }}-frontend

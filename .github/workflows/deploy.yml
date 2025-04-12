@@ -29,8 +29,8 @@ jobs:
           curl https://cli-assets.heroku.com/install.sh | sh
           heroku --version
 
-      # Authentification Heroku avec .netrc
-      - name: Set up Heroku auth with .netrc
+      # Authentification Heroku
+      - name: Set up Heroku auth
         run: |
           echo "machine api.heroku.com" > ~/.netrc
           echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
@@ -40,17 +40,18 @@ jobs:
           echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
           heroku auth:whoami
 
-      # BACKEND - Build, Push & Release to Heroku
+      # BACKEND
       - name: Build & Deploy Backend to Heroku
         run: |
           cd backend
           mvn clean install -DskipTests
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku container:login
           docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web .
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
-      - name: Set backend Heroku config vars
+      - name: Set Backend Heroku config vars
         run: |
           heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
@@ -66,16 +67,17 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
-      # FRONTEND - Build, Push & Release to Heroku
+      # FRONTEND
       - name: Build & Deploy Frontend to Heroku
         run: |
           cd frontend
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku container:login
           docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web .
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
-      - name: Set frontend Heroku config vars
+      - name: Set Frontend Heroku config vars
         run: |
           heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
@@ -92,7 +94,7 @@ jobs:
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       # Stop dynos to avoid charges
-      - name: Stop Heroku dynos to avoid charges
+      - name: Stop Heroku Dynos
         run: |
           heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_FE }}

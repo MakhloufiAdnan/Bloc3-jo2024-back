@@ -4,7 +4,8 @@
   "lockfileVersion": 3,
   "requires": true,
   "scripts": {
-    "build-css": "npx sass dist/scss/main.scss dist/css/main.css --style compressed"
+    "build-css": "npx sass dist/scss/main.scss dist/css/main.css --style compressed",
+    "test": "echo \"Aucun test défini pour l’instant.\""
   },
   "devDependencies": {
     "sass": "^1.86.0"

@@ -48,9 +48,16 @@ jobs:
           curl https://cli-assets.heroku.com/install.sh | sh
           heroku --version  # Vérifier que la CLI est installée
 
-      # Connexion à Heroku avec la clé API
-      - name: Login to Heroku
-        run: echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
+      # Connexion à Heroku via .netrc
+      - name: Login to Heroku with .netrc
+        run: |
+          echo "machine api.heroku.com" > ~/.netrc
+          echo "  login=${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
+          echo "  password=${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          echo "machine git.heroku.com" >> ~/.netrc
+          echo "  login=${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
+          echo "  password=${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          heroku auth:whoami  # Vérifier que l'authentification fonctionne
 
       # Déployer le backend sur Heroku
       - name: Deploy backend to Heroku

@@ -44,15 +44,14 @@ jobs:
           heroku auth:whoami
 
       # ========== BACKEND ==========
-
       - name: Build & Deploy Backend to Heroku
         run: |
           cd backend
           mvn clean install -DskipTests
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku container:login
-          docker build --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web .
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       # Set backend Heroku config vars
@@ -73,17 +72,16 @@ jobs:
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       # ========== FRONTEND ==========
-
-      - name: Reset Docker buildx (prévention bug)
-        run: docker buildx uninstall || true
+      - name: Reset Docker build (prévention bug)
+        run: docker build uninstall || true
 
       - name: Build & Deploy Frontend to Heroku
         run: |
           cd frontend
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku container:login
-          docker build --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web .
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
+          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       # Set frontend Heroku config vars
@@ -103,7 +101,7 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
-      # Optionnel : Stop dynos (ex. en dev)
+      # Optionnel : Stop dynos
       - name: Stop Heroku Dynos
         if: ${{ false }} # désactivé par défaut
         run: |

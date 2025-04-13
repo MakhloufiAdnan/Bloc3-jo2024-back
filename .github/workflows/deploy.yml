@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,13 +27,11 @@ jobs:
       - name: Check Java version
         run: java -version
 
-      # Installer Heroku CLI
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
           heroku --version
 
-      # Authentification Heroku
       - name: Set up Heroku auth
         run: |
           echo "machine api.heroku.com" > ~/.netrc
@@ -44,12 +46,18 @@ jobs:
       - name: Build & Deploy Backend to Heroku
         run: |
           cd backend
-          mvn clean install -DskipTests
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku container:login
-          docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web .
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          if [ -f Dockerfile ]; then
+            echo "✅ Dockerfile trouvé pour le backend"
+            mvn clean install -DskipTests
+            heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
+            heroku container:login
+            docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web .
+            docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+            heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          else
+            echo "❌ Dockerfile manquant dans backend/"
+            exit 1
+          fi
 
       - name: Set Backend Heroku config vars
         run: |
@@ -71,11 +79,17 @@ jobs:
       - name: Build & Deploy Frontend to Heroku
         run: |
           cd frontend
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku container:login
-          docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web .
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          if [ -f Dockerfile ]; then
+            echo "✅ Dockerfile trouvé pour le frontend"
+            heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
+            heroku container:login
+            docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web .
+            docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
+            heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          else
+            echo "❌ Dockerfile manquant dans frontend/"
+            exit 1
+          fi
 
       - name: Set Frontend Heroku config vars
         run: |

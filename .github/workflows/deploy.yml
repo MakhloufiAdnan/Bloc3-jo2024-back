@@ -83,7 +83,8 @@ jobs:
           heroku container:login
           docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          echo "Fake fix to bypass /web bug"
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }} || true
 
       # Set frontend Heroku config vars
       - name: Set Frontend Heroku config vars

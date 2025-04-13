@@ -73,11 +73,12 @@ jobs:
 
       # ========== FRONTEND ==========
       - name: Reset Docker build (prévention bug)
-        run: docker build uninstall || true
+        run: docker builder prune -a -f
 
       - name: Build & Deploy Frontend to Heroku
         run: |
-          cd frontend
+          echo "Contenu du répertoire frontend :"
+          cd frontend && ls -la
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku container:login
           docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web

@@ -5,10 +5,6 @@ on:
     branches:
       - main
 
-env:
-  ACTIONS_STEP_DEBUG: true
-  ACTIONS_RUNNER_DEBUG: true
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -27,11 +23,13 @@ jobs:
       - name: Check Java version
         run: java -version
 
+      # Installer Heroku CLI
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
           heroku --version
 
+      # Authentification Heroku
       - name: Set up Heroku auth
         run: |
           echo "machine api.heroku.com" > ~/.netrc
@@ -42,22 +40,16 @@ jobs:
           echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
           heroku auth:whoami
 
-      # BACKEND
+      # ========== BACKEND ==========
       - name: Build & Deploy Backend to Heroku
         run: |
           cd backend
-          if [ -f Dockerfile ]; then
-            echo "✅ Dockerfile trouvé pour le backend"
-            mvn clean install -DskipTests
-            heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
-            heroku container:login
-            docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web .
-            docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-            heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          else
-            echo "❌ Dockerfile manquant dans backend/"
-            exit 1
-          fi
+          mvn clean install -DskipTests
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku container:login
+          docker build --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web .
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       - name: Set Backend Heroku config vars
         run: |
@@ -75,21 +67,18 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
-      # FRONTEND
+      # ========== FRONTEND ==========
+      - name: Reset Docker buildx (prévention bug)
+        run: docker buildx uninstall || true
+
       - name: Build & Deploy Frontend to Heroku
         run: |
           cd frontend
-          if [ -f Dockerfile ]; then
-            echo "✅ Dockerfile trouvé pour le frontend"
-            heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
-            heroku container:login
-            docker build -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web .
-            docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
-            heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          else
-            echo "❌ Dockerfile manquant dans frontend/"
-            exit 1
-          fi
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku container:login
+          docker build --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web .
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       - name: Set Frontend Heroku config vars
         run: |
@@ -107,8 +96,9 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
-      # Stop dynos to avoid charges
+      # Optionnel : Stop dynos (ex. en dev)
       - name: Stop Heroku Dynos
+        if: ${{ false }} # désactivé par défaut
         run: |
           heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_FE }}

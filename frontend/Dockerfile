@@ -33,5 +33,3 @@ EXPOSE 80
 
 # Démarrer le serveur Nginx en mode "foreground"
 CMD ["nginx", "-g", "daemon off;"]
-
-

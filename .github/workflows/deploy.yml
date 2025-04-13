@@ -50,8 +50,8 @@ jobs:
           mvn clean install -DskipTests
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku container:login
-          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}
+          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       # Set backend Heroku config vars
@@ -80,8 +80,8 @@ jobs:
           cd frontend
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku container:login
-          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}
+          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       # Set frontend Heroku config vars

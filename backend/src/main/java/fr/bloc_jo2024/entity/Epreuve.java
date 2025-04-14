@@ -1,9 +1,7 @@
 package fr.bloc_jo2024.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,7 +9,10 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@Table(name = "epreuves")
 public class Epreuve {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idEpreuve;
@@ -19,6 +20,7 @@ public class Epreuve {
     @Column(nullable = false, length = 50)
     private String nom;
 
-    @ManyToMany(mappedBy = "epreuves")
-    private Set<Evenement> evenements = new HashSet<>();
+    // Relation via l'entité d'association Comporter (association avec l'événement).
+    @OneToMany(mappedBy = "epreuve", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Comporter> comporters = new HashSet<>();
 }

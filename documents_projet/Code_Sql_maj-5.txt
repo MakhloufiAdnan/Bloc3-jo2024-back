@@ -1,0 +1,237 @@
+---------------------------------------------------------------------
+-- Les ENUMS
+---------------------------------------------------------------------
+CREATE TYPE role_enum AS ENUM ('ADMIN', 'USER');
+CREATE TYPE tel_enum AS ENUM ('MOBILE', 'FIXE');
+CREATE TYPE auth_token_temp_enum AS ENUM ('CONNECTION', 'RESET_PASSWORD', 'VALIDATION_EMAIL');
+CREATE TYPE panier_enum AS ENUM ('EN_ATTENTE', 'PAYE', 'SAUVEGARDE');
+CREATE TYPE offre_enum AS ENUM ('DISPONIBLE', 'EPUISE', 'ANNULE');
+CREATE TYPE methode_payement_enum AS ENUM ('CB', 'PAYPAL', 'STRIP');
+CREATE TYPE transaction_enum AS ENUM ('REUSSI', 'ECHEC', 'EN_ATTENTE');
+
+---------------------------------------------------------------------
+-- Table Evenements
+---------------------------------------------------------------------
+CREATE TABLE Evenements (
+   idEvenement SERIAL PRIMARY KEY,
+   nom_evenement VARCHAR(100) NOT NULL,
+   date_evenement TIMESTAMP NOT NULL,
+   nb_place_dispo INT CHECK (nb_place_dispo >= 0)
+);
+
+---------------------------------------------------------------------
+-- Table Pays
+---------------------------------------------------------------------
+CREATE TABLE Pays (
+   idPays SERIAL PRIMARY KEY,
+   nom VARCHAR(50) NOT NULL UNIQUE
+);
+
+---------------------------------------------------------------------
+-- Table Adresses
+---------------------------------------------------------------------
+CREATE TABLE Adresses (
+   idAdresse SERIAL PRIMARY KEY,
+   numero_rue INT CHECK (numero_rue > 0),
+   nom_rue VARCHAR(50),
+   ville VARCHAR(50),
+   code_postale VARCHAR(50),
+   idPays INT NOT NULL,
+   idEvenement INT NOT NULL,
+   FOREIGN KEY(idPays) REFERENCES Pays(idPays) ON DELETE CASCADE,
+   FOREIGN KEY(idEvenement) REFERENCES Evenements(idEvenement) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Roles
+---------------------------------------------------------------------
+CREATE TABLE Roles (
+   idRole SERIAL PRIMARY KEY,
+   typeRole role_enum NOT NULL UNIQUE
+);
+
+---------------------------------------------------------------------
+-- Table Utilisateurs
+---------------------------------------------------------------------
+CREATE TABLE Utilisateurs (
+   IdUtilisateur_UUID UUID PRIMARY KEY,
+   email VARCHAR(250) UNIQUE NOT NULL,
+   nom VARCHAR(50) NOT NULL,
+   prenom VARCHAR(50) NOT NULL,
+   date_naissance DATE NOT NULL,
+   date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   idRole INT NOT NULL,
+   idAdresse INT NOT NULL,
+   FOREIGN KEY(idRole) REFERENCES Roles(idRole) ON DELETE CASCADE,
+   FOREIGN KEY(idAdresse) REFERENCES Adresses(idAdresse) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Telephones
+---------------------------------------------------------------------
+CREATE TABLE Telephones (
+   idPhone SERIAL PRIMARY KEY,
+   typeTel tel_enum NOT NULL,
+   numero_telephone VARCHAR(20) UNIQUE NOT NULL,
+   IdUtilisateur_UUID UUID NOT NULL,
+   FOREIGN KEY(IdUtilisateur_UUID) REFERENCES Utilisateurs(IdUtilisateur_UUID) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Authentifications
+---------------------------------------------------------------------
+CREATE TABLE Authentifications (
+   idToken UUID PRIMARY KEY,
+   token VARCHAR(255) NOT NULL,
+   date_expiration TIMESTAMP NOT NULL,
+   mot_passe VARCHAR(255) NOT NULL,
+   salt VARCHAR(255) NOT NULL,
+   IdUtilisateur_UUID UUID NOT NULL,
+   FOREIGN KEY(IdUtilisateur_UUID) REFERENCES Utilisateurs(IdUtilisateur_UUID) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Auth_Tokens_Temporaire
+---------------------------------------------------------------------
+CREATE TABLE Auth_Tokens_Temporaire (
+   idTokenTemp UUID PRIMARY KEY,
+   token VARCHAR(255) NOT NULL,
+   type_token auth_token_temp_enum NOT NULL,
+   date_expiration TIMESTAMP NOT NULL,
+   IdUtilisateur_UUID UUID NOT NULL,
+   FOREIGN KEY(IdUtilisateur_UUID) REFERENCES Utilisateurs(IdUtilisateur_UUID) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Oauth
+---------------------------------------------------------------------
+CREATE TABLE Oauth (
+   idOAuth UUID PRIMARY KEY,
+   google_id VARCHAR(100) UNIQUE,
+   facebook_id VARCHAR(100) UNIQUE,
+   IdUtilisateur_UUID UUID NOT NULL,
+   FOREIGN KEY(IdUtilisateur_UUID) REFERENCES Utilisateurs(IdUtilisateur_UUID) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Epreuves
+---------------------------------------------------------------------
+CREATE TABLE Epreuves (
+   idEpreuves SERIAL PRIMARY KEY,
+   nom VARCHAR(50) NOT NULL
+);
+
+---------------------------------------------------------------------
+-- Table Paniers
+---------------------------------------------------------------------
+CREATE TABLE Paniers (
+   idPanier SERIAL PRIMARY KEY,
+   montant_total NUMERIC(15,2) CHECK (montant_total >= 0),
+   statut panier_enum NOT NULL,
+   date_ajout TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   IdUtilisateur_UUID UUID NOT NULL,
+   FOREIGN KEY(IdUtilisateur_UUID) REFERENCES Utilisateurs(IdUtilisateur_UUID) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Methodes_Payement
+---------------------------------------------------------------------
+CREATE TABLE Methodes_Payement (
+   idMethode SERIAL PRIMARY KEY,
+   nom_methode methode_payement_enum NOT NULL UNIQUE
+);
+
+---------------------------------------------------------------------
+-- Table Payements
+---------------------------------------------------------------------
+CREATE TABLE Payements (
+   idPayement SERIAL PRIMARY KEY,
+   date_payement TIMESTAMP NOT NULL,
+   statut_payement BOOLEAN NOT NULL,
+   transaction_id VARCHAR(100) UNIQUE,
+   montant_paye NUMERIC(15,2) NOT NULL CHECK (montant_paye >= 0),
+   idMethode INT NOT NULL,
+   idPanier INT NOT NULL,
+   FOREIGN KEY(idMethode) REFERENCES Methodes_Payement(idMethode),
+   FOREIGN KEY(idPanier) REFERENCES Paniers(idPanier) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Transactions
+---------------------------------------------------------------------
+CREATE TABLE Transactions (
+   idTransaction SERIAL PRIMARY KEY,
+   idPayement INT NOT NULL,
+   montant NUMERIC(15,2) NOT NULL CHECK (montant >= 0),
+   statut transaction_enum NOT NULL,
+   date_transaction TIMESTAMP NOT NULL,
+   FOREIGN KEY(idPayement) REFERENCES Payements(idPayement) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Commandes
+---------------------------------------------------------------------
+CREATE TABLE Commandes (
+   idCommande SERIAL PRIMARY KEY,
+   num_commande VARCHAR(50) UNIQUE NOT NULL,
+   envoye_mail BOOLEAN NOT NULL,
+   idPayement INT NOT NULL UNIQUE,
+   FOREIGN KEY(idPayement) REFERENCES Payements(idPayement) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Offres
+-- Ajout d'une contrainte pour limiter le prix maximum d'une offre à 500
+---------------------------------------------------------------------
+CREATE TABLE Offres (
+   idOffre SERIAL PRIMARY KEY,
+   type_offre VARCHAR(50),
+   quantite INT NOT NULL CHECK (quantite >= 0),
+   prix NUMERIC(10,2) NOT NULL CHECK (prix >= 0 AND prix <= 500),
+   qr_code TEXT UNIQUE NOT NULL,
+   date_expiration TIMESTAMP,
+   statut_offre offre_enum NOT NULL DEFAULT 'DISPONIBLE',
+   idPanier INT NOT NULL,
+   idEvenement INT NOT NULL,
+   FOREIGN KEY(idPanier) REFERENCES Paniers(idPanier) ON DELETE CASCADE,
+   FOREIGN KEY(idEvenement) REFERENCES Evenements(idEvenement) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Comporter (relation entre Epreuves et Evenements)
+---------------------------------------------------------------------
+CREATE TABLE Comporter (
+   idEpreuves INT NOT NULL,
+   idEvenement INT NOT NULL,
+   jr_de_medaille BOOLEAN,
+   PRIMARY KEY(idEpreuves, idEvenement),
+   FOREIGN KEY(idEpreuves) REFERENCES Epreuves(idEpreuves) ON DELETE CASCADE,
+   FOREIGN KEY(idEvenement) REFERENCES Evenements(idEvenement) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Table Participer (relation entre Pays et Evenements)
+---------------------------------------------------------------------
+CREATE TABLE Participer (
+   idPays INT NOT NULL,
+   idEvenement INT NOT NULL,
+   PRIMARY KEY(idPays, idEvenement),
+   FOREIGN KEY(idPays) REFERENCES Pays(idPays) ON DELETE CASCADE,
+   FOREIGN KEY(idEvenement) REFERENCES Evenements(idEvenement) ON DELETE CASCADE
+);
+
+---------------------------------------------------------------------
+-- Indexs pour optimiser les performances des tables les plus sollicitées
+---------------------------------------------------------------------
+-- Index sur l'email
+CREATE INDEX idx_utilisateurs_email ON Utilisateurs(email);
+
+-- Index sur la date de l'événement et sur le nom de l'événement
+CREATE INDEX idx_evenements_date ON Evenements(date_evenement);
+CREATE INDEX idx_evenements_nom ON Evenements(nom_evenement);
+
+-- Index sur l'idEvenement pour faciliter la recherche des adresses par événement
+CREATE INDEX idx_adresses_evenement ON Adresses(idEvenement);
+
+-- Index sur le prix des offres
+CREATE INDEX idx_offres_prix ON Offres(prix);

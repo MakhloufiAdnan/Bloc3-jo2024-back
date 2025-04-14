@@ -3,17 +3,17 @@ package fr.bloc_jo2024.entity;
 import fr.bloc_jo2024.entity.enums.TelEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
-import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
+import lombok.*;
+import lombok.experimental.FieldNameConstants;
 
 @Entity
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@Table(name = "telephones")
 public class Telephone {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idTelephone;

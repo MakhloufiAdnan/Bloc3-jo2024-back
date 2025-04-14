@@ -2,49 +2,32 @@ package fr.bloc_jo2024.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
-import java.util.Objects;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@IdClass(ComporterId.class)
+@Builder
+@Table(name = "comporter")
 public class Comporter {
-    @Id
+
+    // Clé composite composée de l'ID de l'épreuve et de l'ID de l'événement
+    @EmbeddedId
+    private ComporterKey id;
+
+    // Attribut pour indiquer si c'est la journée de médaille.
+    @Column(name = "jr_de_medaille")
+    private Boolean jrDeMedaille;
+
+    // Relation vers l'entité Epreuve. Lier l'attribut idEpreuve de la clé composite à cette relation.
     @ManyToOne
+    @MapsId("idEpreuve")
     @JoinColumn(name = "idEpreuve", nullable = false)
     private Epreuve epreuve;
 
-    @Id
+    // Relation vers l'entité Evenement. Lier l'attribut idEvenement de la clé composite à cette relation.
     @ManyToOne
-    @JoinColumn(name = "idEvenement", nullable = false, referencedColumnName = "idEvenement")
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @MapsId("idEvenement")
+    @JoinColumn(name = "idEvenement", nullable = false)
     private Evenement evenement;
-
-    @Column(nullable = false)
-    private boolean jrDeMedaille;
 }
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class ComporterId implements java.io.Serializable {
-    private Long epreuve;
-    private Long evenement;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ComporterId)) return false;
-        ComporterId that = (ComporterId) o;
-        return Objects.equals(epreuve, that.epreuve) && Objects.equals(evenement, that.evenement);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(epreuve, evenement);
-    }
-}
-

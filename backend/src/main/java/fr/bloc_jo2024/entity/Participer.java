@@ -2,47 +2,24 @@ package fr.bloc_jo2024.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
-import java.io.Serializable;
-import java.util.Objects;
 
 @Entity
+@Table(name = "Participer")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@IdClass(ParticiperId.class)
+@Builder
 public class Participer {
-    @Id
+    @EmbeddedId
+    private ParticiperKey id;
+
     @ManyToOne
-    @JoinColumn(name = "idPays", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @MapsId("idPays")
+    @JoinColumn(name = "idPays")
     private Pays pays;
 
-    @Id
     @ManyToOne
-    @JoinColumn(name = "idEvenement", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @MapsId("idEvenement")
+    @JoinColumn(name = "idEvenement")
     private Evenement evenement;
-}
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class ParticiperId implements Serializable {
-    private Long pays;
-    private Long evenement;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ParticiperId)) return false;
-        ParticiperId that = (ParticiperId) o;
-        return pays.equals(that.pays) && evenement.equals(that.evenement);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(pays, evenement);
-    }
 }

@@ -14,11 +14,10 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(
-        name = "utilisateurs",
-        indexes = {@Index(name = "idx_utilisateurs_email", columnList = "email")}
-)
+@Builder
+@Table(name = "utilisateurs", indexes = @Index(name = "idx_utilisateurs_email", columnList = "email"))
 public class Utilisateur {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID idUtilisateur;
@@ -40,28 +39,24 @@ public class Utilisateur {
     private LocalDate dateNaissance;
 
     @Column(nullable = false)
-    private LocalDateTime dateCreation;
+    private LocalDateTime dateCreation = LocalDateTime.now();
 
+    // Relation vers le rôle (ADMIN ou USER)
     @ManyToOne
     @JoinColumn(name = "idRole", nullable = false)
     private Role role;
 
+    // Relation vers l'adresse
     @ManyToOne
     @JoinColumn(name = "idAdresse", nullable = false)
     private Adresse adresse;
 
+    // Collection de téléphones
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.PERSIST, orphanRemoval = true)
     private List<Telephone> telephones;
 
+    // Association avec l'authentification
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "id_authentification", referencedColumnName = "idToken")
     private Authentification authentification;
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setAuthentification(Authentification authentification) {
-        this.authentification = authentification;
-    }
 }

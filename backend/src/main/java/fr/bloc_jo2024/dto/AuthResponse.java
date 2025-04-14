@@ -20,4 +20,3 @@ public class AuthResponse {
         this.message = null;
     }
 }
-

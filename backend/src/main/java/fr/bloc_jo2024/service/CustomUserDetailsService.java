@@ -4,8 +4,8 @@ import fr.bloc_jo2024.entity.Utilisateur;
 import fr.bloc_jo2024.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,9 +19,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé : " + email));
 
-        if (utilisateur == null) {
-            throw new UsernameNotFoundException("Utilisateur non trouvé : " + email);
-        }
         return new CustomUserDetails(utilisateur);
     }
 }

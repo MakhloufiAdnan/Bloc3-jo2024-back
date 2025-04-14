@@ -14,4 +14,5 @@ public class RegisterRequest {
     private String city;
     private String password;
     private String role= "USER";
+    private String country;
 }

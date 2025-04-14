@@ -2,56 +2,39 @@ package fr.bloc_jo2024.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import java.time.LocalDateTime;
 import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Authentification {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "idToken", columnDefinition = "UUID")
     private UUID idToken;
 
-    @Column(nullable = false, unique = true)
+    // Token complémentaire (pour vérification)
+    @Column(nullable = false, length = 255, unique = true)
     private String token;
 
+    // Date d'expiration du token
+    @Column(name = "date_expiration", nullable = false)
     private LocalDateTime dateExpiration;
 
-    @Column(nullable = false)
+    // Mot de passe encodé (donné par PasswordEncoder dans le service)
+    @Column(name = "mot_passe", nullable = false, length = 255)
     private String motPasseHache;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private String salt = "defaultValue";
+    // Sel du mot de passe (pour le hachage)
+    @Column(nullable = false, length = 255)
+    private String salt;
 
+    // Relation bidirectionnelle pour retrouver l'utilisateur
     @OneToOne(mappedBy = "authentification")
+    @JoinColumn(name = "IdUtilisateur_UUID", nullable = false)
     private Utilisateur utilisateur;
-
-    public void setMotPasseHache(String motPasseHache) {
-        this.motPasseHache = motPasseHache;
-    }
-
-    // @PrePersist va s'exécuter avant d'enregistrer l'entité dans la base de données
-    @PrePersist
-    public void hacherMotPasse() {
-        if (this.salt == null) {
-            this.salt = UUID.randomUUID().toString();
-        }
-
-        //BCryptPasswordEncoder hachera le mot de passe + le sel et le stockera
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        this.motPasseHache = encoder.encode(this.motPasseHache + this.salt);
-    }
-
-    // Vérifiez le mot de passe saisi avec le mot de passe haché et le sel stockés
-    public boolean verifierMotPasse(String motPasseSaisi) {
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        return encoder.matches(motPasseSaisi + this.salt, this.motPasseHache);
-    }
 }
-
-

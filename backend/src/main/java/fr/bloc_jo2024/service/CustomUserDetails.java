@@ -17,7 +17,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Si le rôle stocké est ADMIN, alors retourne ROLE_ADMIN, sinon ROLE_USER.
         String role = utilisateur.getRole().getTypeRole().name();
         if ("ADMIN".equalsIgnoreCase(role)) {
             return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
@@ -28,6 +27,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
+        // Utilisez getMotPasseHache() car c'est le nom de l'attribut dans Authentification
         return utilisateur.getAuthentification().getMotPasseHache();
     }
 

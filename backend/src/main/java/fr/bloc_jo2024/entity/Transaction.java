@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "transactions")
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,11 +29,11 @@ public class Transaction {
     @Column(nullable = false)
     private StatutTransaction statut;
 
-    @ManyToOne
-    @JoinColumn(name = "idPayement", nullable = false, foreignKey = @ForeignKey(name = "fk_payement"))
+    @OneToOne
+    @JoinColumn(name = "id_payement", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_payement_transaction"))
     private Payement payement;
 
-    // Constructeur personnalisé pour initialiser la date de transaction
+    // Constructeur pour initialiser la date de transaction
     public Transaction(double montant, StatutTransaction statut, Payement payement) {
         this.montant = montant;
         this.dateTransaction = LocalDateTime.now();

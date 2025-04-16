@@ -6,14 +6,19 @@ import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class CustomUserDetails implements UserDetails {
+public class CustomUserDetails implements UserDetails, Serializable {
 
-    private final Utilisateur utilisateur;
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private final transient Utilisateur utilisateur;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

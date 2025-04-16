@@ -10,7 +10,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "roles", indexes = @Index(name = "idx_role_type", columnList = "typeRole"))
+@Table(name = "roles",
+        indexes = @Index(name = "idx_role_type", columnList = "typeRole"))
 public class Role {
 
     @Id

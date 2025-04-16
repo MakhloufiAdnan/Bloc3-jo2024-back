@@ -17,7 +17,7 @@ public class JwtService {
     private String secretKey;
 
     // Durée d'expiration du token (en millisecondes)
-    private long expirationTime = 36000000; // 1 heure
+    long expirationTime = 36000000;
 
     // Génère un token JWT à partir de l'email de l'utilisateur.
     public String generateToken(String email) {

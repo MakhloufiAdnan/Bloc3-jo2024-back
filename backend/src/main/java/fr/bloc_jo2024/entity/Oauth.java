@@ -9,19 +9,21 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "oauth")
 public class Oauth {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id_oauth")
     private UUID idOAuth;
 
-    @Column(unique = true)
+    @Column(name = "google_id", unique = true)
     private String googleId;
 
-    @Column(unique = true)
+    @Column(name = "facebook_id", unique = true)
     private String facebookId;
 
     @OneToOne
-    @JoinColumn(name = "idUtilisateur", nullable = false)
+    @JoinColumn(name = "id_utilisateur", referencedColumnName = "idUtilisateur", nullable = false)
     private Utilisateur utilisateur;
 }

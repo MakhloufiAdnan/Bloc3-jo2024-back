@@ -4,7 +4,6 @@ import fr.bloc_jo2024.entity.enums.TelEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
-import lombok.experimental.FieldNameConstants;
 
 @Entity
 @Data
@@ -27,6 +26,6 @@ public class Telephone {
     private String numeroTelephone;
 
     @ManyToOne
-    @JoinColumn(name = "idUtilisateur", referencedColumnName = "idUtilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur_telephone"))
+    @JoinColumn(name = "id_utilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur_telephone"))
     private Utilisateur utilisateur;
 }

@@ -39,24 +39,32 @@ public class Utilisateur {
     private LocalDate dateNaissance;
 
     @Column(nullable = false)
+    @Builder.Default
     private LocalDateTime dateCreation = LocalDateTime.now();
 
-    // Relation vers le rôle (ADMIN ou USER)
     @ManyToOne
-    @JoinColumn(name = "idRole", nullable = false)
+    @JoinColumn(name = "id-role", nullable = false)
     private Role role;
 
-    // Relation vers l'adresse
     @ManyToOne
-    @JoinColumn(name = "idAdresse", nullable = false)
+    @JoinColumn(name = "id-adresse", nullable = false)
     private Adresse adresse;
 
-    // Collection de téléphones
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.PERSIST, orphanRemoval = true)
     private List<Telephone> telephones;
 
-    // Association avec l'authentification
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "id_authentification", referencedColumnName = "idToken")
+    @OneToOne(mappedBy = "utilisateur", cascade = CascadeType.ALL)
     private Authentification authentification;
+
+    @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AuthTokenTemporaire> authTokensTemporaires;
+
+    @OneToOne(mappedBy = "utilisateur", cascade = CascadeType.ALL)
+    private Oauth oauth;
+
+    @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Panier> paniers;
+
+    @OneToMany(mappedBy = "utilisateur")
+    private List<Billet> billets;
 }

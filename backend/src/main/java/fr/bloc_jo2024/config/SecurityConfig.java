@@ -1,10 +1,11 @@
-package fr.bloc_jo2024;
+package fr.bloc_jo2024.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +27,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(csrf -> csrf.disable()) // Désactiver CSRF pour les API REST
+                .csrf(AbstractHttpConfigurer::disable) // Désactiver CSRF pour les API REST
 
                 // Utilisation d'une gestion de session STATELESS pour les utilisateurs standard (authentification JWT)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -38,7 +39,7 @@ public class SecurityConfig {
                         // Endpoints administrateur (gérés via session) sont accessibles librement
                         .requestMatchers("/admin/**").permitAll()
 
-                        // Toute autre requête nécessite une authentification (via JWT)
+                        // Toute autre requête nécessite une authentification (via JWT).
                         .anyRequest().authenticated()
                 )
 

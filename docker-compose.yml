@@ -58,4 +58,3 @@ volumes:
 
 networks:
   jo_network:
-

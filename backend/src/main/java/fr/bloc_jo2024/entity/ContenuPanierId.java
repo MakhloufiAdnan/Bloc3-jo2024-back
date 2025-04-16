@@ -8,8 +8,8 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class ParticiperKey implements Serializable {
-    private Long idPays;
-    private Long idEvenement;
+@EqualsAndHashCode
+public class ContenuPanierId implements Serializable {
+    private Long panier;
+    private Long offre;
 }

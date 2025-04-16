@@ -1,4 +1,4 @@
-package fr.bloc_jo2024;
+package fr.bloc_jo2024.config;
 
 import fr.bloc_jo2024.service.JwtService;
 import fr.bloc_jo2024.service.CustomUserDetailsService;
@@ -37,8 +37,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String token = extractToken(request);
 
-        // Si aucun token n'est présent, on laisse passer la demande
-        // afin que la configuration de sécurité gère l'accès aux endpoints ouverts.
+        /*
+         *  Si aucun token n'est présent, on laisse passer la demande
+         * afin que la configuration de sécurité gère l'accès aux endpoints ouverts.
+         */
         if (token != null) {
             try {
                 String email = jwtService.extractEmail(token);

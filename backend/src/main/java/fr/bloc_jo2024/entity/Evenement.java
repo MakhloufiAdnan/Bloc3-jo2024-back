@@ -7,33 +7,36 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import static lombok.Builder.*;
+
 @Entity
+@Table(name = "evenements", indexes = {
+        @Index(name = "idx_evenements_date", columnList = "date_evenement")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "evenements", indexes = {
-        @Index(name = "idx_evenements_date", columnList = "dateEvenement")
-})
 public class Evenement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_evenement")
     private Long idEvenement;
 
-    @Column(nullable = false)
+    @Column(name = "date_evenement", nullable = false)
     private LocalDateTime dateEvenement;
 
-    @Column(nullable = false)
+    @Column(name = "nb_place_dispo", nullable = false)
     @Min(value = 0, message = "Il n'y a plus de place disponible.")
     private int nbPlaceDispo;
 
     /**
-        Chaque événement pocède une adresse.
-        Une adresse peut accueillir plusieurs événements.
+     Chaque événement pocède une adresse.
+     Une adresse peut accueillir plusieurs événements.
      */
     @ManyToOne
-    @JoinColumn(name = "idAdresse", nullable = false, foreignKey = @ForeignKey(name = "fk_evenement_adresse"))
+    @JoinColumn(name = "id_adresse", nullable = false, foreignKey = @ForeignKey(name = "fk_evenement_adresse"))
     private Adresse adresse;
 
     // Relation vers les offres existantes

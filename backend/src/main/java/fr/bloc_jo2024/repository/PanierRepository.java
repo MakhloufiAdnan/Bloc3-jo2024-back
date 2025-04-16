@@ -14,11 +14,4 @@ public interface PanierRepository extends JpaRepository<Panier, Long> {
 
     // Recherche de tous les paniers associés à un utilisateur, si nécessaire
     List<Panier> findByUtilisateurIdUtilisateur(UUID idUtilisateur);
-
-    // Méthode qui permet de calculer le total d'un panier (en fonction des Offres)
-    default double calculateTotal(Panier panier) {
-        return panier.getOffres().stream()
-                .mapToDouble(offre -> offre.getPrix() * offre.getQuantite())
-                .sum();
-    }
 }

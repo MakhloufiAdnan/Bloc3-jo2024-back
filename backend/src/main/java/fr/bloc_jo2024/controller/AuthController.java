@@ -44,7 +44,7 @@ public class AuthController {
                     .body(new AuthResponse(null, "Cet email est déjà utilisé."));
         }
 
-        // Force le rôle USER même si le front essaie de contourner
+        // Force le rôle USER même si le front essaie de contourner, évite l'accès contenu admin
         request.setRole("USER");
 
         utilisateurService.registerUser(request, passwordEncoder);

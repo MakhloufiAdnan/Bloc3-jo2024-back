@@ -1,34 +1,99 @@
 package fr.bloc_jo2024.service;
 
+import fr.bloc_jo2024.dto.CreerOffreDTO;
+import fr.bloc_jo2024.dto.MettreAJourOffreDTO;
+import fr.bloc_jo2024.entity.Evenement;
 import fr.bloc_jo2024.entity.Offre;
 import fr.bloc_jo2024.entity.enums.TypeOffre;
+import fr.bloc_jo2024.exception.ResourceNotFoundException;
+import fr.bloc_jo2024.repository.EvenementRepository;
 import fr.bloc_jo2024.repository.OffreRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class AdminOffreService {
 
-    @Autowired
-    private OffreRepository offreRepository;
+    private final OffreRepository offreRepository;
+    private final EvenementRepository evenementRepository;
+    private final PanierService panierService; // Ajout du PanierService
 
-    // Ajouter une nouvelle offre
-    public Offre ajouterOffre(Offre nouvelleOffre) {
-        return offreRepository.save(nouvelleOffre);
+    public AdminOffreService(OffreRepository offreRepository, EvenementRepository evenementRepository, PanierService panierService) {
+        this.offreRepository = offreRepository;
+        this.evenementRepository = evenementRepository;
+        this.panierService = panierService; // Injection du PanierService
+    }
+
+    // Mettre à jour les propriétés de l'offre (à partir de CreerOffreDTO)
+    private void updateOffreFromDTO(Offre offre, CreerOffreDTO dto) {
+        offre.setTypeOffre(dto.getTypeOffre());
+        offre.setQuantite(dto.getQuantite());
+        offre.setPrix(dto.getPrix());
+        offre.setDateExpiration(dto.getDateExpiration());
+        offre.setStatutOffre(dto.getStatutOffre());
+    }
+
+    // Mettre à jour les propriétés de l'offre (à partir de MettreAJourOffreDTO)
+    private void updateOffreFromDTO(Offre offre, MettreAJourOffreDTO dto) {
+        offre.setTypeOffre(dto.getTypeOffre());
+        offre.setQuantite(dto.getQuantite());
+        offre.setPrix(dto.getPrix());
+        offre.setDateExpiration(dto.getDateExpiration());
+        offre.setStatutOffre(dto.getStatutOffre());
+    }
+
+    private Evenement getEvenementById(Long evenementId) {
+        return evenementRepository.findById(evenementId)
+                .orElseThrow(() -> new ResourceNotFoundException("Événement non trouvé avec l'ID : " + evenementId));
+    }
+
+    // Ajouter une nouvelle offre à partir du DTO
+    public Offre ajouterOffre(CreerOffreDTO creerOffreDTO) {
+        Offre nouvelleOffre = new Offre();
+        updateOffreFromDTO(nouvelleOffre, creerOffreDTO);
+
+        Evenement evenement = getEvenementById(creerOffreDTO.getEvenementId());
+        nouvelleOffre.setEvenement(evenement);
+
+        Offre offreSauvee = offreRepository.save(nouvelleOffre);
+
+        // Ajout de l'offre au panier via le PanierService
+        panierService.ajouterOffreAuPanier(creerOffreDTO.getPanierId(), offreSauvee, creerOffreDTO.getQuantite()); // Utilisation de la quantité du DTO
+
+        return offreSauvee;
+    }
+
+    // Obtenir une offre par ID
+    public Offre obtenirOffreParId(Long idOffre) {
+        return offreRepository.findById(idOffre)
+                .orElse(null); // Retourne null si non trouvé, le contrôleur gère le 404
+    }
+
+    // Mettre à jour une offre à partir du DTO
+    public Offre mettreAJourOffre(Long idOffre, MettreAJourOffreDTO mettreAJourOffreDTO) {
+        Offre offreExistante = offreRepository.findById(idOffre)
+                .orElseThrow(() -> new ResourceNotFoundException("Offre non trouvée avec l'ID : " + idOffre));
+
+        updateOffreFromDTO(offreExistante, mettreAJourOffreDTO);
+
+        Evenement evenement = getEvenementById(mettreAJourOffreDTO.getEvenementId());
+        offreExistante.setEvenement(evenement);
+
+        Offre offreMiseAJour = offreRepository.save(offreExistante);
+
+        // Mise à jour de l'offre dans le panier via le PanierService
+        panierService.mettreAJourQuantiteOffrePanier(mettreAJourOffreDTO.getPanierId(), offreMiseAJour, mettreAJourOffreDTO.getQuantite()); // Utilisation de la quantité du DTO
+
+        return offreMiseAJour;
     }
 
     // Modifier le prix d'une offre
     public Offre modifierPrixOffre(Long idOffre, double nouveauPrix) {
-        Optional<Offre> offreOpt = offreRepository.findById(idOffre);
-        if (offreOpt.isPresent()) {
-            Offre offre = offreOpt.get();
-            offre.setPrix(nouveauPrix);  // Mise à jour du prix
-            return offreRepository.save(offre);
-        }
-        return null;  // Si l'offre n'existe pas
+        Offre offreExistante = offreRepository.findById(idOffre)
+                .orElseThrow(() -> new ResourceNotFoundException("Offre non trouvée avec l'ID : " + idOffre));
+        offreExistante.setPrix(nouveauPrix);
+        return offreRepository.save(offreExistante);
     }
 
     // Supprimer une offre
@@ -37,7 +102,7 @@ public class AdminOffreService {
             offreRepository.deleteById(idOffre);
             return true;
         }
-        return false;
+        return false; // Le contrôleur gère le 404 si false
     }
 
     // Liste des offres par type

@@ -6,18 +6,19 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@Table(name = "epreuves")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "epreuves")
 public class Epreuve {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_epreuve")
     private Long idEpreuve;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "nom", nullable = false, length = 50)
     private String nom;
 
     // Relation via l'entité d'association Comporter (association avec l'événement).

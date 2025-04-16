@@ -10,35 +10,38 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@Table(name = "paniers")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Panier {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_panier")
     private Long idPanier;
 
-    @Column(nullable = false)
+    @Column(name = "montant_total", nullable = false)
     private double montantTotal;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "statut", nullable = false)
     private StatutPanier statut;
 
-    @Column(nullable = false)
+    @Column(name = "date_ajout", nullable = false)
     private LocalDateTime dateAjout = LocalDateTime.now();
 
     @ManyToOne
-    @JoinColumn(name = "idUtilisateur", nullable = false)
+    @JoinColumn(name = "id_utilisateur", nullable = false)
     private Utilisateur utilisateur;
 
     @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Offre> offres = new HashSet<>(); // Liste des offres associées au panier
+    private Set<ContenuPanier> contenuPaniers = new HashSet<>();
 
-    // Permet de gérer la date automatiquement
+    @OneToOne(mappedBy = "panier")
+    private Payement payement;
+
     @PrePersist
     public void prePersist() {
         if (dateAjout == null) dateAjout = LocalDateTime.now();
     }
 }
-

@@ -8,32 +8,34 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "payements")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Payement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_payement")
     private Long idPayement;
 
-    @Column(nullable = false)
-    private LocalDateTime datePayement = LocalDateTime.now(); // Initialisation automatique
+    @Column(name = "date_payement", nullable = false)
+    private LocalDateTime datePayement = LocalDateTime.now();
 
-    @Column(nullable = false)
-    private boolean paiementReussi; // Nom plus clair
+    @Column(name = "paiement_reussi", nullable = false)
+    private boolean paiementReussi;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "transaction_id", nullable = false, unique = true, length = 100)
     private String transactionId;
 
-    @Column(nullable = false)
-    @Min(value = 0, message = "Le montant payé doit être positif.") // Validation sur montant
+    @Column(name = "montant_paye", nullable = false)
+    @Min(value = 0, message = "Le montant payé doit être positif.")
     private double montantPaye;
 
     @ManyToOne
-    @JoinColumn(name = "idMethode", nullable = false)
+    @JoinColumn(name = "id_methode", nullable = false)
     private MethodePayement methodePayement;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "idPanier", nullable = false, referencedColumnName = "idPanier", foreignKey = @ForeignKey(name = "fk_panier"))
+    @OneToOne
+    @JoinColumn(name = "id_panier", nullable = false, referencedColumnName = "id_panier", foreignKey = @ForeignKey(name = "fk_panier"))
     private Panier panier;
 }

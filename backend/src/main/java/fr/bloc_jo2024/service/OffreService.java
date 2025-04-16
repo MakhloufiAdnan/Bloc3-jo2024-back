@@ -2,16 +2,21 @@ package fr.bloc_jo2024.service;
 
 import fr.bloc_jo2024.entity.Offre;
 import fr.bloc_jo2024.entity.enums.StatutOffre;
+import fr.bloc_jo2024.exception.ResourceNotFoundException;
 import fr.bloc_jo2024.repository.OffreRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OffreService {
 
-    @Autowired
-    private OffreRepository offreRepository;
+    private static final String OFFER_NOT_FOUND = "Offre introuvable avec l'ID : ";
+
+    private final OffreRepository offreRepository;
+
+    public OffreService(OffreRepository offreRepository) {
+        this.offreRepository = offreRepository;
+    }
 
     @Transactional
     public Offre creerOffre(Offre offre) {
@@ -30,7 +35,7 @@ public class OffreService {
             throw new IllegalArgumentException("Quantité invalide");
         }
         Offre offre = offreRepository.findById(idOffre)
-                .orElseThrow(() -> new IllegalArgumentException("Offre introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException(OFFER_NOT_FOUND + idOffre));
         offre.setQuantite(nouvelleQuantite);
         return offreRepository.save(offre);
     }
@@ -41,7 +46,7 @@ public class OffreService {
             throw new IllegalArgumentException("Le prix ne peut pas être négatif");
         }
         Offre offre = offreRepository.findById(idOffre)
-                .orElseThrow(() -> new IllegalArgumentException("Offre introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException(OFFER_NOT_FOUND + idOffre));
         offre.setPrix(nouveauPrix);
         return offreRepository.save(offre);
     }
@@ -49,7 +54,7 @@ public class OffreService {
     @Transactional
     public Offre modifierStatutOffre(Long idOffre, StatutOffre nouveauStatut) {
         Offre offre = offreRepository.findById(idOffre)
-                .orElseThrow(() -> new IllegalArgumentException("Offre introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException(OFFER_NOT_FOUND + idOffre));
 
         if (offre.getStatutOffre() == StatutOffre.ANNULE) {
             throw new IllegalStateException("Impossible de modifier une offre annulée");

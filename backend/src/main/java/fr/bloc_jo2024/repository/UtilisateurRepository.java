@@ -14,12 +14,6 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, UUID> 
 
     // Vérifie si un utilisateur existe par email
     boolean existsByEmail(String email);
-
-    // Recherche par rôle (par exemple, pour l'administration)
-    Optional<Utilisateur> findByRole_TypeRole(String role);
-
-    // Recherche par email et rôle
-    Optional<Utilisateur> findByEmailAndRole_TypeRole(String email, String role);
 }
 
 

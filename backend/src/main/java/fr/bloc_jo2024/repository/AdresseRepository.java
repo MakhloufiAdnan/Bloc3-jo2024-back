@@ -24,7 +24,7 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
             int numeroRue, String nomRue, String ville, String codePostal, Pays pays
     );
 
-    // Récupérer les adresses des utilisateurs (moins courant ici)
+    // Récupérer les adresses des utilisateurs
     @Query("SELECT a FROM Adresse a JOIN a.utilisateurs u WHERE u.idUtilisateur = :idUtilisateur")
     List<Adresse> findByUtilisateurs_IdUtilisateur(@Param("idUtilisateur") UUID idUtilisateur);
 

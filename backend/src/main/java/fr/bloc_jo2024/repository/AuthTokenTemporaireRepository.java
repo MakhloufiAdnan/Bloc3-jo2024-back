@@ -7,5 +7,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AuthTokenTemporaireRepository extends JpaRepository<AuthTokenTemporaire, UUID> {
-    Optional<AuthTokenTemporaire> findByTokenHache(String tokenHache); // Renommez la méthode pour correspondre à l'attribut
+    Optional<AuthTokenTemporaire> findByTokenHache(String tokenHache);
 }

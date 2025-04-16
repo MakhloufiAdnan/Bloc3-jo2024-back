@@ -10,6 +10,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 public class ComporterKey implements Serializable {
+    @Column(name = "id_epreuve")
     private Long idEpreuve;
+    @Column(name = "id_evenement")
     private Long idEvenement;
 }

@@ -1,0 +1,4 @@
+services:
+  frontend:
+    environment:
+      API_BASE_URL: back_jo2024:8080

@@ -1,3 +1,4 @@
+# Pour que le frontend en dev utilise correctement le container backend via API_BASE_URL=back_jo2024:8080.
 services:
   frontend:
     environment:

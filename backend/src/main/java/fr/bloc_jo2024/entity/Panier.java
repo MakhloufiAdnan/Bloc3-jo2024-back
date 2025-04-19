@@ -31,7 +31,7 @@ public class Panier {
     private LocalDateTime dateAjout = LocalDateTime.now();
 
     @ManyToOne
-    @JoinColumn(name = "id_utilisateur", nullable = false)
+    @JoinColumn(name = "id_utilisateur_join", nullable = false)
     private Utilisateur utilisateur;
 
     @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true)

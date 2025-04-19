@@ -15,5 +15,3 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, UUID> 
     // Vérifie si un utilisateur existe par email
     boolean existsByEmail(String email);
 }
-
-

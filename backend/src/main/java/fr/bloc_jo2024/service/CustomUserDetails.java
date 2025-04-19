@@ -1,8 +1,6 @@
 package fr.bloc_jo2024.service;
 
 import fr.bloc_jo2024.entity.Utilisateur;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,53 +9,75 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
-@Getter
-@AllArgsConstructor
-public class CustomUserDetails implements UserDetails, Serializable {
+// Implémentation de UserDetails pour Spring Security, basée sur l'entité Utilisateur.
+public record CustomUserDetails(Utilisateur utilisateur) implements UserDetails, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private final transient Utilisateur utilisateur;
-
+    /**
+     * Retourne les autorités (rôles) de l'utilisateur pour Spring Security.
+     * @return Une collection d'autorités (SimpleGrantedAuthority).
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         String role = utilisateur.getRole().getTypeRole().name();
-        if ("ADMIN".equalsIgnoreCase(role)) {
-            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        } else {
-            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
-        }
+        return "ADMIN".equalsIgnoreCase(role)
+                ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                : List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
+    /**
+     * Retourne le mot de passe de l'utilisateur (haché).
+     * @return Le mot de passe haché de l'utilisateur depuis l'entité Authentification.
+     */
     @Override
     public String getPassword() {
-        // Utilisez getMotPasseHache() car c'est le nom de l'attribut dans Authentification
         return utilisateur.getAuthentification().getMotPasseHache();
     }
 
+    /**
+     * Retourne le nom d'utilisateur (l'email dans ce cas).
+     * @return L'email de l'utilisateur.
+     */
     @Override
     public String getUsername() {
         return utilisateur.getEmail();
     }
 
+    /**
+     * Indique si le compte de l'utilisateur n'est pas expiré.
+     * @return true si le compte n'est pas expiré.
+     */
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
+    /**
+     * Indique si le compte de l'utilisateur n'est pas bloqué.
+     * @return true si le compte n'est pas bloqué.
+     */
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
+    /**
+     * Indique si les informations d'identification de l'utilisateur (mot de passe) ne sont pas expirées.
+     * @return true si les informations d'identification ne sont pas expirées.
+     */
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
+    /**
+     * Indique si le compte de l'utilisateur est activé (vérifié par email).
+     * @return La valeur du champ 'isVerified' de l'entité Utilisateur.
+     */
     @Override
     public boolean isEnabled() {
-        return true;
+        return utilisateur.isVerified();
     }
 }

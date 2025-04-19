@@ -18,11 +18,11 @@ public class Billet {
     private Long idBillet;
 
     @ManyToOne
-    @JoinColumn(name = "id_utilisateur", nullable = false)
+    @JoinColumn(name = "id_utilisateur_join", nullable = false)
     private Utilisateur utilisateur;
 
     @ManyToOne
-    @JoinColumn(name = "id_offre", nullable = false)
+    @JoinColumn(name = "id_offre_join", nullable = false)
     private Offre offre;
 
     @Column(name = "cle_finale_billet", nullable = false, unique = true, columnDefinition = "TEXT")

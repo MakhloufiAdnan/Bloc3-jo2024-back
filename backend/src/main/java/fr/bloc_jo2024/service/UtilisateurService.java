@@ -7,7 +7,6 @@ import fr.bloc_jo2024.entity.Pays;
 import fr.bloc_jo2024.entity.Role;
 import fr.bloc_jo2024.entity.Utilisateur;
 import fr.bloc_jo2024.entity.enums.RoleEnum;
-import fr.bloc_jo2024.repository.AdresseRepository;
 import fr.bloc_jo2024.repository.PaysRepository;
 import fr.bloc_jo2024.repository.RoleRepository;
 import fr.bloc_jo2024.repository.UtilisateurRepository;
@@ -25,8 +24,8 @@ public class UtilisateurService {
 
     private final UtilisateurRepository utilisateurRepository;
     private final RoleRepository roleRepository;
-    private final AdresseRepository adresseRepository;
     private final PaysRepository paysRepository;
+    private final AdresseService adresseService;
 
     /**
      * Vérifie si un utilisateur existe déjà avec cet email.
@@ -57,26 +56,25 @@ public class UtilisateurService {
                     return paysRepository.save(nouveauPays);
                 });
 
-        // Création de l'adresse
+        // Création de l'adresse via le service dédié
         Adresse adresse = Adresse.builder()
-                .numeroRue(Integer.parseInt(request.getAddress().split(" ")[0]))
-                .nomRue(request.getAddress().substring(request.getAddress().indexOf(" ") + 1))
-                .codePostal(request.getPostalcode())
+                .numeroRue(request.getStreetnumber())
+                .nomRue(request.getAddress())
+                .codePostale(request.getPostalcode())
                 .ville(request.getCity())
                 .pays(pays)
                 .build();
-        adresseRepository.save(adresse);
+        Adresse savedAdresse = adresseService.creerAdresse(adresse);
 
         // Récupération du rôle USER depuis la base de données
-        Role role = roleRepository.findByTypeRole(RoleEnum.USER.name())
+        Role role = roleRepository.findByTypeRole(RoleEnum.USER)
                 .orElseThrow(() -> new RuntimeException("Le rôle USER n'a pas été trouvé dans la base de données."));
 
         // Construction de l'objet Authentification avec mot de passe encodé
         Authentification authentification = Authentification.builder()
                 .token(UUID.randomUUID().toString())
                 .dateExpiration(LocalDateTime.now().plusHours(24))
-                .motPasseHache(passwordEncoder.encode(request.getPassword())) // Utilisez motPasseHache
-                .salt(UUID.randomUUID().toString())
+                .motPasseHache(passwordEncoder.encode(request.getPassword()))
                 .build();
 
         // Construction de l'objet Utilisateur à partir du DTO
@@ -85,14 +83,16 @@ public class UtilisateurService {
                 .prenom(request.getFirstname())
                 .email(request.getEmail())
                 .dateNaissance(request.getDate())
-                .adresse(adresse)
+                .adresse(savedAdresse) // Utilisation de l'adresse persistée
                 .authentification(authentification)
                 .role(role)
+                .isVerified(false) // Initialisation du champ isVerified
                 .build();
 
+        // Établissement de la relation inverse entre Authentification et Utilisateur
         authentification.setUtilisateur(utilisateur);
 
-        // Sauvegarde de l'utilisateur en base de données
+        // Sauvegarde de l'utilisateur en base de données (la cascade gérera l'adresse et l'authentification)
         utilisateurRepository.save(utilisateur);
     }
 }

@@ -7,8 +7,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-import static lombok.Builder.*;
-
 @Entity
 @Table(name = "evenements", indexes = {
         @Index(name = "idx_evenements_date", columnList = "date_evenement")
@@ -55,4 +53,9 @@ public class Evenement {
             throw new IllegalArgumentException("La date de l'événement ne peut pas être dans le passé.");
         }
     }
+
+    // Relation vers l'événement associé à cette adresse.
+    @ManyToOne
+    @JoinColumn(name = "id_adresse_join", nullable = false, foreignKey = @ForeignKey(name = "fk_evenement_adresse"))
+    private Adresse adresses;
 }

@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
 public class Authentification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id_token", columnDefinition = "UUID")
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id_token_UUID", columnDefinition = "UUID")
     private UUID idToken;
 
     // Token complémentaire (pour vérification)
@@ -28,16 +28,12 @@ public class Authentification {
     private LocalDateTime dateExpiration;
 
     // Mot de passe encodé (donné par PasswordEncoder dans le service)
-    @Column(name = "mot_passe", nullable = false, length = 255)
+    @Column(name = "mot_passe_hache", nullable = false, length = 255)
     private String motPasseHache;
-
-    // Sel du mot de passe (pour le hachage)
-    @Column(name = "salt", nullable = false, length = 255)
-    private String salt;
 
     // Relation unidirectionnelle vers l'utilisateur
     @OneToOne
-    @JoinColumn(name = "id_utilisateur", referencedColumnName = "idUtilisateur", foreignKey = @ForeignKey(name = "fk_authentification_utilisateur"))
+    @JoinColumn(name = "id_utilisateur_join", referencedColumnName = "Id_utilisateur_UUID", foreignKey = @ForeignKey(name = "fk_authentification_utilisateur"))
     private Utilisateur utilisateur;
 
     // Instance de BCryptPasswordEncoder pour encoder et vérifier le mot de passe

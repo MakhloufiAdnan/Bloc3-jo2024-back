@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
+// Recherche par token haché
 public interface AuthTokenTemporaireRepository extends JpaRepository<AuthTokenTemporaire, UUID> {
     Optional<AuthTokenTemporaire> findByTokenHache(String tokenHache);
 }

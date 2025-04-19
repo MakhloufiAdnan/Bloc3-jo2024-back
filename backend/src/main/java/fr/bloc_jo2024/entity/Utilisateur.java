@@ -19,35 +19,41 @@ import java.util.UUID;
 public class Utilisateur {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id_utilisateur_UUID")
     private UUID idUtilisateur;
 
-    @Column(nullable = false, unique = true, length = 250)
+    @Column(name = "email", nullable = false, unique = true, length = 250)
     @Email(message = "L'email doit être valide")
     private String email;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "nom", nullable = false, length = 50)
     @NotNull(message = "Le nom ne peut pas être vide")
     private String nom;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "prenom", nullable = false, length = 50)
     @NotNull(message = "Le prénom ne peut pas être vide")
     private String prenom;
 
-    @Column(nullable = false)
+    @Column(name = "date_naissance", nullable = false)
     @Past(message = "La date de naissance doit être dans le passé")
     private LocalDate dateNaissance;
 
-    @Column(nullable = false)
+    @Column(name = "date_creation",nullable = false)
     @Builder.Default
     private LocalDateTime dateCreation = LocalDateTime.now();
 
+    // Active l’utilisateur après validation email
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isVerified = false;
+
     @ManyToOne
-    @JoinColumn(name = "id-role", nullable = false)
+    @JoinColumn(name = "id_role_join", nullable = false)
     private Role role;
 
     @ManyToOne
-    @JoinColumn(name = "id-adresse", nullable = false)
+    @JoinColumn(name = "id_adresse_join", nullable = false)
     private Adresse adresse;
 
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.PERSIST, orphanRemoval = true)

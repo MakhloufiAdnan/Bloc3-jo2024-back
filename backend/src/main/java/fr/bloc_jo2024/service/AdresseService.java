@@ -1,6 +1,7 @@
 package fr.bloc_jo2024.service;
 
 import fr.bloc_jo2024.entity.Adresse;
+import fr.bloc_jo2024.exception.AdresseLieeAUnEvenementException;
 import fr.bloc_jo2024.exception.ResourceNotFoundException;
 import fr.bloc_jo2024.repository.AdresseRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class AdresseService {
+
+    private static final String ADRESSE_NON_TROUVEE = "Adresse non trouvée avec l'ID : ";
 
     private final AdresseRepository adresseRepository;
 
@@ -33,7 +36,7 @@ public class AdresseService {
      */
     public Adresse getAdresseById(Long id) {
         return adresseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec l'ID : " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE + id));
     }
 
     /**
@@ -53,26 +56,34 @@ public class AdresseService {
      */
     public Adresse updateAdresse(Long id, Adresse nouvelleAdresse) {
         Adresse adresseExistante = adresseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec l'ID : " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE + id));
 
         adresseExistante.setNumeroRue(nouvelleAdresse.getNumeroRue());
         adresseExistante.setNomRue(nouvelleAdresse.getNomRue());
         adresseExistante.setVille(nouvelleAdresse.getVille());
-        adresseExistante.setCodePostal(nouvelleAdresse.getCodePostal());
+        adresseExistante.setCodePostale(nouvelleAdresse.getCodePostale());
         adresseExistante.setPays(nouvelleAdresse.getPays());
 
         return adresseRepository.save(adresseExistante);
     }
 
     /**
-     * Supprime une adresse par son ID.
+     * Supprime une adresse par son ID après avoir vérifié qu'elle n'est pas liée à un événement actif.
      * @param id L'ID de l'adresse à supprimer.
      * @throws ResourceNotFoundException Si aucune adresse n'est trouvée avec cet ID.
+     * @throws AdresseLieeAUnEvenementException Si l'adresse est liée à un événement.
      */
     public void deleteAdresse(Long id) {
-        if (!adresseRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Adresse non trouvée avec l'ID : " + id);
+        Adresse adresse = adresseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE + id));
+
+        try {
+            if (adresseRepository.adresseEstLieeAUnEvenement(id)) {
+                throw new AdresseLieeAUnEvenementException();
+            }
+        } catch (Exception e) {
+            throw AdresseLieeAUnEvenementException.erreurVerification(e);
         }
-        adresseRepository.deleteById(id);
+        adresseRepository.delete(adresse);
     }
 }

@@ -16,10 +16,11 @@ public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_role")
     private Long idRole;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
+    @Column(name = "type_Role",nullable = false, unique = true)
     private RoleEnum typeRole;
 
     @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST)

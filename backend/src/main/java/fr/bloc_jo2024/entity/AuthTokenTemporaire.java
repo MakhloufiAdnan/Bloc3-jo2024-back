@@ -15,8 +15,8 @@ import java.util.UUID;
 public class AuthTokenTemporaire {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id_token_temp", columnDefinition = "UUID")
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id_token_temp_UUID", columnDefinition = "UUID")
     private UUID idTokenTemp;
 
     @Column(name = "token_hache", nullable = false, unique = true, length = 255)
@@ -29,8 +29,13 @@ public class AuthTokenTemporaire {
     @Column(name = "date_expiration", nullable = false)
     private LocalDateTime dateExpiration;
 
+    // Indique si le token a été utilisé ou non.
+    @Column(name = "is_used", nullable = false)
+    @Builder.Default
+    private boolean isUsed = false;
+
     // Relation vers l'utilisateur concerné par ce token temporaire.
     @ManyToOne(optional = false)
-    @JoinColumn(name = "id_utilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur_token"))
+    @JoinColumn(name = "id_utilisateur_join", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateur_token"))
     private Utilisateur utilisateur;
 }

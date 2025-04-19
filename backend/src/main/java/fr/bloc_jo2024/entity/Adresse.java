@@ -29,20 +29,20 @@ public class Adresse {
     @Column(name = "ville", nullable = false, length = 50)
     private String ville;
 
-    @Column(name = "code_postal", nullable = false, length = 50)
-    private String codePostal;
+    @Column(name = "code_postale", nullable = false, length = 50)
+    private String codePostale;
 
     // Une adresse peut accueillir plusieurs événements.
     @Default
-    @OneToMany(mappedBy = "adresse", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "adresse")
     private Set<Evenement> evenements = new HashSet<>();
 
     // Relation vers les utilisateurs associés à cette adresse.
-    @OneToMany(mappedBy = "adresse"/*, cascade = CascadeType.ALL, orphanRemoval = true*/)
+    @OneToMany(mappedBy = "adresse")
     private Set<Utilisateur> utilisateurs;
 
     // Relation vers le pays associé à cette adresse.
     @ManyToOne
-    @JoinColumn(name = "idPays", nullable = false, foreignKey = @ForeignKey(name = "fk_adresse_pays"))
+    @JoinColumn(name = "id_pays_join", nullable = false, foreignKey = @ForeignKey(name = "fk_adresse_pays"))
     private Pays pays;
 }

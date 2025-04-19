@@ -102,7 +102,7 @@ jobs:
           heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
-      # Optionnel : Stop dynos
+      # Stop dynos : avoid fees
       - name: Stop Heroku Dynos
         if: ${{ false }} # désactivé par défaut
         run: |

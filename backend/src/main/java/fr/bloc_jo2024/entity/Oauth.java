@@ -24,6 +24,6 @@ public class Oauth {
     private String facebookId;
 
     @OneToOne
-    @JoinColumn(name = "id_utilisateur", referencedColumnName = "idUtilisateur", nullable = false)
+    @JoinColumn(name = "id_utilisateur_join", referencedColumnName = "id_utilisateur_UUID", nullable = false)
     private Utilisateur utilisateur;
 }

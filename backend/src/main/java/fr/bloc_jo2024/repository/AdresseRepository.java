@@ -14,14 +14,15 @@ import java.util.UUID;
 @Repository
 public interface AdresseRepository extends JpaRepository<Adresse, Long> {
 
+    // Recherche par ville (pour l'évenements)
     List<Adresse> findByVille(String ville);
 
+    //Recherche par ID de pays (pour l'évenements)
     List<Adresse> findByPays_Nom(String nomPays);
 
-    List<Adresse> findByPays_IdPays(Long idPays);
-
-    Optional<Adresse> findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-            int numeroRue, String nomRue, String ville, String codePostal, Pays pays
+    // Recherche par adresse complète (pour l'offre)
+    Optional<Adresse> findByNumeroRueAndNomRueAndVilleAndCodePostaleAndPays(
+            int numeroRue, String nomRue, String ville, String codePostale, Pays pays
     );
 
     // Récupérer les adresses des utilisateurs
@@ -30,5 +31,9 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
 
     // Récupérer l'adresse d'un événement
     @Query("SELECT a FROM Adresse a JOIN a.evenements e WHERE e.idEvenement = :idEvenement")
-    Optional<Adresse> findByEvenements_IdEvenement(@Param("idEvenement") Long idEvenement);
+    Optional<Adresse> findByEvenement_IdEvenement(@Param("idEvenement") Long idEvenement);
+
+    // Vérifie si une adresse est liée à un événement
+    @Query("SELECT COUNT(a) > 0 FROM Adresse a JOIN a.evenements e WHERE a.idAdresse = :idAdresse")
+    boolean adresseEstLieeAUnEvenement(@Param("idAdresse") Long idAdresse);
 }

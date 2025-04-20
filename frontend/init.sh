@@ -7,10 +7,13 @@ export API_BASE_URL="${API_BASE_URL:-localhost:8080}"
 echo "PORT is: $PORT"
 echo "API_BASE_URL is: $API_BASE_URL"
 
-# Substitution des variables dans la conf nginx (using double quotes this time)
+# Substitution des variables dans la conf nginx to a temporary file
 envsubst "$PORT $API_BASE_URL" \
   < /etc/nginx/nginx.conf.template \
-  > /etc/nginx/nginx.conf
+  > /etc/nginx/nginx.conf.tmp
+
+# Replace the original config with the substituted one
+mv /etc/nginx/nginx.conf.tmp /etc/nginx/nginx.conf
 
 # Debug : afficher le contenu généré
 echo "======= nginx.conf généré ======="

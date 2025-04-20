@@ -1,7 +1,6 @@
 #!/bin/sh
-# Remplace la variable ${API_BASE_URL} dans le template,
-# puis démarre Nginx au premier plan.
-envsubst '${API_BASE_URL}' \
+# Remplace ${PORT} et ${API_BASE_URL} par leurs vraies valeurs d’environnement
+envsubst "${PORT} ${API_BASE_URL}" \
   < /etc/nginx/nginx.conf.template \
   > /etc/nginx/nginx.conf
 

@@ -52,6 +52,8 @@ services:
     container_name: front_jo2024
     ports:
       - "80:80"
+    environment:
+      API_BASE_URL: back_jo2024:8080
     depends_on:
       - backend
     env_file:

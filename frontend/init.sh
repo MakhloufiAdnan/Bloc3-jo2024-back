@@ -1,8 +1,17 @@
 #!/bin/sh
-# Remplace ${PORT} et ${API_BASE_URL} par leurs vraies valeurs d’environnement
+# Valeurs par défaut si non définies
+export PORT="${PORT:-80}"
+export API_BASE_URL="${API_BASE_URL:-localhost:8080}"
+
+# Substitution des variables dans la conf nginx
 envsubst "${PORT} ${API_BASE_URL}" \
   < /etc/nginx/nginx.conf.template \
   > /etc/nginx/nginx.conf
 
-# Démarre nginx au premier plan
+# Debug : afficher le contenu généré
+echo "======= nginx.conf généré ======="
+cat /etc/nginx/nginx.conf
+echo "================================="
+
+# Lancement de nginx en mode foreground
 exec nginx -g 'daemon off;'

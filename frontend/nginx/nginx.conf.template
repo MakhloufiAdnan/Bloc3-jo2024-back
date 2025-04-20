@@ -19,12 +19,12 @@ http {
         # Nom du serveur. Ne sert pas dans un contexte Heroku, mais conservé pour dev.
         server_name localhost;
 
-        # Répertoire racine des fichiers statiques.
-        root /usr/share/nginx/html;
-        index index.html;
-
         # Sert les fichiers statiques ou redirige vers index.html (SPA logic)
         location / {
+
+            # Répertoire racine des fichiers statiques.
+            root /usr/share/nginx/html;
+            index index.html;
             try_files $uri $uri/ /index.html;
         }
 

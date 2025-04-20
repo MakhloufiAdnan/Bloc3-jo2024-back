@@ -13,6 +13,25 @@ http {
 
         server_name localhost;
 
+        # Dossier racine du frontend
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Gestion des fichiers CSS
+        location /css/ {
+            alias /usr/share/nginx/html/css/;
+        }
+
+        # Gestion des fichiers JS
+        location /js/ {
+            alias /usr/share/nginx/html/js/;
+        }
+
+        # Gestion des fichiers d'images
+        location /assets/ {
+            alias /usr/share/nginx/html/assets/;
+        }
+
         location / {
             root /usr/share/nginx/html;
             index index.html;

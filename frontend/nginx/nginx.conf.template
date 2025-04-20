@@ -1,52 +1,40 @@
-# Utilise tous les CPU disponibles pour le traitement des requêtes.
 worker_processes auto;
 
 events {
-    # Nombre maximum de connexions simultanées par worker.
     worker_connections 1024;
 }
 
 http {
-    # Inclut les types MIME pour gérer les extensions de fichiers correctement.
     include       mime.types;
     default_type  application/octet-stream;
 
     server {
-        # Heroku fournit le port via une variable d'environnement ${PORT}
-        listen ${PORT};
+        listen $PORT;
 
-        # Nom du serveur. Ne sert pas dans un contexte Heroku, mais conservé pour dev.
         server_name localhost;
 
-        # Sert les fichiers statiques ou redirige vers index.html (SPA logic)
         location / {
-            # Répertoire racine des fichiers statiques.
             root /usr/share/nginx/html;
             index index.html;
             try_files $uri $uri/ /index.html;
         }
 
-        # Proxy les requêtes vers le backend via l'URL spécifiée dans ${API_BASE_URL}
         location /api/ {
-            proxy_pass https://${API_BASE_URL};
+            proxy_pass https://$API_BASE_URL;
 
-            # En-têtes utiles pour transmettre l'identité du client
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
-            # Fichier statique à servir si le backend est inaccessible
             error_page 502 /api-error.html;
         }
 
-        # Mise en cache des fichiers statiques pour de meilleures performances
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
             expires 1d;
             access_log off;
             log_not_found off;
         }
 
-        # Configuration de la compression gzip
         gzip on;
         gzip_types text/plain application/javascript application/x-javascript text/javascript text/css application/json;
         gzip_min_length 1000;

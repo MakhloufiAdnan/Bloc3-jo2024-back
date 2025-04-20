@@ -87,6 +87,12 @@ jobs:
 
       # Set frontend Heroku config vars
       - name: Set Frontend Heroku config vars
+        run: | 
+          heroku config:set API_BASE_URL=${{ secrets.HEROKU_APP_NAME_BE }}.herokuapp.com --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set ENVIRONMENT=production --app ${{ secrets.HEROKU_APP_NAME_FE }}
+
+      # Set frontend Heroku config vars
+      - name: Set Frontend Heroku config vars
         run: |
           heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_FE }}

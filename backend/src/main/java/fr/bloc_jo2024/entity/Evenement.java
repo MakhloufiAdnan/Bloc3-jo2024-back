@@ -38,11 +38,13 @@ public class Evenement {
     private Adresse adresse;
 
     // Relation vers les offres existantes
+    @Builder.Default
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Offre> offres = new HashSet<>();
 
     // Relation vers l'association Comporter qui lie l'événement et une épreuve.
     // Permet de stocker des informations additionnelles (ex. jrDeMedaille).
+    @Builder.Default
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Comporter> comporters = new HashSet<>();
 
@@ -53,9 +55,4 @@ public class Evenement {
             throw new IllegalArgumentException("La date de l'événement ne peut pas être dans le passé.");
         }
     }
-
-    // Relation vers l'événement associé à cette adresse.
-    @ManyToOne
-    @JoinColumn(name = "id_adresse_join", nullable = false, foreignKey = @ForeignKey(name = "fk_evenement_adresse"))
-    private Adresse adresses;
 }

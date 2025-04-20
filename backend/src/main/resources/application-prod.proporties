@@ -1,0 +1,31 @@
+# Heroku définit une variable DATABASE_URL, utilisable telle quelle
+spring.datasource.url=${DATABASE_URL}
+
+# JWT (chargés depuis les secrets Heroku)
+jwt.secret=${JWT_SECRET}
+jwt.expiration=${JWT_EXPIRATION}
+
+# SMTP (réel pour production)
+spring.mail.host=${SMTP_HOST}
+spring.mail.port=${SMTP_PORT}
+spring.mail.username=${EMAIL_USERNAME}
+spring.mail.password=${EMAIL_PASSWORD}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
+
+# Autres
+server.port=${BACKEND_PORT:8080}
+server.error.include-message=always
+
+# Variables admin
+admin.email=${ADMIN_EMAIL}
+admin.password=${ADMIN_PASSWORD}
+admin.path.prefix=/management
+admin.auth.path.prefix=/management/auth
+
+# Google OAuth2
+spring.security.oauth2.client.registration.google.client-id=${ID_GOOGLE}
+spring.security.oauth2.client.registration.google.client-secret=${MDP_GOOGLE}
+spring.security.oauth2.client.registration.google.scope=profile,email
+spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}

@@ -22,6 +22,7 @@ public class Epreuve {
     private String nom;
 
     // Relation via l'entité d'association Comporter (association avec l'événement).
+    @Builder.Default
     @OneToMany(mappedBy = "epreuve", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Comporter> comporters = new HashSet<>();
 }

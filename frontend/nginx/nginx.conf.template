@@ -10,7 +10,6 @@ http {
 
     server {
         listen $PORT;
-
         server_name localhost;
 
         # Dossier racine du frontend
@@ -48,6 +47,7 @@ http {
             error_page 502 /api-error.html;
         }
 
+        # Cache pour les fichiers statiques (CSS, JS, images)
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
             expires 1d;
             access_log off;

@@ -1,3 +1,6 @@
+# Utilise tous les CPU disponibles pour le traitement des requêtes.
+worker_processes auto;
+
 events {
     # Nombre maximum de connexions simultanées par worker.
     worker_connections 1024;

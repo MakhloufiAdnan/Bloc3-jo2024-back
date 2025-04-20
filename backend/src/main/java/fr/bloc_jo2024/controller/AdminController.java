@@ -20,11 +20,11 @@ import java.util.Map;
 public class AdminController {
 
     // Email de l'administrateur, configuré via la propriété 'admin.email'.
-    @Value("${ADMIN_EMAIL}")
+    @Value("${admin.email}")
     private String adminEmail;
 
     // Mot de passe de l'administrateur, configuré via la propriété 'admin.password'.
-    @Value("${ADMIN_PASSWORD}")
+    @Value("${admin.password}")
     private String adminPassword;
 
     // Indiquer qu'un administrateur est connecté.

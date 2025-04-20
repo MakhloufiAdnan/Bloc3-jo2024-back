@@ -5,4 +5,5 @@ envsubst '${API_BASE_URL}' \
   < /etc/nginx/nginx.conf.template \
   > /etc/nginx/nginx.conf
 
+# Démarre nginx au premier plan
 exec nginx -g 'daemon off;'

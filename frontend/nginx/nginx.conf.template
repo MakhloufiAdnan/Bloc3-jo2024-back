@@ -14,7 +14,7 @@ http {
     server {
         # Heroku fournit le port via une variable d'environnement ${PORT}
         # Ce sera remplacé par envsubst dans le script de démarrage.
-        listen ${PORT};
+        listen $PORT;
 
         # Nom du serveur. Ne sert pas dans un contexte Heroku, mais conservé pour dev.
         server_name localhost;

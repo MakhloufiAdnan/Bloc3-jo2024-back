@@ -57,6 +57,7 @@ jobs:
       # Set backend Heroku config vars
       - name: Set Backend Heroku config vars
         run: |
+          heroku config:set SPRING_PROFILES_ACTIVE=prod --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
@@ -94,19 +95,8 @@ jobs:
       # Set frontend Heroku config vars
       - name: Set Frontend Heroku config vars
         run: |
-          heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set SMTP_HOST=${{ secrets.SMTP_HOST }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set SMTP_PORT=${{ secrets.SMTP_PORT }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set API_BASE_URL=${{ secrets.HEROKU_APP_NAME_BE }}.herokuapp.com --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set ENVIRONMENT=production --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       # Stop dynos : avoid fees
       - name: Stop Heroku Dynos

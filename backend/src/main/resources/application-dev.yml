@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver # Connexion à la base PostgreSQL Docker (réseau Docker Compose)
+  mail:
+    host: ${SMTP_HOST:localhost} # SMTP pour envoi de faux email
+    port: ${SMTP_PORT:1025}
+    username: ${EMAIL_USERNAME:}
+    password: ${EMAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${ID_GOOGLE}
+            client-secret: ${MDP_GOOGLE}
+            scope:
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+jwt:
+  secret: ${JWT_SECRET}
+
+server:
+  port: 8080 # Port du serveur
+  error:
+    include-message: always
+
+admin:
+  email: ${ADMIN_EMAIL}
+  password: ${ADMIN_PASSWORD}

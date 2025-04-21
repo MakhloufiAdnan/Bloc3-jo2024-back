@@ -1,0 +1,46 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL} # Heroku définit une variable DATABASE_URL, utilisable telle quelle
+    driver-class-name: org.postgresql.Driver # Pilote de base de données PostgreSQL
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            trust: smtp.gmail.com
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${ID_GOOGLE} # Google OAuth2 (chargés depuis les secrets Heroku)
+            client-secret: ${MDP_GOOGLE}
+            scope:
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+jwt:
+  secret: ${JWT_SECRET} # JWT (chargés depuis les secrets Heroku)
+  expiration: ${JWT_EXPIRATION}
+
+server:
+  port: ${BACKEND_PORT:8080}
+  error:
+    include-message: always
+
+admin:
+  email: ${ADMIN_EMAIL} # Variables admin (chargées depuis les secrets Heroku)
+  password: ${ADMIN_PASSWORD}
+  path:
+    prefix: /management
+  auth:
+    path:
+      prefix: /management/auth

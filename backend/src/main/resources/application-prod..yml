@@ -1,6 +1,8 @@
 spring:
   datasource:
-    url: ${DATABASE_URL} # Heroku définit une variable DATABASE_URL, utilisable telle quelle
+    url: ${DATABASE_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver # Pilote de base de données PostgreSQL
   mail:
     host: ${SMTP_HOST}

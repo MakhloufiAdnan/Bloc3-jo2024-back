@@ -58,9 +58,6 @@ jobs:
       - name: Set Backend Heroku config vars
         run: |
           heroku config:set SPRING_PROFILES_ACTIVE=prod --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set POSTGRES_DB=${{ secrets.POSTGRES_DB }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set POSTGRES_USER=${{ secrets.POSTGRES_USER }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_BE }}

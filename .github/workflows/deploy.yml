@@ -88,14 +88,8 @@ jobs:
 
       # Set frontend Heroku config vars
       - name: Set Frontend Heroku config vars
-        run: | 
-          heroku config:set API_BASE_URL=${{ secrets.HEROKU_APP_NAME_BE }}.herokuapp.com --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set ENVIRONMENT=production --app ${{ secrets.HEROKU_APP_NAME_FE }}
-
-      # Set frontend Heroku config vars
-      - name: Set Frontend Heroku config vars
         run: |
-          heroku config:set API_BASE_URL=${{ secrets.HEROKU_APP_NAME_BE }}.herokuapp.com --app ${{ secrets.HEROKU_APP_NAME_FE }}
+          heroku config:set API_BASE_URL=https://${{ secrets.HEROKU_APP_NAME_BE }}.herokuapp.com --app ${{ secrets.HEROKU_APP_NAME_FE }}
           heroku config:set ENVIRONMENT=production --app ${{ secrets.HEROKU_APP_NAME_FE }}
 
       # Stop dynos : avoid fees

@@ -61,7 +61,7 @@ public class AdresseService {
         adresseExistante.setNumeroRue(nouvelleAdresse.getNumeroRue());
         adresseExistante.setNomRue(nouvelleAdresse.getNomRue());
         adresseExistante.setVille(nouvelleAdresse.getVille());
-        adresseExistante.setCodePostale(nouvelleAdresse.getCodePostale());
+        adresseExistante.setCodePostal(nouvelleAdresse.getCodePostal());
         adresseExistante.setPays(nouvelleAdresse.getPays());
 
         return adresseRepository.save(adresseExistante);

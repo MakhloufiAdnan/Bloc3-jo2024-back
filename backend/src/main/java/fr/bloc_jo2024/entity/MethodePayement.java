@@ -17,7 +17,8 @@ public class MethodePayement {
     @Column(name = "id_methode")
     private Long idMethode;
 
+    // Nom de la méthode de paiement (CB, PAYPAL, STRIP), doit être unique.
     @Enumerated(EnumType.STRING)
-    @Column(name = "nom_methode", nullable = false, unique = true, length = 50)
-    private MethodePayementEnum nomMethode;
+    @Column(name = "nom_methode_payement", nullable = false, unique = true, length = 50)
+    private MethodePayementEnum nomMethodePayement;
 }

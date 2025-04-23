@@ -6,7 +6,7 @@ import fr.bloc_jo2024.entity.Authentification;
 import fr.bloc_jo2024.entity.Pays;
 import fr.bloc_jo2024.entity.Role;
 import fr.bloc_jo2024.entity.Utilisateur;
-import fr.bloc_jo2024.entity.enums.RoleEnum;
+import fr.bloc_jo2024.entity.enums.TypeRole;
 import fr.bloc_jo2024.repository.PaysRepository;
 import fr.bloc_jo2024.repository.RoleRepository;
 import fr.bloc_jo2024.repository.UtilisateurRepository;
@@ -60,20 +60,19 @@ public class UtilisateurService {
         Adresse adresse = Adresse.builder()
                 .numeroRue(request.getStreetnumber())
                 .nomRue(request.getAddress())
-                .codePostale(request.getPostalcode())
+                .codePostal(request.getPostalcode())
                 .ville(request.getCity())
                 .pays(pays)
                 .build();
         Adresse savedAdresse = adresseService.creerAdresse(adresse);
 
         // Récupération du rôle USER depuis la base de données
-        Role role = roleRepository.findByTypeRole(RoleEnum.USER)
+        Role role = roleRepository.findByTypeRole(TypeRole.USER)
                 .orElseThrow(() -> new RuntimeException("Le rôle USER n'a pas été trouvé dans la base de données."));
 
         // Construction de l'objet Authentification avec mot de passe encodé
         Authentification authentification = Authentification.builder()
                 .token(UUID.randomUUID().toString())
-                .dateExpiration(LocalDateTime.now().plusHours(24))
                 .motPasseHache(passwordEncoder.encode(request.getPassword()))
                 .build();
 

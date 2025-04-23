@@ -1,13 +1,13 @@
-#Configurations par défaut
 spring:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none # Ne rien faire par défaut, géré par profil
     show-sql: false
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
   security:
     oauth2:
       client:

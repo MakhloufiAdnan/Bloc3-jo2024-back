@@ -1,6 +1,6 @@
 package fr.bloc_jo2024.entity;
 
-import fr.bloc_jo2024.entity.enums.RoleEnum;
+import fr.bloc_jo2024.entity.enums.TypeRole;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Set;
@@ -11,7 +11,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Table(name = "roles",
-        indexes = @Index(name = "idx_role_type", columnList = "typeRole"))
+        indexes = @Index(name = "idx_role_type", columnList = "type_role"))
 public class Role {
 
     @Id
@@ -19,10 +19,12 @@ public class Role {
     @Column(name = "id_role")
     private Long idRole;
 
+    // Type de rôle (ADMIN, USER)
     @Enumerated(EnumType.STRING)
-    @Column(name = "type_Role",nullable = false, unique = true)
-    private RoleEnum typeRole;
+    @Column(name = "type_role",nullable = false, unique = true)
+    private TypeRole typeRole;
 
+    // Relation One-to-Many vers l'entité Utilisateur. Un rôle peut être attribué à plusieurs utilisateurs.
     @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST)
     private Set<Utilisateur> utilisateurs;
 }

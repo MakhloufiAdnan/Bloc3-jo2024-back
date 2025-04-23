@@ -3,7 +3,6 @@ package fr.bloc_jo2024.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.Builder.Default;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,7 +20,7 @@ public class Adresse {
     private Long idAdresse;
 
     @Column(name = "numero_rue", nullable = false)
-    private int numeroRue;
+    private Integer  numeroRue;
 
     @Column(name = "nom_rue", nullable = false, length = 50)
     private String nomRue;
@@ -29,8 +28,8 @@ public class Adresse {
     @Column(name = "ville", nullable = false, length = 50)
     private String ville;
 
-    @Column(name = "code_postale", nullable = false, length = 50)
-    private String codePostale;
+    @Column(name = "code_postal", nullable = false, length = 50)
+    private String codePostal;
 
     // Une adresse peut accueillir plusieurs événements.
     @Default
@@ -39,10 +38,10 @@ public class Adresse {
 
     // Relation vers les utilisateurs associés à cette adresse.
     @OneToMany(mappedBy = "adresse")
-    private Set<Utilisateur> utilisateurs;
+    private Set<Utilisateur> utilisateurs = new HashSet<>();
 
-    // Relation vers le pays associé à cette adresse.
+    // Relation vers le pays associé à cette adresse. Chaque adresse est associée à un pays.
     @ManyToOne
-    @JoinColumn(name = "id_pays_join", nullable = false, foreignKey = @ForeignKey(name = "fk_adresse_pays"))
+    @JoinColumn(name = "id_pays", nullable = false, foreignKey = @ForeignKey(name = "fk_adresse_pays"))
     private Pays pays;
 }

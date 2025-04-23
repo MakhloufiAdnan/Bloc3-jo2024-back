@@ -21,7 +21,7 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
     List<Adresse> findByPays_Nom(String nomPays);
 
     // Recherche par adresse complète (pour l'offre)
-    Optional<Adresse> findByNumeroRueAndNomRueAndVilleAndCodePostaleAndPays(
+    Optional<Adresse> findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
             int numeroRue, String nomRue, String ville, String codePostale, Pays pays
     );
 

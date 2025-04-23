@@ -10,8 +10,12 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 public class ComporterKey implements Serializable {
+
+    // Partie de la clé primaire composite référençant l'ID de l'épreuve.
     @Column(name = "id_epreuve")
     private Long idEpreuve;
+
+    // Partie de la clé primaire composite référençant l'ID de l'événement.
     @Column(name = "id_evenement")
     private Long idEvenement;
 }

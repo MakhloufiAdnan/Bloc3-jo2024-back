@@ -13,10 +13,12 @@ import lombok.Builder;
 @Builder
 @Table(name = "pays")
 public class Pays {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_pays")
     private Long idPays;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "nom_pays", nullable = false, unique = true, length = 100)
     private String nom;
 }

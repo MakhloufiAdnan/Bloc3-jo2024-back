@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "billets")
@@ -17,14 +16,6 @@ public class Billet {
     @Column(name = "id_billet")
     private Long idBillet;
 
-    @ManyToOne
-    @JoinColumn(name = "id_utilisateur_join", nullable = false)
-    private Utilisateur utilisateur;
-
-    @ManyToOne
-    @JoinColumn(name = "id_offre_join", nullable = false)
-    private Offre offre;
-
     @Column(name = "cle_finale_billet", nullable = false, unique = true, columnDefinition = "TEXT")
     private String cleFinaleBillet;
 
@@ -32,6 +23,13 @@ public class Billet {
     @Column(name = "qr_code_image")
     private byte[] qrCodeImage;
 
-    @Column(name = "date_achat_billet", nullable = false)
-    private LocalDateTime dateAchat;
+    // Relation Many-to-One vers l'entité Utilisateur.
+    @ManyToOne
+    @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
+    private Utilisateur utilisateur;
+
+    // Relation Many-to-One vers l'entité Offre.
+    @ManyToOne
+    @JoinColumn(name = "id_offre", nullable = false)
+    private Offre offre;
 }

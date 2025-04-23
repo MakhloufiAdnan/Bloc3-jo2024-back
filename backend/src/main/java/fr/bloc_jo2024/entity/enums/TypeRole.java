@@ -1,6 +1,6 @@
 package fr.bloc_jo2024.entity.enums;
 
-public enum RoleEnum {
+public enum TypeRole {
     ADMIN,
     USER
 }

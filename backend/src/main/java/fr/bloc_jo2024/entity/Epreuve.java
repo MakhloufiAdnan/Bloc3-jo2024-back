@@ -6,11 +6,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "epreuves")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "epreuves", indexes = {
+        @Index(name = "idx_epreuve_nom", columnList = "nom")
+})
 public class Epreuve {
 
     @Id
@@ -18,8 +20,8 @@ public class Epreuve {
     @Column(name = "id_epreuve")
     private Long idEpreuve;
 
-    @Column(name = "nom", nullable = false, length = 50)
-    private String nom;
+    @Column(name = "nom_epreuve", nullable = false, length = 50)
+    private String nomEpreuve;
 
     // Relation via l'entité d'association Comporter (association avec l'événement).
     @Builder.Default

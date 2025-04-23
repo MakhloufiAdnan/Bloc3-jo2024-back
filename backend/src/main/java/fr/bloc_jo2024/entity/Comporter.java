@@ -4,11 +4,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "comporter")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "comporter", indexes = {
+        @Index(name = "idx_comporter_jr_de_medaille", columnList = "jr_de_medaille")
+})
 public class Comporter {
 
     // Clé composite composée de l'ID de l'épreuve et de l'ID de l'événement

@@ -9,7 +9,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "oauth")
+@Table(name = "oauths")
 public class Oauth {
 
     @Id
@@ -23,7 +23,8 @@ public class Oauth {
     @Column(name = "facebook_id", unique = true)
     private String facebookId;
 
+    // Relation One-to-One vers l'entité Utilisateur. Chaque compte OAuth est lié à un utilisateur.
     @OneToOne
-    @JoinColumn(name = "id_utilisateur_join", referencedColumnName = "id_utilisateur_UUID", nullable = false)
+    @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
     private Utilisateur utilisateur;
 }

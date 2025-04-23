@@ -10,6 +10,10 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 public class ParticiperKey implements Serializable {
+
+    // Partie de la clé primaire composite référençant l'ID du pays.
     private Long idPays;
+
+    // Partie de la clé primaire composite référençant l'ID de l'événement.
     private Long idEvenement;
 }

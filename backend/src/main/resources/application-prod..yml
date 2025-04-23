@@ -3,7 +3,12 @@ spring:
     url: ${DATABASE_URL}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
-    driver-class-name: org.postgresql.Driver # Pilote de base de données PostgreSQL
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # Vérifie que le schéma correspond, ne modifie rien
+
   mail:
     host: ${SMTP_HOST}
     port: ${SMTP_PORT}
@@ -17,12 +22,13 @@ spring:
             enable: true
           ssl:
             trust: smtp.gmail.com
+
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: ${ID_GOOGLE} # Google OAuth2 (chargés depuis les secrets Heroku)
+            client-id: ${ID_GOOGLE}
             client-secret: ${MDP_GOOGLE}
             scope:
               - profile
@@ -30,7 +36,7 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
 jwt:
-  secret: ${JWT_SECRET} # JWT (chargés depuis les secrets Heroku)
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
 
 server:
@@ -39,7 +45,7 @@ server:
     include-message: always
 
 admin:
-  email: ${ADMIN_EMAIL} # Variables admin (chargées depuis les secrets Heroku)
+  email: ${ADMIN_EMAIL}
   password: ${ADMIN_PASSWORD}
   path:
     prefix: /management

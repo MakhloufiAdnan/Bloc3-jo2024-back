@@ -11,7 +11,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Table(name = "epreuves", indexes = {
-        @Index(name = "idx_epreuve_nom", columnList = "nom")
+        @Index(name = "idx_epreuve_nom_epreuve", columnList = "nom_epreuve")
 })
 public class Epreuve {
 
@@ -20,7 +20,7 @@ public class Epreuve {
     @Column(name = "id_epreuve")
     private Long idEpreuve;
 
-    @Column(name = "nom_epreuve", nullable = false, length = 50)
+    @Column(name = "nom_epreuve")
     private String nomEpreuve;
 
     // Relation via l'entité d'association Comporter (association avec l'événement).

@@ -58,11 +58,6 @@ jobs:
       - name: Set Backend Heroku config vars
         run: |
           heroku config:set SPRING_PROFILES_ACTIVE=prod --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set DATABASE_HOST="$HOST" --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set DATABASE_PORT="$PORT" --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set DATABASE_NAME="$DB_NAME" --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set DATABASE_USER="$USER" --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set DATABASE_PASSWORD="$PASSWORD" --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_BE }}

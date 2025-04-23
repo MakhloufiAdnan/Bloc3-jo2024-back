@@ -52,7 +52,7 @@ services:
       - "80:80"
     environment:
       ENVIRONMENT: development
-      API_BASE_URL: back_jo2024:8080
+      API_BASE_URL: http://back_jo2024:8080
     depends_on:
       - backend
     env_file:

@@ -4,8 +4,9 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate # Vérifie que le schéma correspond, ne modifie rien
+      ddl-auto: validate
 
   mail:
     host: ${SMTP_HOST}
@@ -38,7 +39,7 @@ jwt:
   expiration: ${JWT_EXPIRATION}
 
 server:
-  port: ${BACKEND_PORT:8080}
+  port: ${PORT:8080}
   error:
     include-message: always
 

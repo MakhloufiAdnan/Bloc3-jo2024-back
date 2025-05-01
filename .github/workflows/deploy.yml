@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: VPS
+    environment: heroku
 
     steps:
       # 1. Checkout repository
@@ -19,13 +19,8 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
-<<<<<<< HEAD
           java-version: '21'
           distribution: 'temurin'
-=======
-          distribution: 'temurin'
-          java-version: '21'
->>>>>>> 8db850e (modif project : front and back separation)
 
       # 3. Check Java version
       - name: Check Java version
@@ -48,60 +43,6 @@ jobs:
           echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
           heroku auth:whoami
 
-      # ========== BACKEND ==========
-<<<<<<< HEAD
-      - name: Build & Deploy Backend to Heroku
-        run: |
-          cd backend
-          mvn clean install -DskipTests
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku container:login
-          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
-
-      # Set backend Heroku config vars
-      - name: Set Backend Heroku config vars
-        run: |
-          heroku config:set SPRING_PROFILES_ACTIVE=prod --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set JWT_SECRET=${{ secrets.JWT_SECRET }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set SMTP_HOST=${{ secrets.SMTP_HOST }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set SMTP_PORT=${{ secrets.SMTP_PORT }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set ID_GOOGLE=${{ secrets.ID_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku config:set MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} --app ${{ secrets.HEROKU_APP_NAME_BE }}
-
-      # ========== FRONTEND ==========
-      - name: Reset Docker build (prévention bug)
-        run: docker builder prune -a -f
-
-      - name: Build & Deploy Frontend to Heroku
-        run: |
-          echo "Contenu du répertoire frontend :"
-          cd frontend && ls -la
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku container:login
-          docker build . --platform linux/amd64 -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_FE }}/web
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_FE }}
-
-      # Set frontend Heroku config vars
-      - name: Set Frontend Heroku config vars
-        run: |
-          heroku config:set API_BASE_URL=https://${{ secrets.HEROKU_APP_NAME_BE }}.herokuapp.com --app ${{ secrets.HEROKU_APP_NAME_FE }}
-          heroku config:set ENVIRONMENT=production --app ${{ secrets.HEROKU_APP_NAME_FE }}
-
-      # Stop dynos : avoid fees
-      - name: Stop Heroku Dynos
-        if: ${{ false }} # désactivé par défaut
-        run: |
-          heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_FE }}
-=======
       - name: Set Backend Heroku config vars
         run: |
           heroku config:set SPRING_PROFILES_ACTIVE=docker \
@@ -122,17 +63,14 @@ jobs:
           MDP_GOOGLE=${{ secrets.FRONTEND_URL_CONF }} \
           MDP_GOOGLE=${{ secrets.FRONTEND_URL_RESET }} \
           --app ${{ secrets.HEROKU_APP_NAME_BE }}
-
-      - name: Build & Deploy Backend to Heroku
-        run: |
-          mvn clean install -DskipTests
-          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          heroku container:login
-          docker build . --platform linux/amd64 \
-          -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
-
-      - name: Show Backend Heroku logs
-        run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100
->>>>>>> 8db850e (modif project : front and back separation)
+          - name: Build & Deploy Backend to Heroku
+            run: |
+              mvn clean install -DskipTests
+              heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
+              heroku container:login
+              docker build . --platform linux/amd64 \
+              -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+              docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+              heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          - name: Show Backend Heroku logs
+            run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100

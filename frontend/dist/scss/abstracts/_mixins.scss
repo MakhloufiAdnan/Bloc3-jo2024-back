@@ -1,6 +1,0 @@
-// Définition des media-queries dans un mixin
-@mixin respond-to($breakpoint) {
-  @if $breakpoint == desktop {
-      @media (min-width: 1024px) { @content; }
-  }
-}

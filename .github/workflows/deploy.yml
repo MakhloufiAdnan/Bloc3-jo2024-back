@@ -61,8 +61,8 @@ jobs:
           SMTP_PORT=${{ secrets.SMTP_PORT }} \
           ID_GOOGLE=${{ secrets.ID_GOOGLE }} \
           MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} \
-          MDP_GOOGLE=${{ secrets.FRONTEND_URL_CONF }} \
-          MDP_GOOGLE=${{ secrets.FRONTEND_URL_RESET }} \
+          FRONTEND_URL_CONF=${{ secrets.FRONTEND_URL_CONF }} \
+          FRONTEND_URL_RESET=${{ secrets.FRONTEND_URL_RESET }} \
           --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       - name: Build & Deploy Backend to Heroku

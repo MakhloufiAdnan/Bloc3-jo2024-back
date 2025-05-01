@@ -63,14 +63,16 @@ jobs:
           MDP_GOOGLE=${{ secrets.FRONTEND_URL_CONF }} \
           MDP_GOOGLE=${{ secrets.FRONTEND_URL_RESET }} \
           --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          - name: Build & Deploy Backend to Heroku
-            run: |
-              mvn clean install -DskipTests
-              heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
-              heroku container:login
-              docker build . --platform linux/amd64 \
-              -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-              docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
-              heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
-          - name: Show Backend Heroku logs
-            run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100
+
+      - name: Build & Deploy Backend to Heroku
+        run: |
+          mvn clean install -DskipTests
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku container:login
+          docker build . --platform linux/amd64 \
+          -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+
+      - name: Show Backend Heroku logs
+        run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100

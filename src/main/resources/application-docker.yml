@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: jo2024
+
+  datasource:
+    url: jdbc:postgresql://${ALWAYS_POSTGRES_HOST}:${ALWAYS_POSTGRES_PORT}/${ALWAYS_POSTGRES_DB}
+    username: ${ALWAYS_POSTGRES_USER}
+    password: ${ALWAYS_POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+
+admin:
+  email: ${ADMIN_EMAIL}
+  password: ${ADMIN_PASSWORD}
+  path:
+    prefix: /management
+  auth:
+    path:
+      prefix: /management/auth
+
+app:
+  frontend:
+    confirmation-base-url: ${FRONTEND_URL_CONF}
+    reset-password-base-url: ${FRONTEND_URL_RESET}

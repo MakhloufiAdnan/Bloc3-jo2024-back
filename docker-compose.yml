@@ -1,8 +1,8 @@
 services:
   db:
-    image: postgres:17.0
+    image: postgres:17-alpine3.21
     container_name: bloc3_db_jo2024
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -13,20 +13,14 @@ services:
       - .env
     volumes:
       - db_data:/var/lib/postgresql/data
-    networks:
-      - jo2024_net
 
   backend:
     build:
-      context: ./backend
+      context: .
     container_name: back_jo2024
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: dev
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       EMAIL_USERNAME: ${EMAIL_USERNAME}
@@ -41,44 +35,6 @@ services:
       - db
     env_file:
       - .env
-    networks:
-      - jo2024_net
-
-  frontend:
-    build:
-      context: ./frontend
-    container_name: front_jo2024
-    ports:
-      - "80:80"
-    environment:
-      ENVIRONMENT: development
-      API_BASE_URL: http://back_jo2024:8080
-    depends_on:
-      - backend
-    env_file:
-      - .env
-    networks:
-      - jo2024_net
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin_jo2024
-    restart: unless-stopped
-    ports:
-      - "5050:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-    depends_on:
-      - db
-    env_file:
-      - .env
-    networks:
-      - jo2024_net
 
 volumes:
   db_data:
-
-networks:
-  jo2024_net:
-    driver: bridge

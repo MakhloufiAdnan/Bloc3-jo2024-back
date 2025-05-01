@@ -19,8 +19,13 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
+<<<<<<< HEAD
           java-version: '21'
           distribution: 'temurin'
+=======
+          distribution: 'temurin'
+          java-version: '21'
+>>>>>>> 8db850e (modif project : front and back separation)
 
       # 3. Check Java version
       - name: Check Java version
@@ -44,6 +49,7 @@ jobs:
           heroku auth:whoami
 
       # ========== BACKEND ==========
+<<<<<<< HEAD
       - name: Build & Deploy Backend to Heroku
         run: |
           cd backend
@@ -95,3 +101,38 @@ jobs:
         run: |
           heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_FE }}
+=======
+      - name: Set Backend Heroku config vars
+        run: |
+          heroku config:set SPRING_PROFILES_ACTIVE=docker \
+          POSTGRES_HOST=${{ secrets.ALWAYS_POSTGRES_HOST }} \
+          POSTGRES_NAME_DB=${{ secrets.ALWAYS_POSTGRES_DB }} \
+          POSTGRES_USER=${{ secrets.ALWAYS_POSTGRES_USER }} \
+          POSTGRES_PASSWORD=${{ secrets.ALWAYS_POSTGRES_PASSWORD }} \
+          JWT_SECRET=${{ secrets.JWT_SECRET }} \
+          JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} \
+          EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} \
+          EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} \
+          ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+          SMTP_HOST=${{ secrets.SMTP_HOST }} \
+          SMTP_PORT=${{ secrets.SMTP_PORT }} \
+          ID_GOOGLE=${{ secrets.ID_GOOGLE }} \
+          MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} \
+          MDP_GOOGLE=${{ secrets.FRONTEND_URL_CONF }} \
+          MDP_GOOGLE=${{ secrets.FRONTEND_URL_RESET }} \
+          --app ${{ secrets.HEROKU_APP_NAME_BE }}
+
+      - name: Build & Deploy Backend to Heroku
+        run: |
+          mvn clean install -DskipTests
+          heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
+          heroku container:login
+          docker build . --platform linux/amd64 \
+          -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
+
+      - name: Show Backend Heroku logs
+        run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100
+>>>>>>> 8db850e (modif project : front and back separation)

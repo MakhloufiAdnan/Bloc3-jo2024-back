@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: jo2024
+
+  datasource:
+    url: jdbc:postgresql://localhost:6000/jo2024_db
+    username: postgres
+    password: motdepasse
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: makhloufistudi@gmail.com
+    password: pqxjpqiaawqzdxoo
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  secret: ?NFKlvnlavazmb32645bzlhoIHOHOIdfnlkanzv#gaz
+  expiration: 36000000
+
+app:
+  frontend:
+    confirmation-base-url: http://localhost:80/confirm
+    reset-password-base-url: http://localhost:80/reset-password
+admin:
+  email: jose@studi.fr
+  password: Jose2024
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG

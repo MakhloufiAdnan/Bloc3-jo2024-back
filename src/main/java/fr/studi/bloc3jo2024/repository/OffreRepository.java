@@ -1,0 +1,19 @@
+package fr.studi.bloc3jo2024.repository;
+
+import fr.studi.bloc3jo2024.entity.Offre;
+import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
+import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface OffreRepository extends JpaRepository<Offre, Long> {
+
+    // Recherche des offres par type
+    List<Offre> findByTypeOffre(TypeOffre typeOffre);
+
+    // Recherche des offres par statut
+    List<Offre> findByStatutOffre(StatutOffre statutOffre);
+}

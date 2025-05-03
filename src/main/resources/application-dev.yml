@@ -10,14 +10,14 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
 
   mail:
-    host: smtp.gmail.com
-    port: 587
+    host: smtp.test.com
+    port: 432
     username: makhloufistudi@gmail.com
-    password: pqxjpqiaawqzdxoo
+    password: pqxjpqiDAFKon##aawqzdxoo.affa15??
     properties:
       mail:
         smtp:

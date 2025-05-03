@@ -33,32 +33,45 @@ public class UtilisateurService {
     @Value("${app.frontend.reset-password-base-url}")
     private String resetPasswordBaseUrl;
 
-    // Inscription et envoi du token de validation d'email
+    /**
+     * Inscription d'un utilisateur avec création d'adresse, encodage du mot de passe,
+     * attribution du rôle, sauvegarde en base et envoi d'un email de confirmation.
+     */
     @Transactional
     public void registerUser(RegisterRequestDto req) {
         if (utilisateurRepository.existsByEmail(req.getEmail())) {
             throw new IllegalArgumentException("Email déjà utilisé.");
         }
-        // Gestion Pays → Adresse
+
+        // Gestion du pays
         Pays pays = paysRepository.findByNomPays(req.getCountry())
-                .orElseGet(() -> paysRepository.save(new Pays(null, req.getCountry())));
+                .orElseGet(() -> paysRepository.save(Pays.builder()
+                        .nomPays(req.getCountry())
+                        .build()));
+
+        // Construction de l'adresse
         Adresse adr = Adresse.builder()
                 .numeroRue(req.getStreetnumber())
                 .nomRue(req.getAddress())
                 .codePostal(req.getPostalcode())
                 .ville(req.getCity())
-                .pays(pays).build();
-        Long existsId = adresseService.getIdAdresseSiExistante(adr);
-        Adresse finalAdr = existsId != null
-                ? adresseService.getAdresseById(existsId)
+                .pays(pays)
+                .build();
+        Long existingId = adresseService.getIdAdresseSiExistante(adr);
+        Adresse finalAdr = (existingId != null)
+                ? adresseService.getAdresseById(existingId)
                 : adresseService.creerAdresseSiNonExistante(adr);
 
-        // Création de l’utilisateur
+        // Récupération du rôle utilisateur
         Role role = roleRepository.findByTypeRole(TypeRole.USER)
                 .orElseThrow(() -> new IllegalStateException("Rôle USER manquant."));
+
+        // Création de l'entité Authentification
         Authentification auth = Authentification.builder()
                 .motPasseHache(passwordEncoder.encode(req.getPassword()))
                 .build();
+
+        // Création de l'utilisateur
         Utilisateur user = Utilisateur.builder()
                 .nom(req.getUsername())
                 .prenom(req.getFirstname())
@@ -70,49 +83,72 @@ public class UtilisateurService {
                 .isVerified(false)
                 .build();
         auth.setUtilisateur(user);
+
+        // Sauvegarde en base
         utilisateurRepository.save(user);
 
-        // Création et envoi du token de validation
-        String rawToken = tokenService.createToken(user, TypeAuthTokenTemp.VALIDATION_EMAIL, Duration.ofDays(1));
-        sendEmail(user.getEmail(), user.getPrenom(), confirmationBaseUrl + "?token=" + rawToken,
-                "Confirmation de votre compte");
+        // Génération et envoi du token de confirmation
+        String rawToken = tokenService.createToken(
+                user,
+                TypeAuthTokenTemp.VALIDATION_EMAIL,
+                Duration.ofDays(1)
+        );
+        sendEmail(
+                user.getEmail(),
+                user.getPrenom(),
+                confirmationBaseUrl + "?token=" + rawToken,
+                "Confirmation de votre compte"
+        );
     }
 
-    /** Confirmation du compte via token temporaire */
+    // Confirme un compte utilisateur à partir d’un token temporaire valide.
     @Transactional
     public void confirmUser(String rawToken) {
         var token = tokenService.validateToken(rawToken, TypeAuthTokenTemp.VALIDATION_EMAIL);
-        var user  = token.getUtilisateur();
+        var user = token.getUtilisateur();
+
         if (user.isVerified()) {
             throw new IllegalStateException("Compte déjà confirmé.");
         }
+
         user.setVerified(true);
         utilisateurRepository.save(user);
 
-        // Marquage du token utilisé
         tokenService.markAsUsed(token);
     }
 
-    /** Demande de réinitialisation du mot de passe */
+    // Génère un token de réinitialisation de mot de passe et envoie un email.
     public void requestPasswordReset(String email) {
         var user = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Aucun utilisateur avec cet email."));
-        String rawToken = tokenService.createToken(user, TypeAuthTokenTemp.RESET_PASSWORD, Duration.ofHours(1));
-        sendEmail(user.getEmail(), user.getPrenom(), resetPasswordBaseUrl + "?token=" + rawToken,
-                "Réinitialisation de votre mot de passe");
+
+        String rawToken = tokenService.createToken(
+                user,
+                TypeAuthTokenTemp.RESET_PASSWORD,
+                Duration.ofHours(1)
+        );
+
+        sendEmail(
+                user.getEmail(),
+                user.getPrenom(),
+                resetPasswordBaseUrl + "?token=" + rawToken,
+                "Réinitialisation de votre mot de passe"
+        );
     }
 
-    /** Réinitialisation effective du mot de passe */
+    // Réinitialise le mot de passe d’un utilisateur à partir d’un token temporaire.
     @Transactional
     public void resetPassword(String rawToken, String newPassword) {
         var token = tokenService.validateToken(rawToken, TypeAuthTokenTemp.RESET_PASSWORD);
-        var user  = token.getUtilisateur();
-        user.getAuthentification()
-                .setMotPasseHache(passwordEncoder.encode(newPassword));
+        var user = token.getUtilisateur();
+
+        user.getAuthentification().setMotPasseHache(passwordEncoder.encode(newPassword));
         utilisateurRepository.save(user);
+
         tokenService.markAsUsed(token);
     }
 
+    // Envoie un email via JavaMailSender.
     private void sendEmail(String to, String prenom, String link, String subject) {
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setTo(to);

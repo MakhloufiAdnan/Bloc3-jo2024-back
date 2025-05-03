@@ -1,8 +1,10 @@
 package fr.studi.bloc3jo2024.controller;
 
 import fr.studi.bloc3jo2024.entity.Adresse;
-import fr.studi.bloc3jo2024.entity.Evenement;
+import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Pays;
+import fr.studi.bloc3jo2024.exception.AdresseLieeAUneDisciplineException;
+import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.service.AdresseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,18 +23,24 @@ public class AdresseController {
 
     /**
      * Endpoint pour créer une nouvelle adresse.
-     * Utilise le service pour créer l'adresse si elle n'existe pas déjà.
+     * Vérifie au préalable si une adresse identique existe déjà.
+     * Si une adresse identique est trouvée, retourne l'ID de l'adresse existante avec le statut HTTP OK.
+     * Si aucune adresse identique n'est trouvée, crée une nouvelle adresse et retourne l'objet créé avec le statut HTTP CREATED.
      *
-     * @param adresse L'objet Adresse à créer, passé dans le corps de la requête au format JSON.
-     * @return ResponseEntity contenant l'objet Adresse créé (ou existant) et le statut HTTP approprié.
+     * @param adresse L'objet {@link Adresse} à créer, passé dans le corps de la requête au format JSON.
+     * @return {@link ResponseEntity} contenant soit l'objet {@link Adresse} créé (ou existant), soit l'ID de l'adresse existante,
+     * et le statut HTTP approprié:
+     * - {@link HttpStatus#OK} si l'adresse existait déjà (retourne l'ID de l'adresse existante).
+     * - {@link HttpStatus#CREATED} si une nouvelle adresse a été créée avec succès (retourne l'objet {@link Adresse} créé).
      */
     @PostMapping
-    public ResponseEntity<Adresse> createAdresse(@RequestBody Adresse adresse) {
-        Adresse nouvelleAdresse = adresseService.creerAdresseSiNonExistante(adresse);
-        if (adresseService.adresseExisteDeja(adresse)) {
-            return new ResponseEntity<>(nouvelleAdresse, HttpStatus.OK); // L'adresse existait déjà.
+    public ResponseEntity<Object> creerAdresseSiNonExistante(@RequestBody Adresse adresse) {
+        Long existingAdresseId = adresseService.getIdAdresseSiExistante(adresse);
+        if (existingAdresseId != null) {
+            return new ResponseEntity<>(existingAdresseId, HttpStatus.OK); // L'adresse existait déjà, retourne l'ID.
         } else {
-            return new ResponseEntity<>(nouvelleAdresse, HttpStatus.CREATED); // Nouvelle adresse créée avec succès.
+            Adresse nouvelleAdresse = adresseService.creerAdresseSiNonExistante(adresse); // Utilisation de la méthode renommée dans le service.
+            return new ResponseEntity<>(nouvelleAdresse, HttpStatus.CREATED);// Nouvelle adresse créée avec succès, retourne l'objet.
         }
     }
 
@@ -40,15 +48,16 @@ public class AdresseController {
      * Endpoint pour récupérer une adresse spécifique par son ID.
      *
      * @param id L'identifiant unique de l'adresse à récupérer, passé dans le chemin de l'URI.
-     * @return ResponseEntity contenant l'objet Adresse trouvé et le statut HTTP 200 (OK),
-     * ou le statut HTTP 404 (NOT FOUND) si aucune adresse n'est trouvée avec cet ID.
+     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} trouvé et le statut HTTP:
+     * - {@link HttpStatus#OK} si l'adresse est trouvée.
+     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée avec cet ID.
      */
     @GetMapping("/{id}")
     public ResponseEntity<Adresse> getAdresseById(@PathVariable Long id) {
         try {
             Adresse adresse = adresseService.getAdresseById(id);
             return new ResponseEntity<>(adresse, HttpStatus.OK);
-        } catch (fr.studi.bloc3jo2024.exception.ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
@@ -56,8 +65,8 @@ public class AdresseController {
     /**
      * Endpoint pour récupérer toutes les adresses.
      *
-     * @return ResponseEntity contenant une liste de tous les objets Adresse et le statut HTTP 200 (OK).
-     * Si aucune adresse n'est trouvée, une liste vide sera retournée avec le statut 200 (OK).
+     * @return {@link ResponseEntity} contenant une liste de tous les objets {@link Adresse} et le statut HTTP {@link HttpStatus#OK}.
+     * Si aucune adresse n'est trouvée, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
      */
     @GetMapping
     public ResponseEntity<List<Adresse>> getAllAdresses() {
@@ -69,8 +78,8 @@ public class AdresseController {
      * Endpoint pour récupérer toutes les adresses associées à un utilisateur spécifique.
      *
      * @param idUtilisateur L'identifiant unique de l'utilisateur dont on souhaite récupérer les adresses.
-     * @return ResponseEntity contenant une liste des objets Adresse associés à l'utilisateur et le statut HTTP 200 (OK).
-     * Si aucun adresse n'est associée à cet utilisateur, une liste vide sera retournée avec le statut 200 (OK).
+     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} associés à l'utilisateur et le statut HTTP {@link HttpStatus#OK}.
+     * Si aucune adresse n'est associée à cet utilisateur, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
      */
     @GetMapping("/utilisateur/{idUtilisateur}")
     public ResponseEntity<List<Adresse>> getAdressesByUtilisateurId(@PathVariable UUID idUtilisateur) {
@@ -79,36 +88,37 @@ public class AdresseController {
     }
 
     /**
-     * Endpoint pour récupérer l'adresse associée à un événement spécifique.
+     * Endpoint pour récupérer l'adresse associée à une discipline spécifique.
      *
-     * @param idEvenement L'identifiant unique de l'événement dont on souhaite récupérer l'adresse.
-     * @return ResponseEntity contenant l'objet Adresse associé à l'événement et le statut HTTP 200 (OK),
-     * ou le statut HTTP 404 (NOT FOUND) si aucune adresse n'est trouvée pour cet événement.
+     * @param idDiscipline L'identifiant unique de la discipline dont on souhaite récupérer l'adresse.
+     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} associé à la discipline et le statut HTTP:
+     * - {@link HttpStatus#OK} si une adresse est trouvée pour cette discipline.
+     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée pour cette discipline.
      */
-    @GetMapping("/evenement/{idEvenement}")
-    public ResponseEntity<Adresse> getAdresseByEvenement(@PathVariable Long idEvenement) {
-        Evenement evenement = new Evenement();
-        evenement.setIdEvenement(idEvenement);
+    @GetMapping("/discipline/{idDiscipline}")
+    public ResponseEntity<Adresse> getAdresseByDiscipline(@PathVariable Long idDiscipline) {
+        Discipline discipline = new Discipline();
+        discipline.setIdDiscipline(idDiscipline);
         try {
-            Adresse adresse = adresseService.getAdresseByEvenement(evenement);
+            Adresse adresse = adresseService.getAdresseByDiscipline(discipline);
             return new ResponseEntity<>(adresse, HttpStatus.OK);
-        } catch (fr.studi.bloc3jo2024.exception.ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
     /**
-     * Endpoint pour récupérer toutes les adresses liées à un événement spécifique.
+     * Endpoint pour récupérer toutes les adresses liées à une discipline spécifique.
      *
-     * @param idEvenement L'identifiant unique de l'événement dont on souhaite récupérer les adresses liées.
-     * @return ResponseEntity contenant une liste des objets Adresse liés à l'événement et le statut HTTP 200 (OK).
-     * Si aucune adresse n'est liée à cet événement, une liste vide sera retournée avec le statut 200 (OK).
+     * @param idDiscipline L'identifiant unique de la discipline dont on souhaite récupérer les adresses liées.
+     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} liés à la discipline et le statut HTTP {@link HttpStatus#OK}.
+     * Si aucune adresse n'est liée à cette discipline, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
      */
-    @GetMapping("/evenement/{idEvenement}/all")
-    public ResponseEntity<List<Adresse>> getAdressesByEvenement(@PathVariable Long idEvenement) {
-        Evenement evenement = new Evenement();
-        evenement.setIdEvenement(idEvenement);
-        List<Adresse> adresses = adresseService.getAdressesByEvenement(evenement);
+    @GetMapping("/discipline/{idDiscipline}/all")
+    public ResponseEntity<List<Adresse>> getAdressesByDiscipline(@PathVariable Long idDiscipline) {
+        Discipline discipline = new Discipline();
+        discipline.setIdDiscipline(idDiscipline);
+        List<Adresse> adresses = adresseService.getAdressesByDiscipline(discipline);
         return new ResponseEntity<>(adresses, HttpStatus.OK);
     }
 
@@ -121,8 +131,9 @@ public class AdresseController {
      * @param ville      La ville.
      * @param codePostal Le code postal.
      * @param idPays     L'identifiant unique du pays.
-     * @return ResponseEntity contenant l'objet Adresse trouvé et le statut HTTP 200 (OK),
-     * ou le statut HTTP 404 (NOT FOUND) si aucune adresse correspondante n'est trouvée.
+     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} trouvé et le statut HTTP:
+     * - {@link HttpStatus#OK} si une adresse correspondante est trouvée.
+     * - {@link HttpStatus#NOT_FOUND} si aucune adresse correspondante n'est trouvée.
      */
     @GetMapping("/recherche")
     public ResponseEntity<Adresse> rechercherAdresseComplete(
@@ -143,36 +154,36 @@ public class AdresseController {
     }
 
     /**
-     * Endpoint pour rechercher les adresses par ville pour les événements.
+     * Endpoint pour rechercher les adresses par ville pour les disciplines.
      *
      * @param ville Le nom de la ville pour laquelle rechercher les adresses.
-     * @return ResponseEntity contenant une liste des objets Adresse situés dans la ville spécifiée et le statut HTTP 200 (OK).
-     * Si aucune adresse n'est trouvée dans cette ville, une liste vide sera retournée avec le statut 200 (OK).
+     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} situés dans la ville spécifiée et le statut HTTP {@link HttpStatus#OK}.
+     * Si aucune adresse n'est trouvée dans cette ville, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
      */
     @GetMapping("/ville/{ville}")
-    public ResponseEntity<List<Adresse>> rechercherAdressesParVillePourEvenements(@PathVariable String ville) {
-        List<Adresse> adresses = adresseService.rechercherAdressesParVillePourEvenements(ville);
+    public ResponseEntity<List<Adresse>> rechercherAdressesParVillePourDisciplines(@PathVariable String ville) {
+        List<Adresse> adresses = adresseService.rechercherAdressesParVillePourDisciplines(ville);
         return new ResponseEntity<>(adresses, HttpStatus.OK);
     }
 
     /**
-     * Endpoint pour rechercher les adresses pour un événement spécifique et filtrées par l'ID du pays.
+     * Endpoint pour rechercher les adresses pour une discipline spécifique et filtrées par l'ID du pays.
      *
-     * @param idEvenement L'identifiant unique de l'événement.
+     * @param idDiscipline L'identifiant unique de la discipline.
      * @param idPays      L'identifiant unique du pays des adresses à rechercher.
-     * @return ResponseEntity contenant une liste des objets Adresse liés à l'événement et appartenant au pays spécifié,
-     * et le statut HTTP 200 (OK). Si aucune adresse correspondante n'est trouvée, une liste vide sera retournée
-     * avec le statut 200 (OK).
-     * Note : La création d'un objet Evenement temporaire ici n'est pas idéale pour une API robuste.
+     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} liés à la discipline et appartenant au pays spécifié,
+     * et le statut HTTP {@link HttpStatus#OK}. Si aucune adresse correspondante n'est trouvée, une liste vide sera retournée
+     * avec le statut {@link HttpStatus#OK}.
+     * Note : La création d'un objet {@link Discipline}
      */
-    @GetMapping("/evenement/{idEvenement}/pays/{idPays}")
-    public ResponseEntity<List<Adresse>> rechercherAdressesParEvenementEtPays(
-            @PathVariable Long idEvenement,
+    @GetMapping("/discipline/{idDiscipline}/pays/{idPays}")
+    public ResponseEntity<List<Adresse>> rechercherAdressesParDisciplineEtPays(
+            @PathVariable Long idDiscipline,
             @PathVariable Long idPays
     ) {
-        Evenement evenement = new Evenement();
-        evenement.setIdEvenement(idEvenement); // Potentiellement à refactorer pour une meilleure gestion des entités liées.
-        List<Adresse> adresses = adresseService.rechercherAdressesParEvenementEtPays(evenement, idPays);
+        Discipline discipline = new Discipline();
+        discipline.setIdDiscipline(idDiscipline); // Création d'un objet Discipline avec l'ID passé en paramètre
+        List<Adresse> adresses = adresseService.rechercherAdressesParDisciplineEtPays(discipline, idPays);
         return new ResponseEntity<>(adresses, HttpStatus.OK);
     }
 
@@ -180,16 +191,17 @@ public class AdresseController {
      * Endpoint pour mettre à jour une adresse existante.
      *
      * @param id              L'identifiant unique de l'adresse à mettre à jour, passé dans le chemin de l'URI.
-     * @param nouvelleAdresse L'objet Adresse contenant les nouvelles informations, passé dans le corps de la requête au format JSON.
-     * @return ResponseEntity contenant l'objet Adresse mis à jour et le statut HTTP 200 (OK),
-     * ou le statut HTTP 404 (NOT FOUND) si aucune adresse n'est trouvée avec cet ID.
+     * @param nouvelleAdresse L'objet {@link Adresse} contenant les nouvelles informations, passé dans le corps de la requête au format JSON.
+     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} mis à jour et le statut HTTP:
+     * - {@link HttpStatus#OK} si la mise à jour a réussi.
+     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée avec cet ID.
      */
     @PutMapping("/{id}")
     public ResponseEntity<Adresse> updateAdresse(@PathVariable Long id, @RequestBody Adresse nouvelleAdresse) {
         try {
             Adresse adresseMiseAJour = adresseService.updateAdresse(id, nouvelleAdresse);
             return new ResponseEntity<>(adresseMiseAJour, HttpStatus.OK);
-        } catch (fr.studi.bloc3jo2024.exception.ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
@@ -198,18 +210,19 @@ public class AdresseController {
      * Endpoint pour supprimer une adresse par son ID.
      *
      * @param id L'identifiant unique de l'adresse à supprimer, passé dans le chemin de l'URI.
-     * @return ResponseEntity avec le statut HTTP 204 (NO CONTENT) si la suppression a réussi,
-     * ou le statut HTTP 404 (NOT FOUND) si aucune adresse n'est trouvée avec cet ID,
-     * ou le statut HTTP 409 (CONFLICT) si l'adresse est liée à un événement et ne peut pas être supprimée.
+     * @return {@link ResponseEntity} avec le statut HTTP:
+     * - {@link HttpStatus#NO_CONTENT} si la suppression a réussi (pas de contenu à retourner).
+     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée avec cet ID.
+     * - {@link HttpStatus#CONFLICT} si l'adresse est liée à un événement et ne peut pas être supprimée.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAdresse(@PathVariable Long id) {
         try {
             adresseService.deleteAdresse(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Suppression réussie, pas de contenu à retourner.
-        } catch (fr.studi.bloc3jo2024.exception.ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (fr.studi.bloc3jo2024.exception.AdresseLieeAUnEvenementException e) {
+        } catch (AdresseLieeAUneDisciplineException e) {
             return new ResponseEntity<>(HttpStatus.CONFLICT); // L'adresse est liée à un événement.
         }
     }

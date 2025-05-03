@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractToken(request);
 
         /*
-         *  Si aucun token n'est présent, on laisse passer la demande
+         * Si aucun token n'est présent, on laisse passer la demande
          * afin que la configuration de sécurité gère l'accès aux endpoints ouverts.
          */
         if (token != null) {
@@ -70,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String extractToken(HttpServletRequest request) {
+    String extractToken(HttpServletRequest request) {
         String token = request.getHeader(AUTHORIZATION_HEADER);
         return (token != null && token.startsWith(BEARER_PREFIX)) ? token.substring(7) : null;
     }

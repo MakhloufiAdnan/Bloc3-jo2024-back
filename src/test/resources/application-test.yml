@@ -2,17 +2,17 @@ spring:
   application:
     name: jo2024
   datasource:
-    url: jdbc:postgresql://db:5432/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:testdb
+    driverClassName: org.h2.Driver
+    username: test
+    password:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
 jwt:
-  secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION}
+  secret: dGhpc2lzYXJlYWxseWxvbmdhbmRzZWN1cmVqd3RzZWNyZXRrZXlmb3JqbzIwMjRjZXR0ZUNsZWRvaXRldHJlU3VwZXJlU2VTdXBlcnRjbG9uZ3VlSmUgbmUgc2FpcyBwbHVzIHF1b2lkaXJl
+  expiration: 100000
 admin:
-  email: ${ADMIN_EMAIL}
-  password: ${ADMIN_PASSWORD}
+  email: test@admin.com
+  password: motdepasse123

@@ -23,8 +23,8 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
     Map<String, String> errors = new HashMap<>();
     ex.getBindingResult().getAllErrors().forEach(error -> {
-      String fieldName = ((FieldError) error).getField(); // Récupère le nom du champ avec l'erreur
-      String errorMessage = error.getDefaultMessage(); // Récupère le message d'erreur
+      String fieldName = ((FieldError) error).getField();
+      String errorMessage = error.getDefaultMessage();
       errors.put(fieldName, errorMessage); // Ajoute l'erreur au map
     });
     return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST); // Retourne la map d'erreurs avec le statut 400
@@ -37,8 +37,8 @@ public class GlobalExceptionHandler {
   }
 
   // Gestion de l'exception personnalisée pour les adresses liées à un événement
-  @ExceptionHandler(AdresseLieeAUnEvenementException.class)
-  public ResponseEntity<String> handleAdresseLieeAUnEvenement(AdresseLieeAUnEvenementException ex) {
+  @ExceptionHandler(AdresseLieeAUneDisciplineException.class)
+  public ResponseEntity<String> handleAdresseLieeAUnEvenement(AdresseLieeAUneDisciplineException ex) {
     return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST); // Retourne le message avec le statut 400
   }
 

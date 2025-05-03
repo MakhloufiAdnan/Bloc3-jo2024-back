@@ -6,19 +6,23 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-@Table(name = "pays")
-public class Pays {
+import java.util.Set;
 
+@Entity
+@Table(name = "pays")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Pays {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_pays")
     private Long idPays;
 
-    @Column(name = "nom_pays", nullable = false, unique = true, length = 100)
+    @Column(name = "nom_pays", nullable = false, length = 100)
     private String nomPays;
+
+    @OneToMany(mappedBy = "pays")
+    private Set<Adresse> adresses;
 }

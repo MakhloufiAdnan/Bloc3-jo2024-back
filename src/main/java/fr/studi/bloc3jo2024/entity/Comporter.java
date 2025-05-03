@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 })
 public class Comporter {
 
-    // Clé composite composée de l'ID de l'épreuve et de l'ID de l'événement
+    // Clé composite composée de l'ID de l'épreuve et de l'ID de la discipline
     @EmbeddedId
     private ComporterKey id;
 
@@ -30,9 +30,9 @@ public class Comporter {
     @JoinColumn(name = "id_epreuve", nullable = false)
     private Epreuve epreuve;
 
-    // Relation vers l'entité Evenement. Lier l'attribut idEvenement de la clé composite à cette relation.
+    // Relation vers l'entité Discipline. Lier l'attribut idDiscipline de la clé composite à cette relation.
     @ManyToOne
-    @MapsId("idEvenement")
-    @JoinColumn(name = "id_evenement", nullable = false)
-    private Evenement evenement;
+    @MapsId("idDiscipline")
+    @JoinColumn(name = "id_discipline", nullable = false)
+    private Discipline discipline;
 }

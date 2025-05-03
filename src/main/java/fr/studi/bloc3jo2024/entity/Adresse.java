@@ -36,10 +36,10 @@ public class Adresse {
     @Column(name = "code_postal", nullable = false, length = 50)
     private String codePostal;
 
-    // Une adresse peut accueillir plusieurs événements.
+    // Une adresse peut accueillir plusieurs disciplines.
     @Builder.Default
     @OneToMany(mappedBy = "adresse")
-    private Set<Evenement> evenements = new HashSet<>();
+    private Set<Discipline> disciplines = new HashSet<>();
 
     // Relation vers les utilisateurs associés à cette adresse.
     @Builder.Default

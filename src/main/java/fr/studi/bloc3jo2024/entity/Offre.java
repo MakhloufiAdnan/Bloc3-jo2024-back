@@ -53,7 +53,7 @@ public class Offre {
     // Relation Many-to-One vers l'entité Evenement. Chaque offre est associée à un événement.
     @ManyToOne
     @JoinColumn(name = "id_evenement", nullable = false, foreignKey = @ForeignKey(name = "fk_offre_evenement"))
-    private Evenement evenement;
+    private Discipline discipline;
 
     // Relation One-to-Many vers l'entité Billet. Une offre peut avoir plusieurs billets vendus.
     @OneToMany(mappedBy = "offre")

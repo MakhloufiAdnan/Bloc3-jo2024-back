@@ -20,7 +20,7 @@ public class ComporterKey implements Serializable {
     @Column(name = "id_epreuve")
     private Long idEpreuve;
 
-    // Partie de la clé primaire composite référençant l'ID de l'événement.
-    @Column(name = "id_evenement")
-    private Long idEvenement;
+    // Partie de la clé primaire composite référençant l'ID de la discipline.
+    @Column(name = "id_discipline")
+    private Long idDiscipline;
 }

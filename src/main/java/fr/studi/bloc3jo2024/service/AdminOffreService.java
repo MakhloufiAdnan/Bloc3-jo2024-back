@@ -2,11 +2,11 @@ package fr.studi.bloc3jo2024.service;
 
 import fr.studi.bloc3jo2024.dto.CreerOffreDto;
 import fr.studi.bloc3jo2024.dto.MettreAJourOffreDto;
-import fr.studi.bloc3jo2024.entity.Evenement;
+import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Offre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
-import fr.studi.bloc3jo2024.repository.EvenementRepository;
+import fr.studi.bloc3jo2024.repository.DisciplineRepository;
 import fr.studi.bloc3jo2024.repository.OffreRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +16,12 @@ import java.util.List;
 public class AdminOffreService {
 
     private final OffreRepository offreRepository;
-    private final EvenementRepository evenementRepository;
+    private final DisciplineRepository disciplineRepository;
     private final PanierService panierService; // Ajout du PanierService
 
-    public AdminOffreService(OffreRepository offreRepository, EvenementRepository evenementRepository, PanierService panierService) {
+    public AdminOffreService(OffreRepository offreRepository, DisciplineRepository disciplineRepository, PanierService panierService) {
         this.offreRepository = offreRepository;
-        this.evenementRepository = evenementRepository;
+        this.disciplineRepository = disciplineRepository;
         this.panierService = panierService; // Injection du PanierService
     }
 
@@ -43,8 +43,8 @@ public class AdminOffreService {
         offre.setStatutOffre(dto.getStatutOffre());
     }
 
-    private Evenement getEvenementById(Long evenementId) {
-        return evenementRepository.findById(evenementId)
+    private Discipline getEvenementById(Long evenementId) {
+        return disciplineRepository.findById(evenementId)
                 .orElseThrow(() -> new ResourceNotFoundException("Événement non trouvé avec l'ID : " + evenementId));
     }
 
@@ -53,8 +53,8 @@ public class AdminOffreService {
         Offre nouvelleOffre = new Offre();
         updateOffreFromDTO(nouvelleOffre, creerOffreDTO);
 
-        Evenement evenement = getEvenementById(creerOffreDTO.getEvenementId());
-        nouvelleOffre.setEvenement(evenement);
+        Discipline discipline = getEvenementById(creerOffreDTO.getEvenementId());
+        nouvelleOffre.setDiscipline(discipline);
 
         Offre offreSave = offreRepository.save(nouvelleOffre);
 
@@ -77,8 +77,8 @@ public class AdminOffreService {
 
         updateOffreFromDTO(offreExistante, mettreAJourOffreDTO);
 
-        Evenement evenement = getEvenementById(mettreAJourOffreDTO.getEvenementId());
-        offreExistante.setEvenement(evenement);
+        Discipline discipline = getEvenementById(mettreAJourOffreDTO.getEvenementId());
+        offreExistante.setDiscipline(discipline);
 
         Offre offreMiseAJour = offreRepository.save(offreExistante);
 

@@ -17,7 +17,7 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
 
     /**
      * Recherche les adresses par ville.
-     * Utilisé pour la recherche d'adresses potentielles pour des disciplines.
+     * Utilisé pour la recherche d'adresses pour des disciplines ou utilisateurs.
      * @param ville Le nom de la ville.
      * @return Une liste d'adresses situées dans la ville spécifiée.
      */

@@ -35,45 +35,74 @@ jobs:
       # 5. Set up Heroku authentication
       - name: Set up Heroku auth
         run: |
-          echo "machine api.heroku.com" > ~/.netrc
-          echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
-          echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
-          echo "machine git.heroku.com" >> ~/.netrc
-          echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
-          echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          printf "machine api.heroku.com\n  login %s\n  password %s\nmachine git.heroku.com\n  login %s\n  password %s\n" \
+            "${{ secrets.HEROKU_EMAIL }}" "${{ secrets.HEROKU_API_KEY }}" \
+            "${{ secrets.HEROKU_EMAIL }}" "${{ secrets.HEROKU_API_KEY }}" \
+          > ~/.netrc
+          chmod 600 ~/.netrc
           heroku auth:whoami
 
+      # 6. Set Heroku config vars
       - name: Set Backend Heroku config vars
         run: |
           heroku config:set SPRING_PROFILES_ACTIVE=docker \
-          ALWAYS_POSTGRES_HOST=${{ secrets.ALWAYS_POSTGRES_HOST }} \
-          ALWAYS_POSTGRES_PORT=5432 \
-          ALWAYS_POSTGRES_DB=${{ secrets.ALWAYS_POSTGRES_DB }} \
-          ALWAYS_POSTGRES_USER=${{ secrets.ALWAYS_POSTGRES_USER }} \
-          ALWAYS_POSTGRES_PASSWORD=${{ secrets.ALWAYS_POSTGRES_PASSWORD }} \
-          JWT_SECRET=${{ secrets.JWT_SECRET }} \
-          JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} \
-          EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} \
-          EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} \
-          ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
-          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
-          SMTP_HOST=${{ secrets.SMTP_HOST }} \
-          SMTP_PORT=${{ secrets.SMTP_PORT }} \
-          ID_GOOGLE=${{ secrets.ID_GOOGLE }} \
-          MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} \
-          FRONTEND_URL_CONF=${{ secrets.FRONTEND_URL_CONF }} \
-          FRONTEND_URL_RESET=${{ secrets.FRONTEND_URL_RESET }} \
-          --app ${{ secrets.HEROKU_APP_NAME_BE }}
+            ALWAYS_POSTGRES_HOST=${{ secrets.ALWAYS_POSTGRES_HOST }} \
+            ALWAYS_POSTGRES_PORT=${{ secrets.ALWAYS_POSTGRES_PORT }} \
+            ALWAYS_POSTGRES_DB=${{ secrets.ALWAYS_POSTGRES_DB }} \
+            ALWAYS_POSTGRES_USER=${{ secrets.ALWAYS_POSTGRES_USER }} \
+            ALWAYS_POSTGRES_PASSWORD=${{ secrets.ALWAYS_POSTGRES_PASSWORD }} \
+            JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} \
+            EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} \
+            EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} \
+            ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+            SMTP_HOST=${{ secrets.SMTP_HOST }} \
+            SMTP_PORT=${{ secrets.SMTP_PORT }} \
+            ID_GOOGLE=${{ secrets.ID_GOOGLE }} \
+            MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} \
+            FRONTEND_URL_CONF=${{ secrets.FRONTEND_URL_CONF }} \
+            FRONTEND_URL_RESET=${{ secrets.FRONTEND_URL_RESET }} \
+            --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
+      # 7. Build & Deploy Backend to Heroku
       - name: Build & Deploy Backend to Heroku
         run: |
           mvn clean install -DskipTests
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku container:login
           docker build . --platform linux/amd64 \
-          -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
+            -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
+      # 8. Install PostgreSQL client for AlwaysData
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      # 9. Create ENUMs in AlwaysData PostgreSQL
+      - name: Create ENUMs in AlwaysData
+        env:
+          PGPASSWORD: ${{ secrets.ALWAYS_POSTGRES_PASSWORD }}
+        run: |
+          psql "host=${{ secrets.ALWAYS_POSTGRES_HOST }} \
+                port=${{ secrets.ALWAYS_POSTGRES_PORT }} \
+                user=${{ secrets.ALWAYS_POSTGRES_USER }} \
+                dbname=${{ secrets.ALWAYS_POSTGRES_DB }}" \
+                -f database/schema/create_enums.sql
+
+      # 10. Confirm ENUMs creation in AlwaysData
+      - name: Confirm ENUMs creation
+        env:
+          PGPASSWORD: ${{ secrets.ALWAYS_POSTGRES_PASSWORD }}
+        run: |
+          echo "ENUM types in AlwaysData:"
+          psql "host=${{ secrets.ALWAYS_POSTGRES_HOST }} \
+                port=${{ secrets.ALWAYS_POSTGRES_PORT }} \
+                user=${{ secrets.ALWAYS_POSTGRES_USER }} \
+                dbname=${{ secrets.ALWAYS_POSTGRES_DB }}" \
+                -c "\dT+"
+
+      # 11. Show Backend Heroku logs
       - name: Show Backend Heroku logs
         run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100

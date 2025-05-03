@@ -63,18 +63,6 @@ public class AdresseController {
     }
 
     /**
-     * Endpoint pour récupérer toutes les adresses.
-     *
-     * @return {@link ResponseEntity} contenant une liste de tous les objets {@link Adresse} et le statut HTTP {@link HttpStatus#OK}.
-     * Si aucune adresse n'est trouvée, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
-     */
-    @GetMapping
-    public ResponseEntity<List<Adresse>> getAllAdresses() {
-        List<Adresse> adresses = adresseService.getAllAdresses();
-        return new ResponseEntity<>(adresses, HttpStatus.OK);
-    }
-
-    /**
      * Endpoint pour récupérer toutes les adresses associées à un utilisateur spécifique.
      *
      * @param idUtilisateur L'identifiant unique de l'utilisateur dont on souhaite récupérer les adresses.

@@ -20,6 +20,7 @@ public class Telephone {
     @Column(name = "id_telephone")
     private Long idTelephone;
 
+    // Type de téléphone (FIXE, MOBILE)
     @Enumerated(EnumType.STRING)
     @Column(name = "type_tel",nullable = false)
     private TypeTel typeTel;

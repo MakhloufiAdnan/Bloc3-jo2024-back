@@ -9,9 +9,13 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    properties:
+      hibernate:
+        format_sql: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
+    open-in-view: false
 
   mail:
     host: ${SMTP_HOST}
@@ -46,3 +50,9 @@ app:
   frontend:
     confirmation-base-url: ${FRONTEND_URL_CONF}
     reset-password-base-url: ${FRONTEND_URL_RESET}
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG

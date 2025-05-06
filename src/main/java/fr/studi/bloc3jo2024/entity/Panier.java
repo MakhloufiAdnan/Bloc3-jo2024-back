@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,7 +28,7 @@ public class Panier {
     private Long idPanier;
 
     @Column(name = "montant_total", nullable = false)
-    private double montantTotal;
+    private BigDecimal montantTotal;
 
     // Statut du panier (EN_ATTENTE, PAYE, SAUVEGARDE).
     @Enumerated(EnumType.STRING)

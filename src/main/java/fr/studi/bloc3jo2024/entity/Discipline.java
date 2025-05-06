@@ -38,6 +38,9 @@ public class Discipline {
     @Min(value = 0, message = "Il n'y a plus de place disponible.")
     private int nbPlaceDispo;
 
+    @Version
+    private Long version;
+
     // Chaque discipline pocède une adresse. Une adresse peut accueillir plusieurs épreuves.
     @ManyToOne
     @JoinColumn(name = "id_adresse", nullable = false, foreignKey = @ForeignKey(name = "fk_discipline_adresse"))

@@ -1,8 +1,13 @@
 package fr.studi.bloc3jo2024.controller;
 
+import fr.studi.bloc3jo2024.dto.disciplines.CreerDisciplineDto;
+import fr.studi.bloc3jo2024.dto.disciplines.DisciplineDto;
+import fr.studi.bloc3jo2024.dto.disciplines.MettreAJourDisciplineDto;
 import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.service.DisciplineService;
-import org.springframework.format.annotation.DateTimeFormat;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -18,26 +23,72 @@ public class DisciplineController {
         this.disciplineService = disciplineService;
     }
 
-    /**
-     * Recherche des disciplines avec filtres facultatifs :
-     * - ville
-     * - date (AAAA-MM-JJ)
-     * - epreuveId
-     */
-    @GetMapping
-    public List<Discipline> getDisciplines(
-            @RequestParam(required = false) String ville,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date,
-            @RequestParam(required = false) Long epreuveId
-    ) {
-        return disciplineService.findDisciplinesFiltered(ville, date, epreuveId);
+    private DisciplineDto convertToDto(Discipline discipline) {
+        return new DisciplineDto(
+                discipline.getIdDiscipline(),
+                discipline.getNomDiscipline(),
+                discipline.getDateDiscipline(),
+                discipline.getNbPlaceDispo(),
+                discipline.getAdresse().getIdAdresse()
+        );
     }
 
-    // Récupère les disciplines dont la date est dans le futur.
+    /**
+     * Recherche des disciplines avec filtres facultatifs.
+     */
+    @GetMapping
+    public List<DisciplineDto> getDisciplines(
+            @RequestParam(required = false) String ville,
+            @RequestParam(required = false) LocalDateTime date,
+            @RequestParam(required = false) Long epreuveId
+    ) {
+        return disciplineService.findDisciplinesFiltered(ville, date, epreuveId)
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
     @GetMapping("/avenir")
-    public List<Discipline> getDisciplinesAvenir() {
-        return disciplineService.getDisciplinesAvenir();
+    public List<DisciplineDto> getDisciplinesAvenir() {
+        return disciplineService.getDisciplinesAvenir()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
+    /**
+     * Crée une nouvelle discipline.
+     */
+    @PostMapping
+    public ResponseEntity<DisciplineDto> creerDiscipline(
+            @Valid @RequestBody CreerDisciplineDto creerDisciplineDto
+    ) {
+        Discipline disciplineCreee = disciplineService.creerDiscipline(creerDisciplineDto);
+        return new ResponseEntity<>(convertToDto(disciplineCreee), HttpStatus.CREATED);
+    }
+
+    /**
+     * Met à jour une discipline existante.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<DisciplineDto> mettreAJourDiscipline(
+            @PathVariable Long id,
+            @Valid @RequestBody MettreAJourDisciplineDto mettreAJourDisciplineDto
+    ) {
+        if (!id.equals(mettreAJourDisciplineDto.getIdDiscipline())) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        Discipline disciplineMiseAJour = disciplineService.mettreAJourDiscipline(mettreAJourDisciplineDto);
+        return ResponseEntity.ok(convertToDto(disciplineMiseAJour));
+    }
+
+    /**
+     * Supprime une discipline.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> supprimerDiscipline(@PathVariable Long id) {
+        disciplineService.supprimerDiscipline(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     /**
@@ -45,11 +96,12 @@ public class DisciplineController {
      * Exemple : PATCH /disciplines/5/retirer-places?nb=3
      */
     @PatchMapping("/{id}/retirer-places")
-    public Discipline retirerPlaces(
+    public ResponseEntity<DisciplineDto> retirerPlaces(
             @PathVariable Long id,
             @RequestParam int nb
     ) {
-        return disciplineService.retirerPlaces(id, nb);
+        Discipline discipline = disciplineService.retirerPlaces(id, nb);
+        return ResponseEntity.ok(convertToDto(discipline));
     }
 
     /**
@@ -57,11 +109,12 @@ public class DisciplineController {
      * Exemple : PATCH /disciplines/5/ajouter-places?nb=10
      */
     @PatchMapping("/{id}/ajouter-places")
-    public Discipline ajouterPlaces(
+    public ResponseEntity<DisciplineDto> ajouterPlaces(
             @PathVariable Long id,
             @RequestParam int nb
     ) {
-        return disciplineService.ajouterPlaces(id, nb);
+        Discipline discipline = disciplineService.ajouterPlaces(id, nb);
+        return ResponseEntity.ok(convertToDto(discipline));
     }
 
     /**
@@ -69,11 +122,11 @@ public class DisciplineController {
      * Exemple : PATCH /disciplines/5/modifier-date?date=2025-06-01T14:00:00
      */
     @PatchMapping("/{id}/modifier-date")
-    public Discipline updateDate(
+    public ResponseEntity<DisciplineDto> updateDate(
             @PathVariable Long id,
-            @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime date
+            @RequestParam LocalDateTime date
     ) {
-        return disciplineService.updateDate(id, date);
+        Discipline discipline = disciplineService.updateDate(id, date);
+        return ResponseEntity.ok(convertToDto(discipline));
     }
 }

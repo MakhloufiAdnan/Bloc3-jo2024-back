@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,7 +36,7 @@ public class Offre {
     private int quantite;
 
     @Column(name = "prix", nullable = false)
-    private double prix;
+    private BigDecimal prix;
 
     // Date et heure d'expiration de l'offre
     @Column(name = "date_expiration")
@@ -50,14 +51,28 @@ public class Offre {
     @Column(name = "capacite", nullable = false)
     private int capacite;
 
-    // Relation Many-to-One vers l'entité Evenement. Chaque offre est associée à un événement.
+    @Version
+    private Long version;
+
+    // permet de définir le caractère vedette de l'offre
+    @Column(name = "is_featured", nullable = false)
+    private boolean featured;
+
+    // Relation Many-to-One vers l'entité Discipline. Chaque offre est associée à une discipline.
     @ManyToOne
-    @JoinColumn(name = "id_evenement", nullable = false, foreignKey = @ForeignKey(name = "fk_offre_evenement"))
+    @JoinColumn(name = "id_discipline", nullable = false, foreignKey = @ForeignKey(name = "fk_offre_discipline"))
     private Discipline discipline;
 
     // Relation One-to-Many vers l'entité Billet. Une offre peut avoir plusieurs billets vendus.
     @OneToMany(mappedBy = "offre")
     private Set<Billet> billets;
+
+    @PreUpdate
+    @PrePersist
+    public void updateStatutOnChange() {
+        if (quantite == 0) statutOffre = StatutOffre.EPUISE;
+        if (dateExpiration != null && dateExpiration.isBefore(LocalDateTime.now())) statutOffre = StatutOffre.EXPIRE;
+    }
 
     // Relation One-to-Many vers l'entité ContenuPanier (table d'association avec Panier).
     @Builder.Default

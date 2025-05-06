@@ -1,6 +1,6 @@
 package fr.studi.bloc3jo2024.exception;
 
-import fr.studi.bloc3jo2024.dto.AuthReponseDto;
+import fr.studi.bloc3jo2024.dto.authentification.AuthReponseDto;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

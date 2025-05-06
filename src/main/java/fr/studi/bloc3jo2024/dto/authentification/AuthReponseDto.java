@@ -1,4 +1,4 @@
-package fr.studi.bloc3jo2024.dto;
+package fr.studi.bloc3jo2024.dto.authentification;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,7 +32,7 @@ public class Payement {
 
     @Column(name = "montant_paye", nullable = false)
     @Min(value = 0, message = "Le montant payé doit être positif.")
-    private double montantPaye;
+    private BigDecimal montantPaye;
 
     // Relation Many-to-One vers l'entité MethodePayement. Un payement a plusieurs méthode de payement
     @ManyToOne

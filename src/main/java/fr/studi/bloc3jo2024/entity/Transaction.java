@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -23,7 +24,7 @@ public class Transaction {
 
     @Column(name = "montant", nullable = false)
     @Min(value = 0, message = "Le montant doit être positif.")
-    private double montant;
+    private BigDecimal montant;
 
     @Column(name = "date_transaction", nullable = false)
     private LocalDateTime dateTransaction = LocalDateTime.now();

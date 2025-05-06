@@ -1,5 +1,6 @@
-package fr.studi.bloc3jo2024.entity;
+package fr.studi.bloc3jo2024.service.impl;
 
+import fr.studi.bloc3jo2024.entity.Utilisateur;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,7 +11,7 @@ import java.util.Collection;
 import java.util.List;
 
 // Implémentation de UserDetails pour Spring Security, basée sur l'entité Utilisateur.
-public record DetailUtilisateurImpl(Utilisateur utilisateur) implements UserDetails, Serializable {
+public record DetailUtilisateurServiceImpl(Utilisateur utilisateur) implements UserDetails, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;

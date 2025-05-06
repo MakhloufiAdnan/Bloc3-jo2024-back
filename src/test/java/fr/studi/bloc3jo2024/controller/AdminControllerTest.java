@@ -1,6 +1,6 @@
 package fr.studi.bloc3jo2024.controller;
 
-import fr.studi.bloc3jo2024.dto.LoginAdminRequestDto;
+import fr.studi.bloc3jo2024.dto.authentification.LoginAdminRequestDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.AfterEach;

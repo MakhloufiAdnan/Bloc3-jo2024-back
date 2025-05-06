@@ -1,6 +1,6 @@
 package fr.studi.bloc3jo2024.service;
 
-import fr.studi.bloc3jo2024.dto.RegisterRequestDto;
+import fr.studi.bloc3jo2024.dto.authentification.RegisterRequestDto;
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeAuthTokenTemp;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;

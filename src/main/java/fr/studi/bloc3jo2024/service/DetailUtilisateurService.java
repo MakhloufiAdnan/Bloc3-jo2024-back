@@ -1,8 +1,8 @@
 package fr.studi.bloc3jo2024.service;
 
 import fr.studi.bloc3jo2024.entity.Utilisateur;
-import fr.studi.bloc3jo2024.entity.DetailUtilisateurImpl;
 import fr.studi.bloc3jo2024.repository.UtilisateurRepository;
+import fr.studi.bloc3jo2024.service.impl.DetailUtilisateurServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -20,6 +20,6 @@ public class DetailUtilisateurService implements UserDetailsService {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé : " + email));
 
-        return new DetailUtilisateurImpl(utilisateur);
+        return new DetailUtilisateurServiceImpl(utilisateur);
     }
 }

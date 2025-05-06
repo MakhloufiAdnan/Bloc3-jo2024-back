@@ -1,4 +1,4 @@
-package fr.studi.bloc3jo2024.dto;
+package fr.studi.bloc3jo2024.dto.authentification;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -36,7 +36,7 @@ public class RegisterRequestDto {
     @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caractères")
     private String password;
 
-    private String role = "USER"; // Ne serra jamais pris du front
+    private String role = "USER"; // Role par défaut
 
     @NotBlank(message = "Pays requis")
     private String country;

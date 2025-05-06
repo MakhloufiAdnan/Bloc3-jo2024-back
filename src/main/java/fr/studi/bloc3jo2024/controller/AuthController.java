@@ -1,8 +1,8 @@
 package fr.studi.bloc3jo2024.controller;
 
-import fr.studi.bloc3jo2024.dto.AuthReponseDto;
-import fr.studi.bloc3jo2024.dto.LoginUtilisateurRequestDto;
-import fr.studi.bloc3jo2024.dto.RegisterRequestDto;
+import fr.studi.bloc3jo2024.dto.authentification.AuthReponseDto;
+import fr.studi.bloc3jo2024.dto.authentification.LoginUtilisateurRequestDto;
+import fr.studi.bloc3jo2024.dto.authentification.RegisterRequestDto;
 import fr.studi.bloc3jo2024.service.JwtService;
 import fr.studi.bloc3jo2024.service.UtilisateurService;
 import jakarta.validation.Valid;

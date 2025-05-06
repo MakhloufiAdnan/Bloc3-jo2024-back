@@ -45,7 +45,7 @@ DO $$
 DO $$
     BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'statut_offre') THEN
-            CREATE TYPE statut_offre AS ENUM ('DISPONIBLE', 'EPUISE', 'ANNULE');
+            CREATE TYPE statut_offre AS ENUM ('DISPONIBLE', 'EPUISE', 'ANNULE', 'EXPIRE');
         END IF;
     END$$;
 

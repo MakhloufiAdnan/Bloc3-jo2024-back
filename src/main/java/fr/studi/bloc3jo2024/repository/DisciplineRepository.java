@@ -2,6 +2,7 @@ package fr.studi.bloc3jo2024.repository;
 
 import fr.studi.bloc3jo2024.entity.Discipline;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -12,6 +13,11 @@ public interface DisciplineRepository extends JpaRepository<Discipline, Long> {
 
     // Disciplines futures
     List<Discipline> findByDateDisciplineAfter(LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE Discipline d SET d.nbPlaceDispo = d.nbPlaceDispo - :nb"
+            + " WHERE d.idDiscipline = :id AND d.nbPlaceDispo >= :nb")
+    int decrementerPlaces(@Param("id") Long id, @Param("nb") int nb);
 
     // Par ville
     @Query("SELECT d FROM Discipline d WHERE d.adresse.ville = :ville")

@@ -51,7 +51,7 @@ public class Panier {
 
     // Relation One-to-One vers l'entité Payement. Un panier peut être associé à un paiement.
     @OneToOne(mappedBy = "panier")
-    private Payement payement;
+    private Paiement paiement;
 
     // Méthode exécutée avant la persistance pour s'assurer que la date d'ajout est initialisée.
     @PrePersist

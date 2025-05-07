@@ -26,5 +26,5 @@ public class Commande {
     // Relation One-to-One vers l'entité Payement. Chaque commande est liée à un paiement unique.
     @OneToOne
     @JoinColumn(name = "id_payement", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_commande_payement"))
-    private Payement payement;
+    private Paiement paiement;
 }

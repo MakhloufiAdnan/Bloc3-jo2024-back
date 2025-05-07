@@ -34,8 +34,21 @@ public class Transaction {
     @Column(name = "statut_transaction", nullable = false)
     private StatutTransaction statutTransaction;
 
+    // Ajout : Date de validation du paiement si REUSSI
+    @Column(name = "date_validation")
+    private LocalDateTime dateValidation;
+
+    // Ajout : Contenu JSON simulé de retour prestataire (Stripe par exemple)
+    @Lob
+    @Column(name = "details_transaction", columnDefinition = "TEXT")
+    private String details;
+
+    // Ajout : Indique s'il s'agit d'un test
+    @Column(name = "is_test", nullable = false)
+    private boolean isTest = false;
+
     // Relation One-to-One vers l'entité Payement. Chaque transaction est liée à un paiement unique.
     @OneToOne
     @JoinColumn(name = "id_payement", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_payement_transaction"))
-    private Payement payement;
+    private Paiement paiement;
 }

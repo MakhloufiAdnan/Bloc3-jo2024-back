@@ -14,6 +14,14 @@ import java.util.UUID;
 public interface AuthTokenTemporaireRepository extends JpaRepository<AuthTokenTemporaire, UUID> {
 
     /**
+     * Recherche un token temporaire par sa valeur hashée.
+     *
+     * @param tokenHache La valeur hashée du token temporaire.
+     * @return Un Optional contenant le token temporaire correspondant s'il est trouvé, sinon un Optional vide.
+     */
+    Optional<AuthTokenTemporaire> findByTokenHache(String tokenHache);
+
+    /**
      * Recherche un token temporaire associé à un utilisateur spécifique et d'un type donné.
      *
      * @param utilisateur L'utilisateur auquel le token temporaire est associé.

@@ -122,6 +122,13 @@
 			<artifactId>modelmapper</artifactId>
 			<version>3.2.0</version>
 		</dependency>
+		<!-- Test container Postgresql -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>1.20.6</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<profiles>

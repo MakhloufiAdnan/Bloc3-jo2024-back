@@ -1,6 +1,6 @@
 package fr.studi.bloc3jo2024.entity.enums;
 
-public enum MethodePayementEnum {
+public enum MethodePaiementEnum {
     CARTE_BANCAIRE,
     PAYPAL,
     STRIPE

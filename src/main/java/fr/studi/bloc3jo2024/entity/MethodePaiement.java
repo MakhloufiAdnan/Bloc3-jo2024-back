@@ -1,17 +1,17 @@
 package fr.studi.bloc3jo2024.entity;
 
-import fr.studi.bloc3jo2024.entity.enums.MethodePayementEnum;
+import fr.studi.bloc3jo2024.entity.enums.MethodePaiementEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "methodes_payement")
+@Table(name = "methodes_paiement")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MethodePayement {
+public class MethodePaiement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_methode")
@@ -19,6 +19,6 @@ public class MethodePayement {
 
     // Nom de la méthode de paiement (CB, PAYPAL, STRIP), doit être unique.
     @Enumerated(EnumType.STRING)
-    @Column(name = "nom_methode_payement", nullable = false, unique = true, length = 50)
-    private MethodePayementEnum nomMethodePayement;
+    @Column(name = "nom_methode_paiement", nullable = false, unique = true, length = 50)
+    private MethodePaiementEnum nomMethodePaiement;
 }

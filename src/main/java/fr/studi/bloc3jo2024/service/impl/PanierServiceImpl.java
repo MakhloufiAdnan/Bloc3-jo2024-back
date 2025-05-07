@@ -63,7 +63,7 @@ public class PanierServiceImpl implements PanierService {
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException(UTILISATEUR_NOT_FOUND + utilisateurId)); // Récupération de l'utilisateur
         // Récupération du panier "EN_ATTENTE" ou création d'un nouveau
-        Panier panier = panierRepository.findByUtilisateurIdUtilisateurAndStatut(utilisateur.getIdUtilisateur(), StatutPanier.EN_ATTENTE)
+        Panier panier = panierRepository.findByUtilisateur_idUtilisateurAndStatut(utilisateur.getIdUtilisateur(), StatutPanier.EN_ATTENTE)
                 .orElseGet(() -> creerNouveauPanier(utilisateur));
         return mapPanierToDto(panier); // Conversion de l'entité Panier en DTO
     }
@@ -301,7 +301,7 @@ public class PanierServiceImpl implements PanierService {
         UUID utilisateurId = UUID.fromString(utilisateurIdStr);
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException(UTILISATEUR_NOT_FOUND + utilisateurId));
-        return panierRepository.findByUtilisateurIdUtilisateurAndStatut(utilisateur.getIdUtilisateur(), StatutPanier.EN_ATTENTE)
+        return panierRepository.findByUtilisateur_idUtilisateurAndStatut(utilisateur.getIdUtilisateur(), StatutPanier.EN_ATTENTE)
                 .orElseGet(() -> creerNouveauPanier(utilisateur));
     }
 

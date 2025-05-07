@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -17,4 +18,11 @@ public interface TelephoneRepository extends JpaRepository<Telephone, Long> {
      * @return Une liste de téléphones appartenant à cet utilisateur.
      */
     List<Telephone> findByUtilisateur_IdUtilisateur(UUID utilisateur);
+
+    /**
+     * Récupère un numéro de téléphone spécifique.
+     * @param numeroTelephone Le numéro de téléphone à rechercher.
+     * @return Un Optional contenant le téléphone correspondant au numéro, ou un Optional vide si non trouvé.
+     */
+    Optional<Telephone> findByNumeroTelephone(String numeroTelephone);
 }

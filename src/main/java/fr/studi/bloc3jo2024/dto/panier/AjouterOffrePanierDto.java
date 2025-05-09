@@ -2,9 +2,11 @@ package fr.studi.bloc3jo2024.dto.panier;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
+@AllArgsConstructor
 public class AjouterOffrePanierDto {
     @NotNull(message = "L'ID de l'offre est obligatoire")
     private Long idOffre;

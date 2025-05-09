@@ -4,11 +4,15 @@ import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class CreerOffreDto {
     @NotNull(message = "Le type de l'offre est obligatoire")

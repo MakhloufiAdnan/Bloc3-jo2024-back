@@ -106,3 +106,9 @@ jobs:
       # 11. Show Backend Heroku logs
       - name: Show Backend Heroku logs
         run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100
+
+      # 12. Arrêter les dynos
+      - name: Stop Heroku Dynos
+        if: ${{ false }} # désactivé par défaut
+        run: |
+          heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_BE }}

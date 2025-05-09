@@ -27,6 +27,9 @@ public class Epreuve {
     @Column(name = "nom_epreuve")
     private String nomEpreuve;
 
+    @Column(name = "is_featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isFeatured = false;
+
     // Relation via l'entité d'association Comporter (association avec l'événement).
     @Builder.Default
     @OneToMany(mappedBy = "epreuve", cascade = CascadeType.ALL, orphanRemoval = true)

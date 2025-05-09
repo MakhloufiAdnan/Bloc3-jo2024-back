@@ -1,6 +1,5 @@
 package fr.studi.bloc3jo2024.dto.paiement;
 
-import fr.studi.bloc3jo2024.dto.TransactionDto;
 import fr.studi.bloc3jo2024.entity.enums.MethodePaiementEnum;
 import fr.studi.bloc3jo2024.entity.enums.StatutPaiement;
 import jakarta.validation.constraints.NotNull;

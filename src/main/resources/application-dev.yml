@@ -10,29 +10,38 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
 
   mail:
-    host: smtp.test.com
-    port: 432
+    # Configuration Spring Mail
+    host: smtp.gmail.com
+    port: 587
     username: makhloufistudi@gmail.com
-    password: pqxjpqiDAFKon##aawqzdxoo.affa15??
+    password: otgtnpvevcrdxdqk
     properties:
       mail:
         smtp:
-          auth: true
-          starttls:
-            enable: true
-
+            auth: true
+            starttls:
+              enable: true
+              required: true
+    protocol: smtp
 jwt:
-  secret: ?NFKlvnlavazmb32645bzlhoIHOHOIdfnlkanzv#gaz
+  secret: '?NFKlvnlavazmb32645bzlhoIHOHOIdfnlkanzv#gaz'
   expiration: 36000000
 
 app:
   frontend:
     confirmation-base-url: http://localhost:80/confirm
     reset-password-base-url: http://localhost:80/reset-password
+  email:
+    # Sujet et contenu de l'e-mail pour le billet
+    sujet:
+      billet: Votre billet pour les Jeux Olympiques !
+    contenu:
+      billet: "Bonjour %s,<br><br>Merci pour votre achat ! Vous trouverez votre billet en pièce jointe.<br>Votre clé de billet unique est : <b>%s</b>.<br><br>À bientôt aux JO !"
+
 admin:
   email: jose@studi.fr
   password: Jose2024

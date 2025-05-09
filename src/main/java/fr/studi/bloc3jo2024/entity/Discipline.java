@@ -38,6 +38,9 @@ public class Discipline {
     @Min(value = 0, message = "Il n'y a plus de place disponible.")
     private int nbPlaceDispo;
 
+    @Column(name = "is_featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isFeatured = false;
+
     @Version
     private Long version;
 

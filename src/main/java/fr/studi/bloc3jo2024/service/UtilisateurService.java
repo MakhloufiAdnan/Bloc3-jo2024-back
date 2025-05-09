@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -112,6 +113,7 @@ public class UtilisateurService {
         }
 
         user.setVerified(true);
+        user.setCleUtilisateur(UUID.randomUUID().toString());
         utilisateurRepository.save(user);
 
         tokenService.markAsUsed(token);

@@ -56,6 +56,14 @@ public class DisciplineController {
                 .toList();
     }
 
+    @GetMapping("/vedette")
+    public List<DisciplineDto> getDisciplinesEnVedette() {
+        return disciplineService.getDisciplinesEnVedette()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
     /**
      * Crée une nouvelle discipline.
      */

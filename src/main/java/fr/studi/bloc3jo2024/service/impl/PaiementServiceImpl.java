@@ -1,11 +1,9 @@
 package fr.studi.bloc3jo2024.service.impl;
 
 import fr.studi.bloc3jo2024.dto.paiement.PaiementDto;
-import fr.studi.bloc3jo2024.dto.TransactionDto;
-import fr.studi.bloc3jo2024.entity.Paiement;
-import fr.studi.bloc3jo2024.entity.Panier;
-import fr.studi.bloc3jo2024.entity.Transaction;
-import fr.studi.bloc3jo2024.entity.Utilisateur;
+import fr.studi.bloc3jo2024.dto.paiement.PaiementSimulationResultDto;
+import fr.studi.bloc3jo2024.dto.paiement.TransactionDto;
+import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.MethodePaiementEnum;
 import fr.studi.bloc3jo2024.entity.enums.StatutPaiement;
 import fr.studi.bloc3jo2024.entity.enums.StatutTransaction;
@@ -14,6 +12,7 @@ import fr.studi.bloc3jo2024.repository.PaiementRepository;
 import fr.studi.bloc3jo2024.repository.PanierRepository;
 import fr.studi.bloc3jo2024.repository.TransactionRepository;
 import fr.studi.bloc3jo2024.repository.UtilisateurRepository;
+import fr.studi.bloc3jo2024.service.BilletCreationService;
 import fr.studi.bloc3jo2024.service.PaiementService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -38,6 +37,7 @@ public class PaiementServiceImpl implements PaiementService {
     private final TransactionRepository transactionRepository;
     private final ModelMapper modelMapper;
 
+    private final BilletCreationService billetCreationService;
     private static final String UTILISATEUR_NOT_FOUND = "Utilisateur non trouvé avec l'ID : ";
     private static final String PAIEMENT_DEJA_EXISTANT = "Un paiement existe déjà pour ce panier et cet utilisateur.";
     private static final String PAIEMENT_NOT_FOUND = "Paiement non trouvé avec l'ID : ";
@@ -83,7 +83,7 @@ public class PaiementServiceImpl implements PaiementService {
 
     @Override
     @Transactional
-    public PaiementDto simulerResultatPaiement(Long idPaiement, boolean paiementReussi, String detailsSimules) {
+    public PaiementSimulationResultDto simulerResultatPaiement(Long idPaiement, boolean paiementReussi, String detailsSimules) {
         logger.info("Simulation du résultat du paiement ID : {}, résultat : {}", idPaiement, paiementReussi);
         Paiement paiement = paiementRepository.findById(idPaiement)
                 .orElseThrow(() -> new ResourceNotFoundException(PAIEMENT_NOT_FOUND + idPaiement));
@@ -91,14 +91,37 @@ public class PaiementServiceImpl implements PaiementService {
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction non trouvée pour le paiement ID : " + idPaiement));
 
         paiement.setStatutPaiement(paiementReussi ? StatutPaiement.ACCEPTE : StatutPaiement.REFUSE);
-        paiementRepository.save(paiement);
 
         transaction.setStatutTransaction(paiementReussi ? StatutTransaction.REUSSI : StatutTransaction.ECHEC);
         transaction.setDateValidation(paiementReussi ? LocalDateTime.now() : null);
         transaction.setDetails(detailsSimules);
-        transactionRepository.save(transaction);
+        transactionRepository.save(transaction); // Sauvegarde la transaction (et potentiellement le paiement via cascade)
         logger.info("Résultat du paiement ID : {} mis à jour, statut : {}", idPaiement, paiement.getStatutPaiement());
-        return mapPaiementToDto(paiement);
+
+        Billet billetCree = null; // Variable pour stocker le billet créé
+
+        // Générer le billet si la transaction est réussie
+        if (transaction.getStatutTransaction() == StatutTransaction.REUSSI) {
+            billetCree = billetCreationService.genererBilletApresTransactionReussie(paiement);
+            if (billetCree != null) {
+                logger.info("Billet créé avec ID : {} pour paiement ID : {}", billetCree.getIdBillet(), idPaiement);
+            } else {
+                logger.warn("Billet creation service returned null for paiement ID {}", paiement.getIdPaiement());
+            }
+        }
+        // Mapper le Paiement en DTO
+        PaiementDto paiementDto = mapPaiementToDto(paiement);
+
+        // Créer le DTO de résultat incluant le billet
+        PaiementSimulationResultDto resultDto = new PaiementSimulationResultDto();
+        resultDto.setPaiement(paiementDto);
+
+        if (billetCree != null) {
+            resultDto.setBilletId(billetCree.getIdBillet());
+            resultDto.setCleFinaleBillet(billetCree.getCleFinaleBillet());
+        }
+
+        return resultDto;
     }
 
     @Override
@@ -119,7 +142,12 @@ public class PaiementServiceImpl implements PaiementService {
 
     private PaiementDto mapPaiementToDto(Paiement paiement) {
         PaiementDto paiementDto = modelMapper.map(paiement, PaiementDto.class);
-        paiementDto.setUtilisateurId(paiement.getUtilisateur().getIdUtilisateur());
+        if (paiement.getUtilisateur() != null) {
+            paiementDto.setUtilisateurId(paiement.getUtilisateur().getIdUtilisateur());
+        } else {
+            logger.warn("Paiement ID {} has no associated user when mapping to DTO.", paiement.getIdPaiement());
+        }
+
         if (paiement.getTransaction() != null) {
             paiementDto.setTransaction(modelMapper.map(paiement.getTransaction(), TransactionDto.class));
         }

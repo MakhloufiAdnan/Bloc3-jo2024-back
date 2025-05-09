@@ -1,6 +1,7 @@
 package fr.studi.bloc3jo2024.controller;
 
 import fr.studi.bloc3jo2024.dto.paiement.PaiementDto;
+import fr.studi.bloc3jo2024.dto.paiement.PaiementSimulationResultDto;
 import fr.studi.bloc3jo2024.entity.enums.MethodePaiementEnum;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.service.PaiementService;
@@ -55,13 +56,16 @@ public class PaiementController {
     }
 
     @PostMapping("/{idPaiement}/simuler")
-    public ResponseEntity<PaiementDto> simulerResultatPaiement(
+    // *** MODIFICATION : Changer le type de retour de l'endpoint ***
+    public ResponseEntity<PaiementSimulationResultDto> simulerResultatPaiement(
             @PathVariable Long idPaiement,
             @RequestParam boolean reussi,
             @RequestParam(required = false) String details) {
         try {
-            PaiementDto paiementDto = paiementService.simulerResultatPaiement(idPaiement, reussi, details != null ? details : "");
-            return ResponseEntity.ok(paiementDto);
+            // Le service retourne maintenant le nouveau DTO
+            PaiementSimulationResultDto resultDto = paiementService.simulerResultatPaiement(idPaiement, reussi, details != null ? details : "");
+            // *** MODIFICATION : Retourner le nouveau DTO ***
+            return ResponseEntity.ok(resultDto);
         } catch (ResourceNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }

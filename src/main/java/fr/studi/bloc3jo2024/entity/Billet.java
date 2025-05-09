@@ -2,14 +2,18 @@ package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Entity
 @Table(name = "billets")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Billet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,8 +32,12 @@ public class Billet {
     @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
     private Utilisateur utilisateur;
 
-    // Relation Many-to-One vers l'entité Offre.
-    @ManyToOne
-    @JoinColumn(name = "id_offre", nullable = false)
-    private Offre offre;
+    // Relation Many-to-Many vers l'entité Offre.
+    @ManyToMany
+    @JoinTable(
+            name = "billet_offre",
+            joinColumns = @JoinColumn(name = "id_billet"),
+            inverseJoinColumns = @JoinColumn(name = "id_offre")
+    )
+    private List<Offre> offres;
 }

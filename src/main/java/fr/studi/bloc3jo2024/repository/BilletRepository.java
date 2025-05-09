@@ -4,6 +4,10 @@ import fr.studi.bloc3jo2024.entity.Billet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface BilletRepository extends JpaRepository<Billet, Long> {
+
+    Optional<Billet> findByCleFinaleBillet(String cleFinaleBillet);
 }

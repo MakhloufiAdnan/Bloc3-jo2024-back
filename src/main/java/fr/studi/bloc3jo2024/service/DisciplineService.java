@@ -3,7 +3,9 @@ package fr.studi.bloc3jo2024.service;
 import fr.studi.bloc3jo2024.dto.disciplines.CreerDisciplineDto;
 import fr.studi.bloc3jo2024.dto.disciplines.MettreAJourDisciplineDto;
 import fr.studi.bloc3jo2024.entity.Adresse;
+import fr.studi.bloc3jo2024.entity.Comporter;
 import fr.studi.bloc3jo2024.entity.Discipline;
+import fr.studi.bloc3jo2024.entity.Epreuve;
 import fr.studi.bloc3jo2024.repository.AdresseRepository;
 import fr.studi.bloc3jo2024.repository.DisciplineRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -11,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -19,10 +23,12 @@ public class DisciplineService {
 
     private final DisciplineRepository disciplineRepository;
     private final AdresseRepository adresseRepository;
+    private final EpreuveService epreuveService;
 
-    public DisciplineService(DisciplineRepository disciplineRepository, AdresseRepository adresseRepository) {
+    public DisciplineService(DisciplineRepository disciplineRepository, AdresseRepository adresseRepository, EpreuveService epreuveService) {
         this.disciplineRepository = disciplineRepository;
         this.adresseRepository = adresseRepository;
+        this.epreuveService = epreuveService;
     }
 
     public Discipline creerDiscipline(CreerDisciplineDto creerDisciplineDto) {
@@ -57,7 +63,7 @@ public class DisciplineService {
     }
 
     public Discipline retirerPlaces(Long idDiscipline, int nb) {
-        getDisciplineOrThrow(idDiscipline); // On vérifie que la discipline existe
+        getDisciplineOrThrow(idDiscipline); // Vérifier que la discipline existe
         if (nb <= 0) throw new IllegalArgumentException("Le nombre à retirer doit être positif.");
         int updatedRows = disciplineRepository.decrementerPlaces(idDiscipline, nb);
         if (updatedRows == 0) {
@@ -101,5 +107,16 @@ public class DisciplineService {
         } else {
             return disciplineRepository.findAll();
         }
+    }
+
+    public Set<Discipline> getDisciplinesEnVedette() {
+        List<Epreuve> epreuvesEnVedette = epreuveService.getEpreuvesEnVedette();
+        Set<Discipline> disciplinesEnVedette = new HashSet<>();
+        for (Epreuve epreuve : epreuvesEnVedette) {
+            for (Comporter comporteur : epreuve.getComporters()) {
+                disciplinesEnVedette.add(comporteur.getDiscipline());
+            }
+        }
+        return disciplinesEnVedette;
     }
 }

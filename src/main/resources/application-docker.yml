@@ -28,6 +28,8 @@ spring:
           auth: true
           starttls:
             enable: true
+            required: true
+    protocol: smtp
 server:
   port: ${PORT:8080}
   error:
@@ -50,6 +52,12 @@ app:
   frontend:
     confirmation-base-url: ${FRONTEND_URL_CONF}
     reset-password-base-url: ${FRONTEND_URL_RESET}
+  email:
+    # Sujet et contenu de l'e-mail pour le billet
+    sujet:
+      billet: Votre billet pour les Jeux Olympiques !
+    contenu:
+      billet: "Bonjour %s,<br><br>Merci pour votre achat ! Vous trouverez votre billet en pièce jointe.<br>Votre clé de billet unique est : <b>%s</b>.<br><br>À bientôt aux JO !"
 
 logging:
   level:

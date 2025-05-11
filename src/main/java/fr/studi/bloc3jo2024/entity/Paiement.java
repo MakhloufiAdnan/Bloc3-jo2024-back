@@ -1,14 +1,15 @@
 package fr.studi.bloc3jo2024.entity;
 
-import fr.studi.bloc3jo2024.entity.enums.MethodePaiementEnum;
 import fr.studi.bloc3jo2024.entity.enums.StatutPaiement;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import fr.studi.bloc3jo2024.entity.enums.MethodePaiementEnum;
 
 @Entity
 @Table(name = "paiements")
@@ -37,12 +38,16 @@ public class Paiement {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_utilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_paiement_utilisateur"))
+    @EqualsAndHashCode.Exclude // Exclu de l'utilisateur dans equals/hashCode de Paiement
     private Utilisateur utilisateur;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_panier", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_paiement_panier"))
+    @EqualsAndHashCode.Exclude
     private Panier panier;
 
+    // Transaction est une entité avec une relation OneToOne vers Paiement
     @OneToOne(mappedBy = "paiement", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private Transaction transaction;
 }

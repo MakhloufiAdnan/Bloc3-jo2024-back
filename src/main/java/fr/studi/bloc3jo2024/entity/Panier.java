@@ -2,10 +2,12 @@ package fr.studi.bloc3jo2024.entity;
 
 import fr.studi.bloc3jo2024.entity.enums.StatutPanier;
 import jakarta.persistence.*;
+import jakarta.persistence.Index;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,18 +42,24 @@ public class Panier {
     private LocalDateTime dateAjout = LocalDateTime.now();
 
     // Relation Many-to-One vers l'entité Utilisateur. Chaque panier appartient à un utilisateur.
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
+    @EqualsAndHashCode.Exclude // Excluez la relation ManyToOne
     private Utilisateur utilisateur;
 
     // Relation One-to-Many vers l'entité ContenuPanier (table d'association avec Offre).
     @Builder.Default
     @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private Set<ContenuPanier> contenuPaniers = new HashSet<>();
 
     // Relation One-to-One vers l'entité Payement. Un panier peut être associé à un paiement.
-    @OneToOne(mappedBy = "panier")
+    @OneToOne(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
     private Paiement paiement;
+
+    @Version
+    private Long version;
 
     // Méthode exécutée avant la persistance pour s'assurer que la date d'ajout est initialisée.
     @PrePersist

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -28,8 +29,9 @@ public class Billet {
     private byte[] qrCodeImage;
 
     // Relation Many-to-One vers l'entité Utilisateur.
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
+    @EqualsAndHashCode.Exclude // Exclu de l'utilisateur dans equals/hashCode de Billet
     private Utilisateur utilisateur;
 
     // Relation Many-to-Many vers l'entité Offre.
@@ -39,5 +41,6 @@ public class Billet {
             joinColumns = @JoinColumn(name = "id_billet"),
             inverseJoinColumns = @JoinColumn(name = "id_offre")
     )
+    @EqualsAndHashCode.Exclude
     private List<Offre> offres;
 }

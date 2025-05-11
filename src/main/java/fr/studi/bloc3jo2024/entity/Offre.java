@@ -7,12 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "offres")
@@ -50,24 +51,28 @@ public class Offre {
     @Version
     private Long version;
 
-    @Column(name = "is_featured", nullable = false)
-    private boolean featured;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_discipline", nullable = false, foreignKey = @ForeignKey(name = "fk_offre_discipline"))
+    @EqualsAndHashCode.Exclude // Exclu de la relation ManyToOne la discipline dans equals/hashCode de Offre
     private Discipline discipline;
 
+    // Relation Many-to-Many vers l'entité Billet.
     @ManyToMany(mappedBy = "offres")
+    @EqualsAndHashCode.Exclude
     private List<Billet> billets;
 
     @PreUpdate
     @PrePersist
     public void updateStatutOnChange() {
         if (quantite == 0) statutOffre = StatutOffre.EPUISE;
-        if (dateExpiration != null && dateExpiration.isBefore(LocalDateTime.now())) statutOffre = StatutOffre.EXPIRE;
+        if (dateExpiration != null && dateExpiration.isBefore(LocalDateTime.now())&& statutOffre != StatutOffre.ANNULE && statutOffre != StatutOffre.EPUISE) {
+            statutOffre = StatutOffre.EXPIRE;
+        }
     }
 
+    // Relation One-to-Many vers l'entité ContenuPanier.
     @Builder.Default
     @OneToMany(mappedBy = "offre", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private Set<ContenuPanier> contenuPaniers = new HashSet<>();
 }

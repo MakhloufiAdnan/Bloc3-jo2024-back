@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -39,25 +40,29 @@ public class Discipline {
     private int nbPlaceDispo;
 
     @Column(name = "is_featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
     private boolean isFeatured = false;
 
     @Version
     private Long version;
 
     // Chaque discipline pocède une adresse. Une adresse peut accueillir plusieurs épreuves.
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_adresse", nullable = false, foreignKey = @ForeignKey(name = "fk_discipline_adresse"))
+    @EqualsAndHashCode.Exclude // Exclu de la relation ManyToOne l'adresse dans equals/hashCode de Discipline
     private Adresse adresse;
 
     /// Relation One-to-Many vers l'entité Offre. La discipline peut avoir plusieurs offres associées.
     @Builder.Default
     @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private Set<Offre> offres = new HashSet<>();
 
     // Relation vers l'association Comporter qui lie la discipline et une épreuve.
     // Permet de stocker des informations additionnelles (exp. jrDeMedaille).
     @Builder.Default
     @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private Set<Comporter> comporters = new HashSet<>();
 
     // Vérification avant persistance : la date de la discipline ne doit pas être dans le passé.

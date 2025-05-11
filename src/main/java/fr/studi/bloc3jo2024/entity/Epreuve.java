@@ -28,6 +28,7 @@ public class Epreuve {
     private String nomEpreuve;
 
     @Column(name = "is_featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
     private boolean isFeatured = false;
 
     // Relation via l'entité d'association Comporter (association avec l'événement).

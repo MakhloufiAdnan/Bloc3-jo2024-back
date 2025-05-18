@@ -1,25 +1,28 @@
 package fr.studi.bloc3jo2024.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.studi.bloc3jo2024.dto.authentification.LoginAdminRequestDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
-
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class AdminControllerTest {
 
     @InjectMocks
@@ -31,67 +34,99 @@ class AdminControllerTest {
     @Mock
     private HttpSession session;
 
-    private AutoCloseable closeable;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
-    private final String correctAdminEmail = "test@admin.com";
-    private final String correctAdminPassword = "motdepasse123";
+    @Mock
+    private ObjectMapper objectMapper;
+
+    private final String correctAdminEmail = "admin-local@example.com";
+    private final String correctAdminPasswordPlainText = "AdminLocalPass123!";
+    private final String configuredAdminPasswordHashInController = "le_hash_attendu_pour_AdminLocalPass123!";
 
     @BeforeEach
     void setUp() {
-        // Arrange : Initialiser les mocks et injecter les valeurs du contrôleur
-        closeable = MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(adminController, "adminEmail", correctAdminEmail);
-        ReflectionTestUtils.setField(adminController, "adminPassword", correctAdminPassword);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        // Libère les ressources des mocks
-        if (closeable != null) closeable.close();
+        ReflectionTestUtils.setField(adminController, "configuredAdminEmail", correctAdminEmail);
+        ReflectionTestUtils.setField(adminController, "configuredAdminPasswordHash", configuredAdminPasswordHashInController);
     }
 
     @Test
     void adminLogin_validCredentials_returnsOkAndSetsSession() {
-        // Arrange
+        // Arrange : Préparation du test
         LoginAdminRequestDto credentials = new LoginAdminRequestDto();
         credentials.setEmail(correctAdminEmail);
-        credentials.setPassword(correctAdminPassword);
-        when(request.getSession()).thenReturn(session);
+        credentials.setPassword(correctAdminPasswordPlainText);
 
-        // Act
+        // Simule le comportement de request.getSession(true) pour retourner notre session mockée.
+        when(request.getSession(true)).thenReturn(session);
+        // Simule une correspondance de mot de passe réussie par PasswordEncoder.
+        when(passwordEncoder.matches(correctAdminPasswordPlainText, configuredAdminPasswordHashInController)).thenReturn(true);
+
+        // Act : Exécution de la méthode à tester
         ResponseEntity<Map<String, String>> response = adminController.adminLogin(credentials, request);
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("admin-session", response.getBody().get("token"));
-        assertEquals("Connexion administrateur réussie.", response.getBody().get("message"));
-        verify(session, times(1)).setAttribute("ADMIN_LOGGED_IN", true);
+        // Assert : Vérification des résultats
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Le statut HTTP doit être OK pour une connexion réussie.");
+        assertNotNull(response.getBody(), "Le corps de la réponse ne doit pas être null.");
+        assertEquals("admin-session-active", response.getBody().get("token"), "Le token de session est incorrect.");
+        assertEquals("Connexion administrateur réussie.", response.getBody().get("message"), "Le message de succès est incorrect.");
+
+        // Vérifie que l'attribut de session a été correctement positionné.
+        verify(session, times(1)).setAttribute(AdminController.SESSION_ADMIN_LOGGED_IN, true);
     }
 
     @Test
-    void adminLogin_invalidCredentials_returnsUnauthorized() {
+    void adminLogin_invalidEmail_returnsUnauthorized() {
         // Arrange
         LoginAdminRequestDto credentials = new LoginAdminRequestDto();
-        credentials.setEmail("wrong@admin.com");
-        credentials.setPassword("wrongpassword");
+        credentials.setEmail("wrong@admin.com"); // Email incorrect
+        credentials.setPassword(correctAdminPasswordPlainText);
 
         // Act
         ResponseEntity<Map<String, String>> response = adminController.adminLogin(credentials, request);
 
         // Assert
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("Identifiants administrateur invalides.", response.getBody().get("message"));
-        verify(request, never()).getSession();
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode(), "Le statut HTTP doit être Unauthorized pour un email invalide.");
+        assertNotNull(response.getBody(), "Le corps de la réponse ne doit pas être null.");
+        assertEquals("Identifiants administrateur invalides.", response.getBody().get("message"), "Le message d'erreur est incorrect.");
+
+        // Vérifie que la session n'a pas été créée ou modifiée.
+        verify(request, never()).getSession(true);
+        verify(session, never()).setAttribute(anyString(), any());
+        // Vérifie que la comparaison de mot de passe n'a pas été tentée (car l'email était déjà faux).
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+    }
+
+    @Test
+    void adminLogin_incorrectPassword_returnsUnauthorized() {
+        // Arrange
+        LoginAdminRequestDto credentials = new LoginAdminRequestDto();
+        credentials.setEmail(correctAdminEmail);
+        credentials.setPassword("wrongpassword"); // Mot de passe incorrect
+
+        when(passwordEncoder.matches("wrongpassword", configuredAdminPasswordHashInController)).thenReturn(false);
+
+        // Act
+        ResponseEntity<Map<String, String>> response = adminController.adminLogin(credentials, request);
+
+        // Assert
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode(), "Le statut HTTP doit être Unauthorized pour un mot de passe incorrect.");
+        assertNotNull(response.getBody(), "Le corps de la réponse ne doit pas être null.");
+        assertEquals("Identifiants administrateur invalides.", response.getBody().get("message"), "Le message d'erreur est incorrect.");
+
+        // Vérifie que passwordEncoder.matches a bien été appelé avec les bonnes valeurs.
+        verify(passwordEncoder, times(1)).matches("wrongpassword", configuredAdminPasswordHashInController);
+        // Vérifie que la session n'a pas été créée ou modifiée.
+        verify(request, never()).getSession(true);
         verify(session, never()).setAttribute(anyString(), any());
     }
+
 
     @Test
     void checkAdminSession_sessionExistsAndAdminLoggedIn_returnsTrue() {
         // Arrange
-        when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("ADMIN_LOGGED_IN")).thenReturn(true);
+        when(request.getSession(false)).thenReturn(session); // Session existante
+        when(session.getAttribute(AdminController.SESSION_ADMIN_LOGGED_IN)).thenReturn(true); // Admin connecté
 
         // Act
         ResponseEntity<Map<String, Boolean>> response = adminController.checkAdminSession(request);
@@ -99,14 +134,14 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertTrue(response.getBody().get("authenticated"));
+        assertTrue(response.getBody().get("authenticated"), "L'administrateur devrait être authentifié.");
     }
 
     @Test
     void checkAdminSession_sessionExistsButAdminNotLoggedIn_returnsFalse() {
         // Arrange
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("ADMIN_LOGGED_IN")).thenReturn(false);
+        when(session.getAttribute(AdminController.SESSION_ADMIN_LOGGED_IN)).thenReturn(null); // ou false
 
         // Act
         ResponseEntity<Map<String, Boolean>> response = adminController.checkAdminSession(request);
@@ -114,13 +149,13 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertFalse(response.getBody().get("authenticated"));
+        assertFalse(response.getBody().get("authenticated"), "L'administrateur ne devrait pas être authentifié.");
     }
 
     @Test
     void checkAdminSession_sessionDoesNotExist_returnsFalse() {
         // Arrange
-        when(request.getSession(false)).thenReturn(null);
+        when(request.getSession(false)).thenReturn(null); // Pas de session
 
         // Act
         ResponseEntity<Map<String, Boolean>> response = adminController.checkAdminSession(request);
@@ -128,7 +163,7 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertFalse(response.getBody().get("authenticated"));
+        assertFalse(response.getBody().get("authenticated"), "L'administrateur ne devrait pas être authentifié si la session n'existe pas.");
     }
 
     @Test
@@ -142,12 +177,12 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Déconnexion administrateur réussie.", response.getBody().get("message"));
-        verify(session, times(1)).invalidate();
+        assertEquals("Déconnexion administrateur réussie. Session invalidée.", response.getBody().get("message"));
+        verify(session, times(1)).invalidate(); // Vérifie que la session a été invalidée.
     }
 
     @Test
-    void adminLogout_sessionDoesNotExist_returnsOk() {
+    void adminLogout_sessionDoesNotExist_returnsOkWithMessage() {
         // Arrange
         when(request.getSession(false)).thenReturn(null);
 
@@ -157,15 +192,15 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Déconnexion administrateur réussie.", response.getBody().get("message"));
-        verify(session, never()).invalidate();
+        assertEquals("Aucune session administrateur active à déconnecter.", response.getBody().get("message"));
+        verify(session, never()).invalidate(); // Vérifie que invalidate n'a pas été appelé.
     }
 
     @Test
     void adminDashboard_adminLoggedIn_returnsOkAndWelcomeMessage() {
         // Arrange
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("ADMIN_LOGGED_IN")).thenReturn(true);
+        when(session.getAttribute(AdminController.SESSION_ADMIN_LOGGED_IN)).thenReturn(true);
 
         // Act
         ResponseEntity<Map<String, String>> response = adminController.adminDashboard(request);
@@ -173,14 +208,14 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Bienvenue José.", response.getBody().get("message"));
+        assertEquals("Bienvenue sur le dashboard administrateur.", response.getBody().get("message"));
     }
 
     @Test
     void adminDashboard_adminNotLoggedIn_returnsUnauthorized() {
         // Arrange
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("ADMIN_LOGGED_IN")).thenReturn(null);
+        when(session.getAttribute(AdminController.SESSION_ADMIN_LOGGED_IN)).thenReturn(null); // Admin non connecté
 
         // Act
         ResponseEntity<Map<String, String>> response = adminController.adminDashboard(request);
@@ -188,13 +223,14 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Non autorisé.", response.getBody().get("message"));
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+        assertEquals("Non autorisé. Veuillez vous connecter.", response.getBody().get("message"));
     }
 
     @Test
     void adminDashboard_sessionDoesNotExist_returnsUnauthorized() {
         // Arrange
-        when(request.getSession(false)).thenReturn(null);
+        when(request.getSession(false)).thenReturn(null); // Pas de session
 
         // Act
         ResponseEntity<Map<String, String>> response = adminController.adminDashboard(request);
@@ -202,6 +238,7 @@ class AdminControllerTest {
         // Assert
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Non autorisé.", response.getBody().get("message"));
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+        assertEquals("Non autorisé. Veuillez vous connecter.", response.getBody().get("message"));
     }
 }

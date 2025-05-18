@@ -26,7 +26,6 @@ public class ModelMapperConfig {
             protected void configure() {
                 map().setIdDiscipline(source.getIdDiscipline());
                 map().setNomDiscipline(source.getNomDiscipline());
-                // Ajoutez d'autres mappings pour les champs de DisciplineDto si nécessaire
             }
         });
 
@@ -42,9 +41,6 @@ public class ModelMapperConfig {
                 using(context -> getPrixUnitaire((ContenuPanier) context.getSource())).map().setPrixUnitaire(source.getOffre().getPrix());
                 using(context -> getTypeOffre((ContenuPanier) context.getSource())).map().setTypeOffre(source.getOffre().getTypeOffre());
                 using(context -> getPrixTotalOffre((ContenuPanier) context.getSource())).map(source).setPrixTotalOffre(null);
-
-                // Le chemin 'source.getOffre().getIdOffre()' etc. est toujours nécessaire pour ModelMapper
-                // La VALEUR mappée sera celle retournée par le convertisseur.
             }
         });
 
@@ -77,12 +73,11 @@ public class ModelMapperConfig {
         return (source != null && source.getOffre() != null) ? source.getOffre().getTypeOffre() : null;
     }
 
-
     /**
      * Helper pour calculer le prix total de l'Offre dans un ContenuPanier, gère les cas null.
      * Refactorisé pour potentiellement réduire la complexité perçue.
      */
-    private static BigDecimal getPrixTotalOffre(ContenuPanier source) { // Complexité réduite par rapport à un seul if multi-condition
+    private static BigDecimal getPrixTotalOffre(ContenuPanier source) {
         // Complexité: 1 + 1 + 1 = 3 (un point pour chaque if)
         if (source == null) { // +1
             return BigDecimal.ZERO;
@@ -95,9 +90,6 @@ public class ModelMapperConfig {
         if (prix == null) { // +1
             return BigDecimal.ZERO;
         }
-        // Si on arrive ici, source, offre et prix ne sont pas null
         return prix.multiply(BigDecimal.valueOf(source.getQuantiteCommandee()));
     }
-
-    // --- Fin des Méthodes Helpers ---
 }

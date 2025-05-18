@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.studi.bloc3jo2024.controller.AuthController;
 import fr.studi.bloc3jo2024.dto.authentification.LoginUtilisateurRequestDto;
 import fr.studi.bloc3jo2024.dto.authentification.RegisterRequestDto;
+import fr.studi.bloc3jo2024.exception.GlobalExceptionHandler;
 import fr.studi.bloc3jo2024.service.JwtService;
 import fr.studi.bloc3jo2024.service.UtilisateurService;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension.class) // Utilise l'extension Mockito pour JUnit 5
 class AuthControllerMvcTest {
 
     @InjectMocks
@@ -43,167 +44,195 @@ class AuthControllerMvcTest {
     private AuthenticationManager authenticationManager;
 
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
+    private ObjectMapper objectMapper; // Pour convertir les objets Java en JSON et vice-versa
 
     @BeforeEach
     void setUp() {
-        // Configurer MockMvc pour inclure le AuthenticationManager mocké dans le contrôleur
+        // Initialise MockMvc pour tester le contrôleur en isolation
+        // GlobalExceptionHandler est inclus pour tester la gestion des exceptions du contrôleur
         mockMvc = MockMvcBuilders.standaloneSetup(authController)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+        // Configure ObjectMapper pour gérer les types Java Time (comme LocalDate)
         objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule()); // Ajouté pour gérer LocalDate
+        objectMapper.registerModule(new JavaTimeModule());
+    }
+
+    // Méthode utilitaire pour créer un DTO d'inscription valide
+    private RegisterRequestDto createValidRegisterRequestDto() {
+        RegisterRequestDto request = new RegisterRequestDto();
+        request.setUsername("testuserMvc");
+        request.setFirstname("Jean");
+        request.setDate(LocalDate.of(1990, 1, 1));
+        request.setEmail("mvc_test@example.com");
+        request.setPhonenumber("+33612345678");
+        request.setStreetnumber(10);
+        request.setAddress("10 rue de Paris"); // Note: Ce champ semble redondant si streetnumber est déjà là.
+        request.setPostalcode("75000");
+        request.setCity("Paris");
+        request.setPassword("MotDePassMvc123!");
+        request.setCountry("France");
+        return request;
     }
 
     @Test
     void register_shouldReturnCreated() throws Exception {
-        // Création d'un objet RegisterRequestDto
-        RegisterRequestDto request = new RegisterRequestDto();
-        request.setUsername("testuser");
-        request.setFirstname("Jean");
-        request.setDate(LocalDate.of(1990, 1, 1));
-        request.setEmail("test@example.com");
-        request.setStreetnumber(10);
-        request.setAddress("10 rue de Paris");
-        request.setPostalcode("75000");
-        request.setCity("Paris");
-        request.setPassword("MotDePass123!");
-        request.setCountry("France");
+        // Arrange
+        RegisterRequestDto request = createValidRegisterRequestDto();
+        // Simule le service utilisateur ne faisant rien (pas d'exception)
+        doNothing().when(utilisateurService).registerUser(any(RegisterRequestDto.class));
 
-        // Simule le comportement de la méthode registerUser
-        doNothing().when(utilisateurService).registerUser(request);
-
-        // Effectuer l'appel POST et vérifier le statut
+        // Act & Assert
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated()) // Vérifie si le statut est 201 Created
-                .andExpect(jsonPath("$.message").value("Inscription réussie. Un email de confirmation a été envoyé.")); // Vérifie le message
+                        .content(objectMapper.writeValueAsString(request))) // Convertit l'objet en JSON
+                .andExpect(status().isCreated()) // Vérifie le statut HTTP 201
+                .andExpect(jsonPath("$.message").value("Inscription réussie. Un email de confirmation a été envoyé.")); // Vérifie le message dans le corps JSON
 
-        // Vérifie que la méthode registerUser a bien été appelée
-        verify(utilisateurService).registerUser(request);
+        verify(utilisateurService).registerUser(any(RegisterRequestDto.class)); // Vérifie l'appel au service
     }
 
     @Test
     void confirm_shouldReturnOk_whenTokenIsValid() throws Exception {
+        // Arrange
         String token = "validToken";
-
-        // Simuler la confirmation du token
         doNothing().when(utilisateurService).confirmUser(token);
 
-        // Effectuer l'appel GET pour confirmer le token
+        // Act & Assert
         mockMvc.perform(get("/auth/confirm")
-                        .param("token", token))
-                .andExpect(status().isOk()) // Vérifie que la réponse est OK
-                .andExpect(content().string("Compte activé. Vous pouvez désormais vous connecter.")); // Vérifie le message
+                        .param("token", token)) // Ajoute le token comme paramètre de requête
+                .andExpect(status().isOk()) // Vérifie le statut HTTP 200
+                .andExpect(content().string("Compte activé. Vous pouvez désormais vous connecter.")); // Vérifie le corps de la réponse texte
 
-        // Vérifie que la méthode confirmUser a bien été appelée
         verify(utilisateurService).confirmUser(token);
     }
 
     @Test
     void confirm_shouldReturnBadRequest_whenTokenIsInvalid() throws Exception {
+        // Arrange
         String token = "invalidToken";
+        String serviceErrorMessage = "Token invalide pour ce test MVC"; // Message spécifique du mock pour le test
+        // Simule le service utilisateur levant une IllegalArgumentException
+        doThrow(new IllegalArgumentException(serviceErrorMessage)).when(utilisateurService).confirmUser(token);
 
-        // Simuler une exception pour un token invalide
-        doThrow(new IllegalArgumentException("Token invalide")).when(utilisateurService).confirmUser(token);
-
-        // Effectuer l'appel GET pour confirmer le token
+        // Act & Assert
         mockMvc.perform(get("/auth/confirm")
                         .param("token", token))
-                .andExpect(status().isBadRequest()) // Vérifie que la réponse est BAD_REQUEST (400)
-                .andExpect(content().string("Token invalide ou expiré. Token invalide")); // Vérifie le message d'erreur
+                .andExpect(status().isBadRequest()) // Vérifie le statut HTTP 400
+                // Le corps de la réponse doit correspondre à ce que AuthController construit
+                .andExpect(content().string("Lien de confirmation invalide ou expiré. " + serviceErrorMessage));
 
-        // Vérifie que la méthode confirmUser a bien été appelée
         verify(utilisateurService).confirmUser(token);
     }
 
     @Test
+    void confirm_shouldReturnConflict_whenAccountAlreadyActivated() throws Exception {
+        // Arrange
+        String token = "usedToken";
+        String serviceErrorMessage = "Compte déjà utilisé pour ce test MVC";
+        doThrow(new IllegalStateException(serviceErrorMessage)).when(utilisateurService).confirmUser(token);
+
+        // Act & Assert
+        mockMvc.perform(get("/auth/confirm")
+                        .param("token", token))
+                .andExpect(status().isConflict()) // Vérifie le statut HTTP 409
+                .andExpect(content().string("Ce compte est déjà activé ou le lien de confirmation a déjà été utilisé. " + serviceErrorMessage));
+        verify(utilisateurService).confirmUser(token);
+    }
+
+
+    @Test
     void login_shouldReturnOk_whenCredentialsAreValid() throws Exception {
+        // Arrange
         LoginUtilisateurRequestDto request = new LoginUtilisateurRequestDto();
         request.setEmail("test@example.com");
         request.setPassword("MotDePass123!");
 
-        // Simuler l'authentification réussie via AuthenticationManager
-        // Créer un objet Authentication mocké pour simuler le résultat d'une authentification réussie
         Authentication mockAuthentication = mock(Authentication.class);
-        when(mockAuthentication.getName()).thenReturn(request.getEmail()); // Simule l'obtention de l'email de l'utilisateur authentifié
-
-        // Mock l'appel à authenticationManager.authenticate pour retourner l'objet Authentication mocké
+        when(mockAuthentication.getName()).thenReturn(request.getEmail());
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(mockAuthentication); // Mock l'authentification réussie
+                .thenReturn(mockAuthentication);
+        when(jwtService.generateToken(request.getEmail())).thenReturn("mockJwtToken");
 
-        // Simuler la génération du JWT APRES l'authentification réussie
-        when(jwtService.generateToken(request.getEmail())).thenReturn("mockJwtToken"); // MMock avec l'email attendu
-
-        // Effectuer l'appel POST pour la connexion
+        // Act & Assert
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk()) // Vérifie que le statut est 200 OK
-                .andExpect(jsonPath("$.message").value("Connexion réussie")) // Vérifie le message
-                .andExpect(jsonPath("$.token").value("mockJwtToken"));  // Vérifie le JWT généré
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Connexion réussie"))
+                .andExpect(jsonPath("$.token").value("mockJwtToken"));
 
-        // Vérifier que authenticationManager.authenticate et jwtService.generateToken ont été appelés
-        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class)); // Vérification ajoutée
-        verify(jwtService).generateToken(request.getEmail()); // Vérification
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(jwtService).generateToken(request.getEmail());
     }
 
     @Test
     void login_shouldReturnUnauthorized_whenCredentialsAreInvalid() throws Exception {
+        // Arrange
         LoginUtilisateurRequestDto request = new LoginUtilisateurRequestDto();
         request.setEmail("test@example.com");
         request.setPassword("WrongPassword");
 
-        // Simuler un échec d'authentification via AuthenticationManager
-        // Mock l'appel à authenticationManager.authenticate pour lancer une exception
+        // Simule l'AuthenticationManager levant une BadCredentialsException
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Email ou mot de passe invalide")); // Ajouté : Mock l'échec d'authentification
+                .thenThrow(new BadCredentialsException("Email ou mot de passe invalide.")); // Le message doit correspondre à celui attendu
 
-        // Effectuer l'appel POST pour la connexion
+        // Act & Assert
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized()) // Vérifie que le statut est 401 Unauthorized
-                // Vérifie que le contrôleur renvoie le message d'échec attendu
+                .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Email ou mot de passe invalide.")); // Vérifie le message d'erreur
 
-        // Vérifier que authenticationManager.authenticate a été appelé
-        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class)); // Vérification ajoutée
-        // Vérifier que jwtService.generateToken n'a PAS été appelé en cas d'échec d'authentification
-        verify(jwtService, never()).generateToken(anyString()); // Vérification ajoutée
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(jwtService, never()).generateToken(anyString()); // S'assure que le token n'est pas généré
     }
 
     @Test
     void passwordResetRequest_shouldReturnNoContent_whenEmailIsValid() throws Exception {
+        // Arrange
         String email = "test@example.com";
-
-        // Simuler la demande de réinitialisation de mot de passe
         doNothing().when(utilisateurService).requestPasswordReset(email);
 
-        // Effectuer l'appel POST pour demander une réinitialisation
+        // Act & Assert
         mockMvc.perform(post("/auth/password-reset-request")
-                        .param("email", email))
-                .andExpect(status().isNoContent()); // Vérifie que la réponse est No Content (204)
+                        .param("email", email)) // Envoi comme paramètre de requête
+                .andExpect(status().isNoContent()); // Vérifie le statut HTTP 204
 
-        // Vérifie que la méthode requestPasswordReset a bien été appelée
         verify(utilisateurService).requestPasswordReset(email);
     }
 
     @Test
     void passwordReset_shouldReturnNoContent_whenResetIsSuccessful() throws Exception {
+        // Arrange
         String token = "validToken";
         String newPassword = "NewPassword123!";
-
-        // Simuler la réinitialisation du mot de passe
         doNothing().when(utilisateurService).resetPassword(token, newPassword);
 
-        // Effectuer l'appel POST pour réinitialiser le mot de passe
+        // Act & Assert
         mockMvc.perform(post("/auth/password-reset")
                         .param("token", token)
                         .param("newPassword", newPassword))
-                .andExpect(status().isNoContent()); // Vérifie que la réponse est No Content (204)
+                .andExpect(status().isNoContent());
 
-        // Vérifie que la méthode resetPassword a bien été appelée
+        verify(utilisateurService).resetPassword(token, newPassword);
+    }
+
+    @Test
+    void passwordReset_shouldReturnBadRequest_whenTokenIsInvalid() throws Exception {
+        // Arrange
+        String token = "invalidToken";
+        String newPassword = "NewPassword123!";
+        // Simule le service levant une IllegalArgumentException pour un token invalide
+        doThrow(new IllegalArgumentException("Token de réinitialisation invalide ou expiré."))
+                .when(utilisateurService).resetPassword(token, newPassword);
+
+        // Act & Assert
+        mockMvc.perform(post("/auth/password-reset")
+                        .param("token", token)
+                        .param("newPassword", newPassword))
+                .andExpect(status().isBadRequest()); // Attend un statut 400 Bad Request
+
         verify(utilisateurService).resetPassword(token, newPassword);
     }
 }

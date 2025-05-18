@@ -20,6 +20,9 @@ public class RegisterRequestDto {
     @NotBlank(message = "Email requis")
     private String email;
 
+    @NotBlank(message = "Numéro de téléphone requis")
+    private String phonenumber;
+
     @NotNull(message = "Le numéro de rue est requis (mettre 0 si absent)")
     private Integer streetnumber;
 

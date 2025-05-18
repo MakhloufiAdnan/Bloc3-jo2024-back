@@ -1,53 +1,83 @@
+# Configuration spécifique pour l'environnement de développement et de test bout en bout.
 spring:
-  application:
-    name: jo2024
-
+  # Configuration de la source de données pour le développement et les tests
   datasource:
-    url: jdbc:postgresql://localhost:6000/jo2024_db
-    username: postgres
-    password: motdepasse
+    # Les valeurs par défaut (après le ':') sont pour un développement local sans Testcontainers.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:6000/jo2024_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:motdepasse}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      leak-detection-threshold: 10000
 
+  # Configuration JPA/Hibernate
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      # TEST_SPRING_JPA_HIBERNATE_DDL_AUTO est fourni par AbstractIntegrationTest.java
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update} # 'update' ou 'validate' pour dev local
     show-sql: true
+    open-in-view: false # La valeur par défaut est true
+    properties:
+      hibernate:
+        format_sql: true
 
+  # Configuration de Spring Mail
   mail:
-    # Configuration Spring Mail
-    host: smtp.gmail.com
-    port: 587
-    username: makhloufistudi@gmail.com
-    password: otgtnpvevcrdxdqk
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:3025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    protocol: smtp
     properties:
       mail:
         smtp:
-            auth: true
-            starttls:
-              enable: true
-              required: true
-    protocol: smtp
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}
+
+server:
+  port: ${PORT:8080} # PORT est une variable d'environnement standard
+  error:
+    include-message: always # Utile pour dev/test
+
 jwt:
-  secret: '?NFKlvnlavazmb32645bzlhoIHOHOIdfnlkanzv#gaz'
-  expiration: 36000000
+  secret: ${JWT_SECRET:valeurParDefautLocalPourSecretJWT}
+  expiration: ${JWT_EXPIRATION:3600000}
+
+admin:
+  email: ${ADMIN_EMAIL:admin-default@example.com}
+  password: ${ADMIN_PASSWORD:AdminDefaultPass123!}
 
 app:
   frontend:
-    confirmation-base-url: http://localhost:80/confirm
-    reset-password-base-url: http://localhost:80/reset-password
-  email:
-    # Sujet et contenu de l'e-mail pour le billet
+    confirmation-base-url: ${FRONTEND_URL_CONF:http://localhost:3000/confirm-default}
+    reset-password-base-url: ${FRONTEND_URL_RESET:http://localhost:3000/reset-default}
+  email: # Structure personnalisée pour les templates d'email
     sujet:
-      billet: Votre billet pour les Jeux Olympiques !
+      billet: "[DEV-E2E] Votre billet pour les Jeux Olympiques !"
     contenu:
-      billet: "Bonjour %s,<br><br>Merci pour votre achat ! Vous trouverez votre billet en pièce jointe.<br>Votre clé de billet unique est : <b>%s</b>.<br><br>À bientôt aux JO !"
-
-admin:
-  email: jose@studi.fr
-  password: Jose2024
+      billet: "Bonjour %s,<br><br>(Message de DEV) Merci pour votre achat ! Vous trouverez votre billet en pièce jointe.<br>Votre clé de billet unique est : <b>%s</b>.<br><br>À bientôt aux JO !"
 
 logging:
   level:
-    org:
-      springframework:
-        security: DEBUG
+    root: INFO
+    fr.studi: DEBUG                         # Logs de votre application
+    org.springframework.web: INFO           # Moins de bruit de Spring MVC/WebFlux
+    org.springframework.security: trace      # Moins de bruit de Spring Security
+    org.hibernate.SQL: DEBUG                # Voir les requêtes SQL générées
+    org.hibernate.type.descriptor.sql: INFO # Paramètres SQL (moins verbeux que TRACE)
+    org.testcontainers: INFO                # Logs de Testcontainers
+    com.icegreen.greenmail: INFO            # Logs de GreenMail
+
+management:
+  health:
+    mail:
+      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false} # Contrôlé par variable de test
+  endpoints:
+    web:
+      exposure:
+        include: "*" # Expose tous les endpoints Actuator (health, env, metrics, etc.)
+      base-path: /management # Chemin de base pour les endpoints Actuator
+  endpoint:
+    health:
+      show-details: always # Montre les détails complets dans /management/health

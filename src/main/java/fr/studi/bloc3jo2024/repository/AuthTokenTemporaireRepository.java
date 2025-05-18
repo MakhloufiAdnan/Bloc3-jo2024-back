@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,28 +15,40 @@ import java.util.UUID;
 public interface AuthTokenTemporaireRepository extends JpaRepository<AuthTokenTemporaire, UUID> {
 
     /**
-     * Recherche un token temporaire par sa valeur hashée.
+     * Trouve un token d'authentification temporaire par sa valeur hachée.
      *
-     * @param tokenHache La valeur hashée du token temporaire.
-     * @return Un Optional contenant le token temporaire correspondant s'il est trouvé, sinon un Optional vide.
+     * @param tokenHache La chaîne du token haché.
+     * @return Un Optional contenant le token s'il est trouvé, sinon vide.
      */
     Optional<AuthTokenTemporaire> findByTokenHache(String tokenHache);
 
     /**
-     * Recherche un token temporaire associé à un utilisateur spécifique et d'un type donné.
+     * Trouve un token d'authentification temporaire pour un utilisateur spécifique et un type de token.
+     * Utile pour s'assurer qu'un utilisateur n'a pas plusieurs tokens actifs du même type.
      *
-     * @param utilisateur L'utilisateur auquel le token temporaire est associé.
-     * @param typeToken   Le type du token temporaire (mot de passe oublié, activation de compte, jeton connexion).
-     * @return Un Optional contenant le token temporaire correspondant s'il est trouvé, sinon un Optional vide.
+     * @param utilisateur L'utilisateur associé au token.
+     * @param typeToken   Le type du token.
+     * @return Un Optional contenant le token s'il est trouvé, sinon vide.
      */
     Optional<AuthTokenTemporaire> findByUtilisateurAndTypeToken(Utilisateur utilisateur, TypeAuthTokenTemp typeToken);
 
     /**
-     * Supprime tous les tokens temporaires dont la date d'expiration est antérieure à la date spécifiée.
+     * Supprime tous les tokens d'authentification temporaires dont la date d'expiration est antérieure à la date donnée.
      *
-     * @param dateExpiration La date limite d'expiration. Tous les tokens expirés avant cette date seront supprimés.
-     * @return Le nombre de tokens temporaires qui ont été supprimés.
-     * Permet la maintenance et la sécurité, en supprimant régulièrement les tokens obsolètes.
+     * @param dateExpiration La date et l'heure limites pour l'expiration.
+     * @return Le nombre de tokens supprimés.
      */
     long deleteByDateExpirationBefore(LocalDateTime dateExpiration);
+
+    /**
+     * Trouve tous les tokens temporaires qui ne sont pas utilisés (champ 'isUsed' = false dans l'entité)
+     * ET dont la date d'expiration est postérieure à la date fournie (donc non expirés).
+     * Spring Data JPA déduira la requête à partir de ce nom de méthode.
+     * Le nom 'IsUsedFalse' correspond à une propriété 'isUsed' dans l'entité AuthTokenTemporaire.
+     *
+     * @param date La date actuelle, pour comparer avec la date d'expiration des tokens.
+     * @return Une liste d'entités AuthTokenTemporaire actives.
+     */
+    // NOM DE MÉTHODE CORRIGÉ : Doit correspondre au nom de la propriété 'isUsed' dans l'entité.
+    List<AuthTokenTemporaire> findAllByIsUsedFalseAndDateExpirationAfter(LocalDateTime date);
 }

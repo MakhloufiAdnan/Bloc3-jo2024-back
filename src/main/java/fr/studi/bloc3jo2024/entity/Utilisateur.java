@@ -85,4 +85,23 @@ public class Utilisateur {
 
     @OneToMany(mappedBy = "utilisateur")
     private List<Billet> billets;
+
+
+    // Dans fr.studi.bloc3jo2024.entity.Utilisateur.java
+
+    @Override
+    public String toString() {
+        return "Utilisateur{" +
+                "idUtilisateur=" + idUtilisateur +
+                ", email='" + email + '\'' + // Soyez prudent avec le logging des PII en production
+                ", nom='" + nom + '\'' +
+                ", prenom='" + prenom + '\'' +
+                ", dateNaissance=" + dateNaissance +
+                ", dateCreation=" + dateCreation +
+                ", cleUtilisateur='" + (cleUtilisateur != null ? cleUtilisateur.substring(0, Math.min(cleUtilisateur.length(), 8)) + "..." : "null") + '\'' + // Tronquer pour les logs
+                ", isVerified=" + isVerified +
+                ", roleId=" + (role != null && role.getIdRole() != null ? role.getIdRole() : "null") +
+                ", adresseId=" + (adresse != null && adresse.getIdAdresse() != null ? adresse.getIdAdresse() : "null") +
+                '}';
+    }
 }

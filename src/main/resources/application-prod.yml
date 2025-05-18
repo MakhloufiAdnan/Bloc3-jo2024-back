@@ -1,0 +1,96 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Configurations HikariCP
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}  # 30 secondes
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT:600000}             # 10 minutes
+      max-lifetime: ${HIKARI_MAX_LIFETIME:1800000}            # 30 minutes
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:10}           # Ajuster selon la charge attendue
+      minimum-idle: ${HIKARI_MIN_IDLE:5}                      # Ajuster selon la charge attendue
+      pool-name: Jo2024ProdHikariPool
+
+  jpa:
+    hibernate:
+      ddl-auto: update              # 'validate' vérifie que le schéma de la BDD correspond aux entités.
+    show-sql: ${JPA_SHOW_SQL:false} # Pour éviter des logs excessifs.
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: ${JPA_FORMAT_SQL:false}
+
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+server:
+  port: ${PORT:8080}
+
+  # Compression des réponses HTTP pour la performance
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css,image/svg+xml
+    min-response-size: 1024 # Taille minimale pour compresser (en octets)
+  error:
+    include-message: never
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+
+admin:
+  email: ${ADMIN_EMAIL}
+  password: ${ADMIN_PASSWORD}
+  path:
+    prefix: /management
+  auth:
+    path:
+      prefix: /management/auth
+
+app:
+  frontend:
+    confirmation-base-url: ${FRONTEND_URL_CONF}
+    reset-password-base-url: ${FRONTEND_URL_RESET}
+  email:
+    # Sujet et contenu de l'e-mail pour le billet
+    sujet:
+      billet: Votre billet pour les Jeux Olympiques !
+    contenu:
+      billet: "Bonjour %s,<br><br>Merci pour votre achat ! Vous trouverez votre billet en pièce jointe.<br>Votre clé de billet unique est : <b>%s</b>.<br><br>À bientôt aux JO !"
+
+logging:
+  level:
+    root: INFO                # Niveau de log par défaut.
+    fr.studi: INFO            # Logs de l'application en INFO, sauf si un module spécifique nécessite DEBUG temporairement.
+    org.springframework: WARN
+    org.hibernate: WARN
+
+# Configuration Actuator pour la production
+management:
+  health:
+    mail:
+      enabled: true # Activer le health check pour le mail
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus" # Exposer uniquement les endpoints Actuator nécessaires et sécurisés.
+      base-path: /management              # Changer le chemin de base pour Actuator (sécurité par obscurcissement partiel)
+  endpoint:
+    health:
+      show-details: when_authorized # Afficher les détails uniquement aux utilisateurs autorisés.
+      # Probes de vivacité et de disponibilité pour Kubernetes/Cloud
+      probes:
+        enabled: true

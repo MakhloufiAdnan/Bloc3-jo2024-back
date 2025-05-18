@@ -31,4 +31,15 @@ public class Role {
     // Relation One-to-Many vers l'entité Utilisateur. Un rôle peut être attribué à plusieurs utilisateurs.
     @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST)
     private Set<Utilisateur> utilisateurs;
+
+
+    // Dans fr.studi.bloc3jo2024.entity.Role.java
+    @Override
+    public String toString() {
+        return "Role{" +
+                "idRole=" + idRole +
+                ", typeRole=" + typeRole +
+                // Évitez d'accéder à la collection 'utilisateurs' ici pour prévenir LazyInitializationException
+                '}';
+    }
 }

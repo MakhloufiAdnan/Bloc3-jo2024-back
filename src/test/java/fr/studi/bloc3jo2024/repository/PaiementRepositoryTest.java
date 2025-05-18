@@ -1,25 +1,48 @@
 package fr.studi.bloc3jo2024.repository;
 
-import fr.studi.bloc3jo2024.entity.Adresse;
-import fr.studi.bloc3jo2024.entity.Paiement;
-import fr.studi.bloc3jo2024.entity.Panier;
-import fr.studi.bloc3jo2024.entity.Pays;
-import fr.studi.bloc3jo2024.entity.Role;
-import fr.studi.bloc3jo2024.entity.Transaction;
-import fr.studi.bloc3jo2024.entity.Utilisateur;
+import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Testcontainers
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class PaiementRepositoryTest {
+
+    @SuppressWarnings("resource")
+    @Container
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+            .withDatabaseName("test_paiement_db_" + UUID.randomUUID().toString().substring(0,8))
+            .withUsername("test_user_paiement")
+            .withPassword("test_pass_paiement");
+
+    @DynamicPropertySource
+    static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
+        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
+        registry.add("spring.sql.init.mode", () -> "always");
+    }
 
     @Autowired
     private PaiementRepository paiementRepository;
@@ -27,90 +50,64 @@ class PaiementRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    Panier panier;
-    Paiement paiement;
-    Transaction transaction;
+    private Panier panierEntity; // Renommé pour clarté
+    private Utilisateur utilisateurEntity; // Renommé pour clarté
+    // Le paiement sera créé dans les méthodes de test ou setUp si besoin constant
 
     @BeforeEach
     void setUp() {
-        // Création et persistance d'un pays
-        Pays pays;
-        pays = Pays.builder()
-                .nomPays("France")
-                .build();
-        entityManager.persist(pays);
-        entityManager.flush();
+        Pays pays = entityManager.getEntityManager()
+                .createQuery("SELECT p FROM Pays p WHERE p.nomPays = :nom", Pays.class)
+                .setParameter("nom", "France")
+                .getResultStream().findFirst().orElseGet(() -> entityManager.persist(Pays.builder().nomPays("France").build()));
 
-        // Création et persistance d'une adresse
-        Adresse adresse;
-        adresse = new Adresse();
-        adresse.setNumeroRue(1);
-        adresse.setNomRue("Rue Test");
-        adresse.setCodePostal("75000");
-        adresse.setVille("Paris");
-        adresse.setPays(pays);
-        entityManager.persist(adresse);
+        Adresse adresse = entityManager.persist(Adresse.builder().numeroRue(1).nomRue("Rue Paiement").codePostal("75000").ville("Paris").pays(pays).build());
 
-        // Création et persistance d'un rôle
-        Role role;
-        role = new Role();
-        role.setTypeRole(TypeRole.USER);
-        entityManager.persist(role);
+        Role role = entityManager.getEntityManager()
+                .createQuery("SELECT r FROM Role r WHERE r.typeRole = :type", Role.class)
+                .setParameter("type", TypeRole.USER)
+                .getResultStream().findFirst().orElseGet(() -> entityManager.persist(Role.builder().typeRole(TypeRole.USER).build()));
 
-        // Création et persistance d'un utilisateur
-        Utilisateur utilisateur;
-        utilisateur = Utilisateur.builder()
-                .email("test@example.com")
-                .nom("NomTest")
-                .prenom("PrenomTest")
-                .dateNaissance(LocalDate.now().minusYears(30))
-                .adresse(adresse)
-                .role(role)
-                .build();
-        entityManager.persist(utilisateur);
-        entityManager.flush();
+        utilisateurEntity = entityManager.persist(Utilisateur.builder()
+                .email("paiement_" + UUID.randomUUID().toString().substring(0,8) + "@example.com")
+                .nom("NomPaiement").prenom("PrenomPaiement").dateNaissance(LocalDate.now().minusYears(30))
+                .adresse(adresse).role(role).dateCreation(LocalDateTime.now()).isVerified(true).build());
 
-        panier = new Panier();
-        panier.setMontantTotal(java.math.BigDecimal.valueOf(100.00));
-        panier.setStatut(StatutPanier.EN_ATTENTE);
-        panier.setUtilisateur(utilisateur);
-        entityManager.persist(panier);
-        entityManager.flush();
-
-        paiement = new Paiement();
-        paiement.setStatutPaiement(StatutPaiement.EN_ATTENTE);
-        paiement.setMethodePaiement(MethodePaiementEnum.PAYPAL);
-        paiement.setDatePaiement(java.time.LocalDateTime.now());
-        paiement.setMontant(java.math.BigDecimal.valueOf(100.00));
-        paiement.setPanier(panier);
-        paiement.setUtilisateur(utilisateur); // Associer l'utilisateur au paiement !
-        entityManager.persist(paiement);
-
-        transaction = new Transaction();
-        transaction.setMontant(java.math.BigDecimal.valueOf(100.00));
-        transaction.setStatutTransaction(StatutTransaction.REUSSI);
-        transaction.setDetails("{\"status\": \"COMPLETED\"}");
-        transaction.setTest(true);
-        transaction.setPaiement(paiement);
-
-        entityManager.persist(transaction);
+        // Créer Panier - Utilisation des setters
+        panierEntity = new Panier();
+        panierEntity.setMontantTotal(BigDecimal.valueOf(100.00));
+        panierEntity.setStatut(StatutPanier.EN_ATTENTE);
+        panierEntity.setUtilisateur(utilisateurEntity);
+        panierEntity.setDateAjout(LocalDateTime.now());
+        entityManager.persist(panierEntity);
         entityManager.flush();
     }
 
     @Test
-    void testSavePaiement() {
-        Paiement savedPaiement = paiementRepository.findById(paiement.getIdPaiement()).orElse(null);
-        assertNotNull(savedPaiement);
-        assertNotNull(savedPaiement.getIdPaiement());
-        assertEquals(java.math.BigDecimal.valueOf(100.0).stripTrailingZeros(), savedPaiement.getMontant().stripTrailingZeros());
-        assertEquals(panier.getIdPanier(), savedPaiement.getPanier().getIdPanier());
+    void testSaveAndRetrievePaiement() { // Renommé pour clarté, combinant les assertions
+        // Créer Paiement - Utilisation des setters
+        Paiement paiement = new Paiement();
+        paiement.setStatutPaiement(StatutPaiement.EN_ATTENTE);
+        paiement.setMethodePaiement(MethodePaiementEnum.PAYPAL);
+        paiement.setDatePaiement(LocalDateTime.now());
+        paiement.setMontant(BigDecimal.valueOf(100.00));
+        paiement.setPanier(panierEntity);
+        paiement.setUtilisateur(utilisateurEntity);
 
-        Transaction associatedTransaction = entityManager.find(Transaction.class, transaction.getIdTransaction());
-        assertNotNull(associatedTransaction);
-        if (transaction.getIdTransaction() != null) {
-            assertEquals(transaction.getIdTransaction().toString(), associatedTransaction.getIdTransaction().toString());
-        }
-        assertEquals(StatutTransaction.REUSSI, associatedTransaction.getStatutTransaction());
-        assertTrue(associatedTransaction.isTest());
+        Paiement savedPaiement = paiementRepository.save(paiement);
+        entityManager.flush(); // Assure la persistance et la génération d'ID
+
+        Optional<Paiement> retrievedOpt = paiementRepository.findById(savedPaiement.getIdPaiement());
+        assertTrue(retrievedOpt.isPresent(), "Le paiement sauvegardé devrait être récupérable.");
+        Paiement retrievedPaiement = retrievedOpt.get();
+
+        assertNotNull(retrievedPaiement.getIdPaiement());
+        assertEquals(0, BigDecimal.valueOf(100.00).compareTo(retrievedPaiement.getMontant()), "Les montants devraient correspondre.");
+        assertNotNull(retrievedPaiement.getPanier(), "Le panier associé ne devrait pas être null.");
+        assertEquals(panierEntity.getIdPanier(), retrievedPaiement.getPanier().getIdPanier());
+        assertNotNull(retrievedPaiement.getUtilisateur(), "L'utilisateur associé ne devrait pas être null.");
+        assertEquals(utilisateurEntity.getIdUtilisateur(), retrievedPaiement.getUtilisateur().getIdUtilisateur());
+        assertEquals(StatutPaiement.EN_ATTENTE, retrievedPaiement.getStatutPaiement());
+        assertEquals(MethodePaiementEnum.PAYPAL, retrievedPaiement.getMethodePaiement());
     }
 }

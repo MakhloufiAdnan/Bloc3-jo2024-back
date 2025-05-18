@@ -1,111 +1,157 @@
 package fr.studi.bloc3jo2024.repository;
 
 import fr.studi.bloc3jo2024.entity.*;
+import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
-import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Testcontainers
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class BilletRepositoryTest {
+
+    // L'annotation @Container avec un champ static assure que Testcontainers gère
+    // le cycle de vie (start/stop) du conteneur pour toutes les méthodes de test de cette classe.
+    // L'avertissement IDE sur "try-with-resources" peut être ignoré ici.
+    @SuppressWarnings("resource") // Optionnel, pour supprimer l'avertissement IDE si persistant
+    @Container
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+            .withDatabaseName("test_billet_db_" + UUID.randomUUID().toString().substring(0,8))
+            .withUsername("test_user_billet")
+            .withPassword("test_pass_billet");
+
+    @DynamicPropertySource
+    static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
+        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
+        registry.add("spring.sql.init.mode", () -> "always");
+    }
 
     @Autowired
     private BilletRepository billetRepository;
+
     @Autowired
     private TestEntityManager entityManager;
 
-    private Pays createFrance() {
-        Pays pays = new Pays();
-        pays.setNomPays("France");
-        return entityManager.persist(pays);
-    }
+    private Utilisateur testUser;
+    private Offre testOffre;
 
-    private Adresse createAdresse(String nomRue, String ville, String codePostal, Pays pays) {
-        Adresse adresse = Adresse.builder()
+
+    @BeforeEach
+    void setUpTestData() {
+
+        Role userRoleEntity;
+        userRoleEntity = entityManager.getEntityManager()
+                .createQuery("SELECT r FROM Role r WHERE r.typeRole = :type", Role.class)
+                .setParameter("type", TypeRole.USER)
+                .getResultStream().findFirst()
+                .orElseGet(() -> entityManager.persist(Role.builder().typeRole(TypeRole.USER).build()));
+
+        Pays francePays;
+        francePays = entityManager.getEntityManager()
+                .createQuery("SELECT p FROM Pays p WHERE p.nomPays = :nom", Pays.class)
+                .setParameter("nom", "France")
+                .getResultStream().findFirst().orElseGet(() -> {
+                    Pays newPays = new Pays();
+                    newPays.setNomPays("France");
+                    return entityManager.persist(newPays);
+                });
+
+        Adresse userAdresse;
+        userAdresse = Adresse.builder()
                 .numeroRue(10)
-                .nomRue(nomRue)
-                .ville(ville)
-                .codePostal(codePostal)
-                .pays(pays)
+                .nomRue("Rue Ticket")
+                .ville("Nice")
+                .codePostal("06000")
+                .pays(francePays)
                 .build();
-        return entityManager.persist(adresse);
-    }
+        entityManager.persist(userAdresse);
 
-    private Utilisateur createUser(Adresse adresse, Role role) {
-        Utilisateur user = Utilisateur.builder()
-                .email("billet@jo.fr")
+        testUser = Utilisateur.builder()
+                .email("billet_" + UUID.randomUUID().toString().substring(0,8) + "@jo.fr")
                 .nom("Toto")
                 .prenom("Ticket")
                 .dateNaissance(LocalDate.of(1990, 2, 1))
-                .role(role)
-                .adresse(adresse)
+                .role(userRoleEntity)
+                .adresse(userAdresse)
+                .dateCreation(LocalDateTime.now())
+                .isVerified(true)
                 .build();
-        return entityManager.persist(user);
-    }
+        entityManager.persist(testUser);
 
-    private Discipline createDiscipline(Adresse adresse) {
-        Discipline discipline = Discipline.builder()
-                .nomDiscipline("Natation")
+        Adresse disciplineAdresseEntity;
+        disciplineAdresseEntity = Adresse.builder()
+                .numeroRue(20)
+                .nomRue("Rue des Athlètes")
+                .ville("Paris")
+                .codePostal("75001")
+                .pays(francePays)
+                .build();
+        entityManager.persist(disciplineAdresseEntity);
+
+        Discipline disciplineEntity;
+        disciplineEntity = Discipline.builder()
+                .nomDiscipline("Natation Test Billet")
                 .dateDiscipline(LocalDateTime.now().plusDays(7))
                 .nbPlaceDispo(100)
-                .adresse(adresse)
+                .adresse(disciplineAdresseEntity)
                 .build();
-        return entityManager.persist(discipline);
-    }
+        entityManager.persist(disciplineEntity);
 
-    private Offre createOffre(Discipline discipline) {
-        Offre offre = new Offre();
-        offre.setTypeOffre(TypeOffre.SOLO);
-        offre.setPrix(java.math.BigDecimal.valueOf(60.00));
-        offre.setDiscipline(discipline);
-        return entityManager.persist(offre);
-    }
-
-    private Role createUserRole() {
-        Role role = Role.builder()
-                .typeRole(TypeRole.USER)
-                .build();
-        return entityManager.persist(role);
+        // Créer Offre - Supposant que votre entité Offre a un constructeur ou des setters
+        testOffre = new Offre(); // Si @Builder n'est pas disponible
+        testOffre.setTypeOffre(TypeOffre.SOLO);
+        testOffre.setPrix(java.math.BigDecimal.valueOf(60.00));
+        testOffre.setQuantite(10);
+        testOffre.setCapacite(1);
+        testOffre.setStatutOffre(StatutOffre.DISPONIBLE);
+        testOffre.setDiscipline(disciplineEntity);
+        entityManager.persist(testOffre);
+        entityManager.flush();
     }
 
     @Test
-    @Transactional
     void testBilletCreationAvecQRCode() {
-        Pays france = createFrance();
-        Adresse userAdresse = createAdresse("Rue Ticket", "Nice", "06000", france);
-        Role userRole = createUserRole();
-        Utilisateur user = createUser(userAdresse, userRole);
+        // Créer Billet - Supposant que votre entité Billet a un constructeur ou des setters
+        Billet billet = new Billet(); // Si @Builder n'est pas disponible
+        billet.setCleFinaleBillet("BILLET-UNIQUE-" + UUID.randomUUID());
+        billet.setQrCodeImage("fake-qrcode-image-billet-test".getBytes());
+        billet.setUtilisateur(testUser);
+        billet.setOffres(List.of(testOffre));
 
-        Adresse disciplineAdresse = createAdresse("Rue des Athlètes", "Paris", "75001", france);
-        Discipline discipline = createDiscipline(disciplineAdresse);
-        Offre offre = createOffre(discipline);
+        Billet savedBillet = billetRepository.save(billet);
+        entityManager.flush();
 
-        Billet billet = Billet.builder()
-                .cleFinaleBillet("BILLET-UNIQUE-123456")
-                .qrCodeImage("fake-qrcode-image".getBytes())
-                .utilisateur(user)
-                .offres(List.of(offre)) // Utilisation du Builder pour la liste d'offres
-                .build();
-        billetRepository.save(billet);
-
-        assertThat(billetRepository.findById(billet.getIdBillet()))
+        assertThat(billetRepository.findById(savedBillet.getIdBillet()))
                 .isPresent()
-                .hasValueSatisfying(savedBillet -> {
-                    assertThat(savedBillet.getUtilisateur().getEmail()).isEqualTo("billet@jo.fr");
-                    assertThat(savedBillet.getOffres())
+                .hasValueSatisfying(retrievedBillet -> {
+                    assertThat(retrievedBillet.getUtilisateur().getEmail()).isEqualTo(testUser.getEmail());
+                    assertThat(retrievedBillet.getOffres())
                             .hasSize(1)
-                            .anySatisfy(offreAssociee -> assertThat(offreAssociee.getIdOffre()).isEqualTo(offre.getIdOffre()));
-                    assertThat(savedBillet.getCleFinaleBillet()).isEqualTo("BILLET-UNIQUE-123456");
-                    assertThat(savedBillet.getQrCodeImage()).isEqualTo("fake-qrcode-image".getBytes());
+                            .anySatisfy(offreAssociee -> assertThat(offreAssociee.getIdOffre()).isEqualTo(testOffre.getIdOffre()));
+                    assertThat(retrievedBillet.getCleFinaleBillet()).isEqualTo(billet.getCleFinaleBillet());
+                    assertThat(retrievedBillet.getQrCodeImage()).isEqualTo("fake-qrcode-image-billet-test".getBytes());
                 });
     }
 }

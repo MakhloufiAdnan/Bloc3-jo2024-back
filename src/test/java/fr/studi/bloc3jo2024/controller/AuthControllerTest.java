@@ -37,37 +37,42 @@ class AuthControllerTest {
     @Mock
     private JwtService jwtService;
 
-    private AutoCloseable closeable;
+    private AutoCloseable closeable; // Pour gérer la fermeture des mocks
 
     @BeforeEach
     void setUp() {
+        // Initialise les mocks et l'objet sous test
         closeable = MockitoAnnotations.openMocks(this);
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        closeable.close();
+        // Ferme les ressources de mocking après chaque test
+        if (closeable != null) {
+            closeable.close();
+        }
     }
 
-    // Test de la méthode register avec le pattern AAA (Arrange, Act, Assert)
     @Test
     void register_validRequest_returnsCreatedAndSuccessMessage() {
-        // Arrange : Préparer le test
+        // Arrange
         RegisterRequestDto request = new RegisterRequestDto();
         request.setEmail("test@example.com");
         request.setPassword("MotDePasseUtilisateur123");
         request.setUsername("Studi");
         request.setFirstname("Bob");
+        // Simule le comportement du service utilisateur (ne rien faire et ne pas lever d'exception)
+        doNothing().when(utilisateurService).registerUser(any(RegisterRequestDto.class));
 
-        // Act : Exécuter l’action à tester
+        // Act
         ResponseEntity<AuthReponseDto> response = authController.register(request);
 
-        // Assert : Vérifier le résultat
+        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Inscription réussie. Un email de confirmation a été envoyé.", response.getBody().getMessage());
-        assertNull(response.getBody().getToken());
-        verify(utilisateurService, times(1)).registerUser(request);
+        assertNull(response.getBody().getToken(), "Aucun token ne doit être retourné lors de l'inscription.");
+        verify(utilisateurService, times(1)).registerUser(request); // Vérifie que la méthode du service a été appelée
     }
 
     @Test
@@ -89,15 +94,17 @@ class AuthControllerTest {
     void confirm_invalidToken_returnsBadRequestAndErrorMessage() {
         // Arrange
         String token = "invalidToken";
-        String errorMessage = "Token invalide.";
-        doThrow(new IllegalArgumentException(errorMessage)).when(utilisateurService).confirmUser(token);
+        String serviceErrorMessage = "Token invalide."; // Le message que le service est censé retourner via l'exception
+        // Simule le service utilisateur levant une IllegalArgumentException
+        doThrow(new IllegalArgumentException(serviceErrorMessage)).when(utilisateurService).confirmUser(token);
 
         // Act
         ResponseEntity<String> response = authController.confirm(token);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals("Token invalide ou expiré. " + errorMessage, response.getBody());
+        // Le message attendu doit correspondre à celui construit par AuthController
+        assertEquals("Lien de confirmation invalide ou expiré. " + serviceErrorMessage, response.getBody());
         verify(utilisateurService).confirmUser(token);
     }
 
@@ -105,15 +112,17 @@ class AuthControllerTest {
     void confirm_accountAlreadyActivated_returnsConflictAndErrorMessage() {
         // Arrange
         String token = "usedToken";
-        String errorMessage = "Compte déjà actif.";
-        doThrow(new IllegalStateException(errorMessage)).when(utilisateurService).confirmUser(token);
+        String serviceErrorMessage = "Compte déjà actif."; // Le message que le service est censé retourner via l'exception
+        // Simule le service utilisateur levant une IllegalStateException
+        doThrow(new IllegalStateException(serviceErrorMessage)).when(utilisateurService).confirmUser(token);
 
         // Act
         ResponseEntity<String> response = authController.confirm(token);
 
         // Assert
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        assertEquals("Compte déjà activé ou lien déjà utilisé. " + errorMessage, response.getBody());
+        // Le message attendu doit correspondre à celui construit par AuthController
+        assertEquals("Ce compte est déjà activé ou le lien de confirmation a déjà été utilisé. " + serviceErrorMessage, response.getBody());
         verify(utilisateurService).confirmUser(token);
     }
 
@@ -124,9 +133,9 @@ class AuthControllerTest {
         request.setEmail("test@example.com");
         request.setPassword("password");
 
-        Authentication authResult = mock(Authentication.class);
-        when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authResult);
-        when(authResult.getName()).thenReturn(request.getEmail());
+        Authentication mockAuthentication = mock(Authentication.class); // Crée un mock pour l'objet Authentication
+        when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(mockAuthentication);
+        when(mockAuthentication.getName()).thenReturn(request.getEmail()); // Simule getName() sur le mock
         when(jwtService.generateToken(request.getEmail())).thenReturn("mockedJwtToken");
 
         // Act
@@ -148,6 +157,7 @@ class AuthControllerTest {
         request.setEmail("invalid@example.com");
         request.setPassword("wrongpassword");
 
+        // Simule l'AuthenticationManager levant une BadCredentialsException
         when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
@@ -160,7 +170,7 @@ class AuthControllerTest {
         assertEquals("Email ou mot de passe invalide.", response.getBody().getMessage());
         assertNull(response.getBody().getToken());
         verify(authManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(jwtService, never()).generateToken(anyString());
+        verify(jwtService, never()).generateToken(anyString()); // Vérifie que generateToken n'est jamais appelé
     }
 
     @Test
@@ -174,7 +184,7 @@ class AuthControllerTest {
 
         // Assert
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        assertNull(response.getBody());
+        assertNull(response.getBody()); // Pas de corps pour 204 No Content
         verify(utilisateurService).requestPasswordReset(email);
     }
 

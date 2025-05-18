@@ -1,21 +1,48 @@
+# Configuration spécifique pour l'environnement de TEST (sauf test bout en bout)
 spring:
   application:
-    name: jo2024
+    name: jo2024-test
+
+  # Assurer que l'application web démarre pour les tests d'intégration MVC ou WebTestClient
+  main:
+    web-application-type: servlet
+
+  # Configuration de la base de données H2 en mémoire pour les tests
+  # H2 est plus rapide et ne nécessite pas de serveur externe pour la plupart des tests.
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     driverClassName: org.h2.Driver
-    username: test
-    password:
+    username: sa # Utilisateur par défaut pour H2
+    password: # Mot de passe vide par défaut pour H2
+    hikari:
+      # Configuration Hikari minimale pour H2 en test
+      leak-detection-threshold: 15000 # Plus permissif pour les tests
+
+  # Configuration JPA/Hibernate pour la base de données de test H2
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    show-sql: true
+      ddl-auto: create-drop # 'create-drop' crée le schéma au début de chaque contexte de test et le supprime à la fin.
+
+    show-sql: true # Utile pour voir les requêtes SQL générées pendant les tests.
+    open-in-view: false
     properties:
       hibernate:
+        format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
+
+# Configuration JWT pour les tests
+# Utilisez un secret et une expiration spécifiques pour les tests.
 jwt:
-  secret: dGhpc2lzYXJlYWxseWxvbmdhbmRzZWN1cmVqd3RzZWNyZXRrZXlmb3JqbzIwMjRjZXR0ZUNsZWRvaXRldHJlU3VwZXJlU2VTdXBlcnRjbG9uZ3VlSmUgbmUgc2FpcyBwbHVzIHF1b2lkaXJl
-  expiration: 100000
-admin:
-  email: test@admin.com
-  password: motdepasse123
+  secret: ceciEstUnSecretDeTestPourJwtQuiEstSuffisammentLongEtAleatoirePourEtreValide123456789!
+  expiration: 600000 # 10 minutes pour les tests
+
+# Configuration Actuator pour les tests
+management:
+  # Désactiver les endpoints Actuator par défaut pour les tests pour accélérer le démarrage,
+  endpoints:
+    web:
+      exposure:
+        include: "health" # Exposer uniquement health si nécessaire
+  endpoint:
+    health:
+      show-details: never

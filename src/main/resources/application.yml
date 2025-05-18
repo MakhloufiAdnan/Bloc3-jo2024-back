@@ -1,3 +1,6 @@
+# Configuration globale de l'application
 spring:
+  application:
+    name: jo2024
   profiles:
     active: dev

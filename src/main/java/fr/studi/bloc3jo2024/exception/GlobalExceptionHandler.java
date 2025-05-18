@@ -1,9 +1,12 @@
 package fr.studi.bloc3jo2024.exception;
 
 import fr.studi.bloc3jo2024.dto.authentification.AuthReponseDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,17 +20,18 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
   // Gestion des erreurs de validation (@Valid) des DTO (@RequestBody)
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(MethodArgumentNotValidException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
     Map<String, String> errors = new HashMap<>();
     ex.getBindingResult().getAllErrors().forEach(error -> {
       String fieldName = ((FieldError) error).getField();
       String errorMessage = error.getDefaultMessage();
-      errors.put(fieldName, errorMessage); // Ajoute l'erreur au map
+        errors.put(fieldName, errorMessage);
     });
-    return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST); // Retourne la map d'erreurs avec le statut 400
+      return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
   }
 
   // Gestion de l'exception personnalisée pour les ressources non trouvées
@@ -46,16 +50,35 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<String> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
     String errorMessage = "Erreur de contrainte de base de données.";
-    if (ex.getMessage() != null && ex.getMessage().contains("Unicité non respectée")) {
-      errorMessage = "Cette donnée existe déjà.";
+      // Vous pouvez inspecter ex.getMessage() ou ex.getCause() pour des messages plus spécifiques si besoin
+      log.error("DataIntegrityViolationException: {}", ex.getMessage()); // Log de l'erreur
+      if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("unique constraint") || ex.getMessage().toLowerCase().contains("unicité non respectée")) {
+          errorMessage = "Une valeur unique est dupliquée (par exemple, email ou nom d'utilisateur).";
     }
-    return new ResponseEntity<>(errorMessage, HttpStatus.CONFLICT); // Retourne un message avec le statut 409 Conflict
+      return new ResponseEntity<>(errorMessage, HttpStatus.CONFLICT);
   }
 
   // Gestion de l'exception IllegalArgumentException pour l'email déjà utilisé
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<AuthReponseDto> handleIllegalArgument(IllegalArgumentException ex) {
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+      log.warn("IllegalArgumentException: {}", ex.getMessage()); // Utilisez warn pour les erreurs client attendues
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST) // Ou CONFLICT(409) si c'est plus approprié pour l'email dupliqué
             .body(new AuthReponseDto(null, ex.getMessage()));
   }
+
+    @ExceptionHandler(MailException.class) // Intercepte MailSendException et autres MailException
+    public ResponseEntity<AuthReponseDto> handleMailException(MailException ex) {
+        log.error("Erreur lors de l'opération d'envoi d'email: ", ex); // Log l'exception complète
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new AuthReponseDto(null, "Erreur interne du serveur lors de la tentative d'envoi d'email."));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    // Soyez prudent si cette exception est utilisée pour divers cas non liés
+    public ResponseEntity<AuthReponseDto> handleIllegalState(IllegalStateException ex) {
+        log.error("État illégal rencontré: ", ex); // Log l'exception complète
+        // Si le message est "Rôle USER manquant.", un 500 est approprié car c'est un problème de configuration/données serveur
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new AuthReponseDto(null, "Erreur interne du serveur : " + ex.getMessage()));
+    }
 }

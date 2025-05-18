@@ -1,135 +1,161 @@
 package fr.studi.bloc3jo2024.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.studi.bloc3jo2024.dto.authentification.LoginAdminRequestDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * Contrôleur REST pour la gestion de l'authentification de l'administrateur via la session HTTP.
- * Les routes sont préfixées par '/api/admin/auth'.
- */
 @RestController
 @RequestMapping("/api/admin/auth")
 public class AdminController {
 
-    // Email de l'administrateur, configuré via la propriété 'admin.email'.
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
+
     @Value("${admin.email}")
-    private String adminEmail;
+    private String configuredAdminEmail;
 
-    // Mot de passe de l'administrateur, configuré via la propriété 'admin.password'.
     @Value("${admin.password}")
-    private String adminPassword;
+    private String configuredAdminPasswordHash;
 
-    // Indiquer qu'un administrateur est connecté.
-    private static final String SESSION_ADMIN_LOGGED_IN = "ADMIN_LOGGED_IN";
+    private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper; // Utilisé pour la sérialisation JSON, notamment pour les réponses d'erreur.
 
-    // Clé JSON pour le message de réponse.
+    public static final String SESSION_ADMIN_LOGGED_IN = "ADMIN_LOGGED_IN";
+
+    // Constantes pour les clés JSON utilisées dans les réponses.
     private static final String JSON_KEY_MESSAGE = "message";
-
-    // Clé JSON pour indiquer si l'administrateur est authentifié.
     private static final String JSON_KEY_AUTHENTICATED = "authenticated";
-
-    // Clé JSON pour le token (même si ici j'utilise la session, je garde une clé 'token' par cohérence).
     private static final String JSON_KEY_TOKEN = "token";
 
     /**
+     * Constructeur pour l'injection de dépendances.
+     * @param passwordEncoder L'encodeur de mot de passe pour la vérification sécurisée des mots de passe.
+     * @param objectMapper Pour la sérialisation/désérialisation JSON.
+     */
+    public AdminController(PasswordEncoder passwordEncoder, ObjectMapper objectMapper) {
+        this.passwordEncoder = passwordEncoder;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
      * Endpoint pour la connexion de l'administrateur.
-     * Valide les identifiants fournis dans le corps de la requête (AdminLoginRequestDTO).
-     * En cas de succès, enregistre l'état de connexion dans la session HTTP.
-     * @param credentials Les identifiants de l'administrateur (email et mot de passe).
-     * @param request     La requête HTTP.
-     * @return ResponseEntity contenant un message de succès et un token de session en cas de succès,
-     * ou une réponse 401 Unauthorized en cas d'échec d'authentification.
+     * Valide les identifiants fournis. En cas de succès, un attribut est positionné dans la session HTTP
+     * pour marquer l'administrateur comme connecté.
+     *
+     * @param credentials Les identifiants de l'administrateur (email et mot de passe en clair).
+     * @param request     La requête HTTP pour accéder ou créer la session.
+     * @return ResponseEntity contenant un message de succès et un "token" symbolique de session,
+     * ou une réponse 401 Unauthorized en cas d'échec.
      */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> adminLogin(@Valid @RequestBody LoginAdminRequestDto credentials, HttpServletRequest request) {
-        String email = credentials.getEmail();
-        String password = credentials.getPassword();
+        String submittedEmail = credentials.getEmail();
+        String submittedPassword = credentials.getPassword();
 
-        // Vérifie si l'email et le mot de passe fournis correspondent aux identifiants de l'administrateur configurés.
-        if (email.equals(adminEmail) && password.equals(adminPassword)) {
+        log.info("Tentative de connexion administrateur pour l'email : {}", submittedEmail);
 
-            // Récupère la session HTTP et y enregistre l'état de connexion de l'administrateur.
-            HttpSession session = request.getSession();
+        // Vérification SÉCURISÉE des identifiants :
+        // 1. Comparaison de l'email.
+        // 2. Comparaison du mot de passe soumis (en clair) avec le hash stocké, en utilisant PasswordEncoder.
+        if (configuredAdminEmail.equals(submittedEmail) &&
+                passwordEncoder.matches(submittedPassword, configuredAdminPasswordHash)) {
+
+            // Création ou récupération de la session existante.
+            // true: crée une nouvelle session si aucune n'existe pour cette requête.
+            HttpSession session = request.getSession(true);
             session.setAttribute(SESSION_ADMIN_LOGGED_IN, true);
 
-            // Renvoie une réponse 200 OK avec un message de succès et un token de session.
-            return ResponseEntity.ok(Map.of(JSON_KEY_TOKEN, "admin-session", JSON_KEY_MESSAGE, "Connexion administrateur réussie."));
+            log.info("Connexion administrateur réussie pour l'email : {}. ID de session : {}", submittedEmail, session.getId());
+            return ResponseEntity.ok(Map.of(
+                    JSON_KEY_TOKEN, "admin-session-active", // "token" symbolique pour indiquer une session active.
+                    JSON_KEY_MESSAGE, "Connexion administrateur réussie."
+            ));
         } else {
-
-            //En cas d'échec d'authentification, renvoie une réponse 401 Unauthorized avec un message d'erreur.
+            log.warn("Échec de la connexion administrateur pour l'email '{}' : Identifiants invalides ou mot de passe incorrect.", submittedEmail);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of(JSON_KEY_MESSAGE, "Identifiants administrateur invalides."));
         }
     }
 
     /**
-     * Endpoint pour vérifier si une session d'administrateur est active.
+     * Endpoint pour vérifier si une session d'administrateur est active et valide.
+     *
      * @param request La requête HTTP.
      * @return ResponseEntity contenant un booléen indiquant si l'administrateur est authentifié.
      */
     @GetMapping("/check-session")
     public ResponseEntity<Map<String, Boolean>> checkAdminSession(HttpServletRequest request) {
-
-        // Récupère la session HTTP sans la créer si elle n'existe pas.
+        // Récupère la session HTTP sans la créer si elle n'existe pas (false).
         HttpSession session = request.getSession(false);
-
-        // Vérifie si la session existe et si l'attribut de connexion de l'administrateur est présent.
         boolean isLoggedIn = session != null && Boolean.TRUE.equals(session.getAttribute(SESSION_ADMIN_LOGGED_IN));
 
-        // Renvoie une réponse 200 OK avec l'état d'authentification de l'administrateur.
+        if (isLoggedIn) {
+            log.debug("Vérification de session admin : Actif. Session ID : {}", session.getId());
+        } else {
+            log.debug("Vérification de session admin : Inactif.");
+        }
         return ResponseEntity.ok(Map.of(JSON_KEY_AUTHENTICATED, isLoggedIn));
     }
 
     /**
      * Endpoint pour la déconnexion de l'administrateur.
-     * Invalide la session HTTP actuelle.
+     * Invalide la session HTTP actuelle si elle existe.
+     *
      * @param request La requête HTTP.
      * @return ResponseEntity contenant un message de succès.
      */
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> adminLogout(HttpServletRequest request) {
-
-        // Récupère la session HTTP sans la créer si elle n'existe pas.
-        HttpSession session = request.getSession(false);
-
-        // Si une session existe, l'invalide.
+        HttpSession session = request.getSession(false); // Ne pas créer de session si elle n'existe pas.
+        String message;
         if (session != null) {
+            String sessionId = session.getId();
             session.invalidate();
+            message = "Déconnexion administrateur réussie. Session invalidée.";
+            log.info("{} Session ID : {}", message, sessionId);
+        } else {
+            message = "Aucune session administrateur active à déconnecter.";
+            log.info(message);
         }
-
-        // Renvoie une réponse 200 OK avec un message de déconnexion réussie.
-        return ResponseEntity.ok(Map.of(JSON_KEY_MESSAGE, "Déconnexion administrateur réussie."));
+        return ResponseEntity.ok(Map.of(JSON_KEY_MESSAGE, message));
     }
 
     /**
-     * Endpoint pour accéder au dashboard de l'administrateur (nécessite une session d'administrateur active).
+     * Endpoint pour accéder au dashboard de l'administrateur.
+     * Nécessite une session d'administrateur active.
+     * La protection de cet endpoint est gérée manuellement ici en vérifiant l'attribut de session.
+     * Si Spring Security est utilisé, il est préférable de sécuriser cet endpoint via la configuration de sécurité
+     * (par exemple, en utilisant des filtres ou des annotations @PreAuthorize).
+     *
      * @param request La requête HTTP.
-     * @return ResponseEntity contenant un message de bienvenue si l'administrateur est connecté,
-     * ou une réponse 401 Unauthorized si l'administrateur n'est pas connecté.
+     * @return ResponseEntity contenant un message de bienvenue ou une réponse 401 Unauthorized.
      */
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, String>> adminDashboard(HttpServletRequest request) {
-
-        // Récupère la session HTTP sans la créer si elle n'existe pas.
         HttpSession session = request.getSession(false);
 
-        // Vérifie si la session existe et si l'attribut de connexion de l'administrateur est présent.
-        if (session == null || session.getAttribute(SESSION_ADMIN_LOGGED_IN) == null) {
-
-            // Si l'administrateur n'est pas connecté, renvoie une réponse 401 Unauthorized.
+        if (session != null && Boolean.TRUE.equals(session.getAttribute(SESSION_ADMIN_LOGGED_IN))) {
+            log.info("Accès autorisé au dashboard pour l'administrateur (session ID : {})", session.getId());
+            // Le message "Bienvenue José." est un placeholder.
+            return ResponseEntity.ok(Map.of(JSON_KEY_MESSAGE, "Bienvenue sur le dashboard administrateur."));
+        } else {
+            log.warn("Accès non autorisé au dashboard administrateur : session invalide ou manquante.");
+            // Réponse JSON structurée pour l'erreur 401.
+            // L'utilisation de objectMapper ici est évitée en retournant directement un ResponseEntity.
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(JSON_KEY_MESSAGE, "Non autorisé."));
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of(JSON_KEY_MESSAGE, "Non autorisé. Veuillez vous connecter."));
         }
-
-        // Si l'administrateur est connecté, renvoie une réponse 200 OK avec un message de bienvenue.
-        return ResponseEntity.ok(Map.of(JSON_KEY_MESSAGE, "Bienvenue José."));
     }
 }

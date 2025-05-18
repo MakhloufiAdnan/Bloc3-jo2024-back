@@ -45,7 +45,7 @@ jobs:
       # 6. Set Heroku config vars
       - name: Set Backend Heroku config vars
         run: |
-          heroku config:set SPRING_PROFILES_ACTIVE=docker \
+          heroku config:set SPRING_PROFILES_ACTIVE=prod \
             ALWAYS_POSTGRES_HOST=${{ secrets.ALWAYS_POSTGRES_HOST }} \
             ALWAYS_POSTGRES_PORT=${{ secrets.ALWAYS_POSTGRES_PORT }} \
             ALWAYS_POSTGRES_DB=${{ secrets.ALWAYS_POSTGRES_DB }} \

@@ -1,8 +1,11 @@
 spring:
+  application:
+    name: jo2024
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:postgresql://${ALWAYS_POSTGRES_HOST}:${ALWAYS_POSTGRES_PORT}/${ALWAYS_POSTGRES_DB}
+    username: ${ALWAYS_POSTGRES_USER}
+    password: ${ALWAYS_POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       # Configurations HikariCP

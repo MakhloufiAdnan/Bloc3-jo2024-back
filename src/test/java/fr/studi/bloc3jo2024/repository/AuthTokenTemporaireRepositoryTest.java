@@ -27,11 +27,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class AuthTokenTemporaireRepositoryTest {
 
+    @SuppressWarnings("resource")
     @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("test_repo_db_" + UUID.randomUUID().toString().substring(0,8))
-            .withUsername("test_user")
-            .withPassword("test_pass");
+            .withUsername("test_user_repo")
+            .withPassword("test_pass_repo");
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -53,39 +54,36 @@ class AuthTokenTemporaireRepositoryTest {
 
     @BeforeEach
     void setUpTestData() {
-        Role userRoleEntity;
-        userRoleEntity = entityManager.getEntityManager()
+        // Assurer que le rôle USER existe ou le créer
+        Role userRoleEntity = entityManager.getEntityManager()
                 .createQuery("SELECT r FROM Role r WHERE r.typeRole = :type", Role.class)
                 .setParameter("type", TypeRole.USER)
                 .getResultStream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("Le rôle USER n'a pas été trouvé. Vérifiez data.sql."));
+                .orElseGet(() -> entityManager.persistFlushFind(Role.builder().typeRole(TypeRole.USER).build()));
 
-        // On crée toujours le pays pour ce test.
-        Pays francePays;
-        francePays = new Pays();
-        francePays.setNomPays("France");
-        entityManager.persist(francePays);
+        Pays francePays = entityManager.getEntityManager()
+                .createQuery("SELECT p FROM Pays p WHERE p.nomPays = :nom", Pays.class)
+                .setParameter("nom", "FranceRepoTest")
+                .getResultStream().findFirst()
+                .orElseGet(() -> entityManager.persistFlushFind(Pays.builder().nomPays("FranceRepoTest").build()));
 
-        // On crée toujours l'adresse pour ce test.
-        Adresse userAdresse;
-        userAdresse = Adresse.builder()
-                .nomRue("1 rue de la Paix")
+        Adresse userAdresse = entityManager.persistFlushFind(Adresse.builder()
+                .nomRue("1 rue de la Paix TestRepo")
                 .numeroRue(1)
-                .ville("Paris")
+                .ville("ParisTestRepo")
                 .codePostal("75001")
                 .pays(francePays)
-                .build();
-        entityManager.persist(userAdresse);
+                .build());
 
         testUser = Utilisateur.builder()
-                .email("testuser.repo@example.com")
+                .email("testuser.repo." + UUID.randomUUID().toString().substring(0,8) + "@example.com") // Email unique
                 .nom("RepoUserNom")
                 .prenom("RepoUserPrenom")
                 .dateNaissance(LocalDate.of(1990, 1, 1))
                 .role(userRoleEntity)
                 .adresse(userAdresse)
                 .dateCreation(LocalDateTime.now())
-                .isVerified(false)
+                .isVerified(true) // Ou false selon les besoins des tests de token
                 .build();
         entityManager.persist(testUser);
         entityManager.flush();
@@ -94,7 +92,9 @@ class AuthTokenTemporaireRepositoryTest {
 
     @Test
     void testCreationTokenTemporaire() {
+        String tokenIdentifier = UUID.randomUUID().toString();
         AuthTokenTemporaire token = AuthTokenTemporaire.builder()
+                .tokenIdentifier(tokenIdentifier)
                 .tokenHache("hashed123ForCreationTest")
                 .typeToken(TypeAuthTokenTemp.VALIDATION_EMAIL)
                 .dateExpiration(LocalDateTime.now().plusDays(1))
@@ -107,21 +107,23 @@ class AuthTokenTemporaireRepositoryTest {
 
         Optional<AuthTokenTemporaire> retrievedTokenOpt = tokenRepository.findById(savedToken.getIdTokenTemp());
         assertThat(retrievedTokenOpt).isPresent();
-        AuthTokenTemporaire retrievedToken = retrievedTokenOpt.get(); // Correction ici si c'était sur un Optional et non une List
+        AuthTokenTemporaire retrievedToken = retrievedTokenOpt.get();
 
         assertThat(retrievedToken.getIdTokenTemp()).isNotNull();
+        assertThat(retrievedToken.getTokenIdentifier()).isEqualTo(tokenIdentifier);
         assertThat(retrievedToken.getTypeToken()).isEqualTo(TypeAuthTokenTemp.VALIDATION_EMAIL);
         assertThat(retrievedToken.getTokenHache()).isEqualTo("hashed123ForCreationTest");
         assertThat(retrievedToken.getDateExpiration()).isAfter(LocalDateTime.now());
         assertThat(retrievedToken.getUtilisateur().getIdUtilisateur()).isEqualTo(testUser.getIdUtilisateur());
     }
-    // ... (autres tests de AuthTokenTemporaireRepositoryTest restent similaires) ...
-    // Assurez-vous que les autres tests utilisent entityManager.persist et entityManager.flush si besoin.
 
     @Test
     void testFindByTokenHache() {
-        String uniqueHash = "uniqueHashedForFindBy";
+        String uniqueHash = "uniqueHashedForFindBy_" + UUID.randomUUID(); // Assurer l'unicité
+        String tokenIdentifier = UUID.randomUUID().toString();
+
         AuthTokenTemporaire token = AuthTokenTemporaire.builder()
+                .tokenIdentifier(tokenIdentifier)
                 .tokenHache(uniqueHash)
                 .typeToken(TypeAuthTokenTemp.RESET_PASSWORD)
                 .dateExpiration(LocalDateTime.now().plusHours(2))
@@ -135,6 +137,7 @@ class AuthTokenTemporaireRepositoryTest {
         assertThat(foundTokenOptional)
                 .isPresent()
                 .hasValueSatisfying(foundToken -> {
+                    assertThat(foundToken.getTokenIdentifier()).isEqualTo(tokenIdentifier);
                     assertThat(foundToken.getTokenHache()).isEqualTo(uniqueHash);
                     assertThat(foundToken.getTypeToken()).isEqualTo(TypeAuthTokenTemp.RESET_PASSWORD);
                     assertThat(foundToken.getUtilisateur().getIdUtilisateur()).isEqualTo(testUser.getIdUtilisateur());
@@ -145,8 +148,10 @@ class AuthTokenTemporaireRepositoryTest {
 
     @Test
     void testFindByUtilisateurAndTypeToken() {
+        String tokenIdentifier = UUID.randomUUID().toString();
         AuthTokenTemporaire token1 = AuthTokenTemporaire.builder()
-                .tokenHache("hashForUserAndTypeTest")
+                .tokenIdentifier(tokenIdentifier)
+                .tokenHache("hashForUserAndTypeTest_" + UUID.randomUUID()) // Assurer l'unicité
                 .typeToken(TypeAuthTokenTemp.VALIDATION_EMAIL)
                 .dateExpiration(LocalDateTime.now().plusDays(1))
                 .utilisateur(testUser)
@@ -158,7 +163,11 @@ class AuthTokenTemporaireRepositoryTest {
         Optional<AuthTokenTemporaire> foundTokenOptional = tokenRepository.findByUtilisateurAndTypeToken(testUser, TypeAuthTokenTemp.VALIDATION_EMAIL);
         assertThat(foundTokenOptional)
                 .isPresent()
-                .hasValueSatisfying(foundToken -> assertThat(foundToken.getTokenHache()).isEqualTo("hashForUserAndTypeTest"));
+                .hasValueSatisfying(foundToken -> {
+                    assertThat(foundToken.getTokenIdentifier()).isEqualTo(tokenIdentifier);
+                    assertThat(foundToken.getTokenHache()).isEqualTo(token1.getTokenHache());
+                });
+
 
         assertThat(tokenRepository.findByUtilisateurAndTypeToken(testUser, TypeAuthTokenTemp.RESET_PASSWORD))
                 .isNotPresent();
@@ -166,8 +175,10 @@ class AuthTokenTemporaireRepositoryTest {
 
     @Test
     void testDeleteByDateExpirationBefore() {
+        String expiredTokenIdentifier = UUID.randomUUID().toString();
         AuthTokenTemporaire expiredToken = AuthTokenTemporaire.builder()
-                .tokenHache("expiredTokenForDeleteTest")
+                .tokenIdentifier(expiredTokenIdentifier)
+                .tokenHache("expiredTokenForDeleteTest_" + UUID.randomUUID()) // Assurer l'unicité
                 .typeToken(TypeAuthTokenTemp.VALIDATION_EMAIL)
                 .dateExpiration(LocalDateTime.now().minusDays(1))
                 .utilisateur(testUser)
@@ -175,8 +186,10 @@ class AuthTokenTemporaireRepositoryTest {
                 .build();
         entityManager.persist(expiredToken);
 
+        String validTokenIdentifier = UUID.randomUUID().toString();
         AuthTokenTemporaire validToken = AuthTokenTemporaire.builder()
-                .tokenHache("validTokenForDeleteTest")
+                .tokenIdentifier(validTokenIdentifier)
+                .tokenHache("validTokenForDeleteTest_" + UUID.randomUUID()) // Assurer l'unicité
                 .typeToken(TypeAuthTokenTemp.CONNEXION)
                 .dateExpiration(LocalDateTime.now().plusHours(1))
                 .utilisateur(testUser)
@@ -187,9 +200,12 @@ class AuthTokenTemporaireRepositoryTest {
 
         LocalDateTime now = LocalDateTime.now();
         long deletedCount = tokenRepository.deleteByDateExpirationBefore(now);
+        entityManager.flush();
+        entityManager.clear();
 
         assertThat(deletedCount).isEqualTo(1);
-        assertThat(tokenRepository.findByTokenHache("expiredTokenForDeleteTest")).isNotPresent();
-        assertThat(tokenRepository.findByTokenHache("validTokenForDeleteTest")).isPresent();
+        // Pour vérifier la suppression
+        assertThat(tokenRepository.findByTokenIdentifier(expiredTokenIdentifier)).isNotPresent();
+        assertThat(tokenRepository.findByTokenIdentifier(validTokenIdentifier)).isPresent();
     }
 }

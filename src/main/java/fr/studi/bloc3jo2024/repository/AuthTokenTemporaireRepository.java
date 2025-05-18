@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,8 +14,16 @@ import java.util.UUID;
 public interface AuthTokenTemporaireRepository extends JpaRepository<AuthTokenTemporaire, UUID> {
 
     /**
-     * Trouve un token d'authentification temporaire par sa valeur hachée.
+     * Trouve un token d'authentification temporaire par sa valeur d'identification brute (non hachée).
      *
+     * @param tokenIdentifier La chaîne du token brut (UUID).
+     * @return Un Optional contenant le token s'il est trouvé, sinon vide.
+     */
+    Optional<AuthTokenTemporaire> findByTokenIdentifier(String tokenIdentifier);
+
+    /**
+     * Trouve un token d'authentification temporaire par sa valeur hachée.
+     * (Peut-être moins utile maintenant, mais on la garde au cas où)
      * @param tokenHache La chaîne du token haché.
      * @return Un Optional contenant le token s'il est trouvé, sinon vide.
      */
@@ -39,16 +46,4 @@ public interface AuthTokenTemporaireRepository extends JpaRepository<AuthTokenTe
      * @return Le nombre de tokens supprimés.
      */
     long deleteByDateExpirationBefore(LocalDateTime dateExpiration);
-
-    /**
-     * Trouve tous les tokens temporaires qui ne sont pas utilisés (champ 'isUsed' = false dans l'entité)
-     * ET dont la date d'expiration est postérieure à la date fournie (donc non expirés).
-     * Spring Data JPA déduira la requête à partir de ce nom de méthode.
-     * Le nom 'IsUsedFalse' correspond à une propriété 'isUsed' dans l'entité AuthTokenTemporaire.
-     *
-     * @param date La date actuelle, pour comparer avec la date d'expiration des tokens.
-     * @return Une liste d'entités AuthTokenTemporaire actives.
-     */
-    // NOM DE MÉTHODE CORRIGÉ : Doit correspondre au nom de la propriété 'isUsed' dans l'entité.
-    List<AuthTokenTemporaire> findAllByIsUsedFalseAndDateExpirationAfter(LocalDateTime date);
 }

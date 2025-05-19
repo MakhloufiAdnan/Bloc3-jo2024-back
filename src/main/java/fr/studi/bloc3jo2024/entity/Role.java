@@ -2,20 +2,23 @@ package fr.studi.bloc3jo2024.entity;
 
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+import java.util.Objects;
 import java.util.Set;
 
-@Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "roles",
-        indexes = @Index(name = "idx_role_type", columnList = "type_role"))
+@Entity
+@Table(name = "roles")
 public class Role {
 
     @Id
@@ -28,18 +31,27 @@ public class Role {
     @Column(name = "type_role",nullable = false, unique = true)
     private TypeRole typeRole;
 
-    // Relation One-to-Many vers l'entité Utilisateur. Un rôle peut être attribué à plusieurs utilisateurs.
-    @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    @ToString.Exclude // Important
     private Set<Utilisateur> utilisateurs;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Role role)) return false;
+        return Objects.equals(idRole, role.idRole);
+    }
 
-    // Dans fr.studi.bloc3jo2024.entity.Role.java
+    @Override
+    public int hashCode() {
+        return Objects.hash(idRole);
+    }
+
     @Override
     public String toString() {
         return "Role{" +
                 "idRole=" + idRole +
                 ", typeRole=" + typeRole +
-                // Évitez d'accéder à la collection 'utilisateurs' ici pour prévenir LazyInitializationException
                 '}';
     }
 }

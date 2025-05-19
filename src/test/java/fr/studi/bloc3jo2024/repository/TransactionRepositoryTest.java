@@ -29,7 +29,7 @@ class TransactionRepositoryTest {
 
     @SuppressWarnings("resource")
     @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("test_transac_db_" + UUID.randomUUID().toString().substring(0,8))
             .withUsername("test_user_transac")
             .withPassword("test_pass_transac");
@@ -58,42 +58,48 @@ class TransactionRepositoryTest {
                 .createQuery("SELECT p FROM Pays p WHERE p.nomPays = :nom", Pays.class)
                 .setParameter("nom", "France")
                 .getResultStream().findFirst().orElseGet(() -> entityManager.persist(Pays.builder().nomPays("France").build()));
+        entityManager.flush();
 
-        Adresse adresse = entityManager.persist(Adresse.builder().numeroRue(1).nomRue("Rue Transac").codePostal("75000").ville("Paris").pays(pays).build());
+        Adresse userAdresse;
+        userAdresse = entityManager.persist(Adresse.builder().numeroRue(1).nomRue("Rue Transac").codePostal("75000").ville("Paris").pays(pays).build());
+        entityManager.flush();
 
-        Role role = entityManager.getEntityManager()
+        Role userRole;
+        userRole = entityManager.getEntityManager()
                 .createQuery("SELECT r FROM Role r WHERE r.typeRole = :type", Role.class)
                 .setParameter("type", TypeRole.USER)
                 .getResultStream().findFirst().orElseGet(() -> entityManager.persist(Role.builder().typeRole(TypeRole.USER).build()));
+        entityManager.flush();
 
-        Utilisateur utilisateur = entityManager.persist(Utilisateur.builder()
+        Utilisateur testUtilisateur;
+        testUtilisateur = entityManager.persist(Utilisateur.builder()
                 .email("transac_" + UUID.randomUUID().toString().substring(0,8) + "@example.com")
                 .nom("NomTransac").prenom("PrenomTransac").dateNaissance(LocalDate.now().minusYears(30))
-                .adresse(adresse).role(role).dateCreation(LocalDateTime.now()).isVerified(true).build());
+                .adresse(userAdresse).role(userRole).dateCreation(LocalDateTime.now()).isVerified(true).build());
+        entityManager.flush();
 
-        // Créer Panier - Supposant que votre entité Panier a un constructeur ou des setters
-        Panier panier = new Panier(); // Si @Builder n'est pas disponible
-        panier.setMontantTotal(BigDecimal.valueOf(150.00));
-        panier.setStatut(StatutPanier.EN_ATTENTE);
-        panier.setUtilisateur(utilisateur);
-        panier.setDateAjout(LocalDateTime.now());
-        entityManager.persist(panier);
+        Panier testPanier;
+        testPanier = new Panier();
+        testPanier.setMontantTotal(BigDecimal.valueOf(150.00));
+        testPanier.setStatut(StatutPanier.EN_ATTENTE);
+        testPanier.setUtilisateur(testUtilisateur);
+        testPanier.setDateAjout(LocalDateTime.now());
+        entityManager.persist(testPanier);
+        entityManager.flush();
 
-        // Créer Paiement - Utilisation des setters
         paiementEntity = new Paiement();
         paiementEntity.setStatutPaiement(StatutPaiement.ACCEPTE);
         paiementEntity.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
         paiementEntity.setDatePaiement(LocalDateTime.now().minusMinutes(5));
         paiementEntity.setMontant(BigDecimal.valueOf(150.00));
-        paiementEntity.setPanier(panier);
-        paiementEntity.setUtilisateur(utilisateur);
+        paiementEntity.setPanier(testPanier);
+        paiementEntity.setUtilisateur(testUtilisateur);
         entityManager.persist(paiementEntity);
         entityManager.flush();
     }
 
     @Test
     void testSaveAndRetrieveTransaction() {
-        // Créer Transaction - Utilisation des setters
         Transaction transaction = new Transaction();
         transaction.setMontant(BigDecimal.valueOf(150.00));
         transaction.setStatutTransaction(StatutTransaction.REUSSI);
@@ -111,7 +117,6 @@ class TransactionRepositoryTest {
         Transaction retrievedTransaction = retrievedOpt.get();
 
         assertNotNull(retrievedTransaction.getIdTransaction());
-        // CORRECTION: Utilisation de assertEquals pour comparer le résultat de compareTo
         assertEquals(0, BigDecimal.valueOf(150.00).compareTo(retrievedTransaction.getMontant()), "Les montants devraient correspondre.");
         assertEquals(StatutTransaction.REUSSI, retrievedTransaction.getStatutTransaction());
         assertNotNull(retrievedTransaction.getDateValidation());
@@ -123,7 +128,6 @@ class TransactionRepositoryTest {
 
     @Test
     void testFindTransactionByPaiement() {
-        // Créer Transaction - Utilisation des setters
         Transaction transaction = new Transaction();
         transaction.setMontant(BigDecimal.valueOf(150.00));
         transaction.setStatutTransaction(StatutTransaction.REUSSI);

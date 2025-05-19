@@ -1,7 +1,6 @@
 package fr.studi.bloc3jo2024.service.offres;
 
 import fr.studi.bloc3jo2024.entity.Offre;
-import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.repository.OffreRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,15 +11,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OffreServiceTest {
@@ -61,33 +57,28 @@ class OffreServiceTest {
     }
 
     @Test
-    void mettreAJourStatutOffresExpirees_NoExpiredOffers_DoesNothing() {
+    void mettreAJourStatutOffresExpirees_shouldCallRepositoryUpdateMethod() {
         // Arrange
-        List<Offre> offres = Collections.singletonList(offre);
-        offre.setStatutOffre(StatutOffre.DISPONIBLE);
-        offre.setDateExpiration(LocalDateTime.now().plusHours(1)); // Définir l'expiration dans le futur
-        when(offreRepository.findByStatutOffre(StatutOffre.DISPONIBLE)).thenReturn(offres);
+        int expectedUpdatedCount = 5;
+        when(offreRepository.updateStatusForExpiredOffers(any(LocalDateTime.class))).thenReturn(expectedUpdatedCount);
 
         // Act
         offreService.mettreAJourStatutOffresExpirees();
 
         // Assert
-        verify(offreRepository, never()).save(any());
+        verify(offreRepository, times(1)).updateStatusForExpiredOffers(any(LocalDateTime.class));
     }
 
     @Test
-    void mettreAJourStatutOffresExpirees_ExpiredOffersExist_UpdatesStatus() {
+    void mettreAJourStatutOffresExpirees_NoOffersUpdated_shouldHandleZeroCount() {
         // Arrange
-        List<Offre> offres = Collections.singletonList(offre);
-        offre.setStatutOffre(StatutOffre.DISPONIBLE);
-        offre.setDateExpiration(LocalDateTime.now().minusHours(1)); // Set expiration in the past
-        when(offreRepository.findByStatutOffre(StatutOffre.DISPONIBLE)).thenReturn(offres);
+        int expectedUpdatedCount = 0;
+        when(offreRepository.updateStatusForExpiredOffers(any(LocalDateTime.class))).thenReturn(expectedUpdatedCount);
 
         // Act
         offreService.mettreAJourStatutOffresExpirees();
 
         // Assert
-        assertEquals(StatutOffre.EXPIRE, offre.getStatutOffre());
-        verify(offreRepository, times(1)).save(offre);
+        verify(offreRepository, times(1)).updateStatusForExpiredOffers(any(LocalDateTime.class));
     }
 }

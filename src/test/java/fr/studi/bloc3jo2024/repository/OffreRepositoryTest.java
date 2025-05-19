@@ -27,7 +27,7 @@ class OffreRepositoryTest {
 
     @SuppressWarnings("resource")
     @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("test_offre_db_" + UUID.randomUUID().toString().substring(0,8))
             .withUsername("test_user_offre")
             .withPassword("test_pass_offre");

@@ -3,7 +3,6 @@ package fr.studi.bloc3jo2024.service;
 import fr.studi.bloc3jo2024.dto.disciplines.CreerDisciplineDto;
 import fr.studi.bloc3jo2024.dto.disciplines.MettreAJourDisciplineDto;
 import fr.studi.bloc3jo2024.entity.Adresse;
-import fr.studi.bloc3jo2024.entity.Comporter;
 import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Epreuve;
 import fr.studi.bloc3jo2024.repository.AdresseRepository;
@@ -14,12 +13,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,443 +45,281 @@ class DisciplineServiceTest {
     private EpreuveService epreuveService;
 
     @InjectMocks
+    @Spy // Pour espionner les appels internes comme self.getDisciplineOrThrow
     private DisciplineService disciplineService;
 
-    private Adresse dummyAdresse;
-    private Discipline dummyDiscipline;
+
+    private Adresse adresse;
+    private Discipline discipline;
     private CreerDisciplineDto creerDisciplineDto;
     private MettreAJourDisciplineDto mettreAJourDisciplineDto;
+    private Epreuve epreuveEnVedette;
 
     @BeforeEach
     void setUp() {
-        dummyAdresse = new Adresse();
-        dummyAdresse.setIdAdresse(1L);
-        dummyAdresse.setVille("Paris");
-
-        dummyDiscipline = new Discipline();
-        dummyDiscipline.setIdDiscipline(1L);
-        dummyDiscipline.setNomDiscipline("Natation");
-        dummyDiscipline.setDateDiscipline(LocalDateTime.now().plusDays(10));
-        dummyDiscipline.setNbPlaceDispo(100);
-        dummyDiscipline.setAdresse(dummyAdresse);
+        adresse = new Adresse(1L, 10, "Rue Test", "TestVille", "75000", null, null, null);
+        // Discipline de base pour les tests où une discipline existante est nécessaire
+        discipline = new Discipline(1L, "Test Discipline", LocalDateTime.now().plusDays(1), 100, false, 0L, adresse, Collections.emptySet(), Collections.emptySet());
 
         creerDisciplineDto = new CreerDisciplineDto();
-        creerDisciplineDto.setNomDiscipline("Athlétisme");
-        creerDisciplineDto.setDateDiscipline(LocalDateTime.now().plusDays(20));
-        creerDisciplineDto.setNbPlaceDispo(200);
+        creerDisciplineDto.setNomDiscipline("Nouvelle Discipline");
+        creerDisciplineDto.setDateDiscipline(LocalDateTime.now().plusDays(5));
+        creerDisciplineDto.setNbPlaceDispo(50);
         creerDisciplineDto.setIdAdresse(1L);
 
         mettreAJourDisciplineDto = new MettreAJourDisciplineDto();
-        mettreAJourDisciplineDto.setIdDiscipline(1L);
-        mettreAJourDisciplineDto.setNomDiscipline("Natation Synchronisée");
-        mettreAJourDisciplineDto.setDateDiscipline(LocalDateTime.now().plusDays(15));
-        mettreAJourDisciplineDto.setNbPlaceDispo(150);
-        mettreAJourDisciplineDto.setIdAdresse(1L);
+        mettreAJourDisciplineDto.setIdDiscipline(1L); // ID de la discipline à mettre à jour
+        mettreAJourDisciplineDto.setNomDiscipline("Discipline Mise à Jour");
+        mettreAJourDisciplineDto.setDateDiscipline(LocalDateTime.now().plusDays(10));
+        mettreAJourDisciplineDto.setNbPlaceDispo(75);
+        mettreAJourDisciplineDto.setIdAdresse(1L); // ID de l'adresse pour la mise à jour
+
+        epreuveEnVedette = Epreuve.builder()
+                .idEpreuve(101L)
+                .nomEpreuve("Epreuve Vedette Test")
+                .isFeatured(true)
+                .build();
+
+        lenient().doCallRealMethod().when(disciplineService).getDisciplineOrThrow(anyLong());
     }
 
     @Test
-    void creerDiscipline_Successful() {
-        // Arrange
-        when(adresseRepository.findById(creerDisciplineDto.getIdAdresse())).thenReturn(Optional.of(dummyAdresse));
-        when(disciplineRepository.save(any(Discipline.class))).thenReturn(dummyDiscipline);
+    void creerDiscipline_shouldReturnSavedDiscipline_whenAdresseExists() {
+        when(adresseRepository.findById(1L)).thenReturn(Optional.of(adresse));
+        when(disciplineRepository.save(any(Discipline.class))).thenAnswer(invocation -> {
+            Discipline d = invocation.getArgument(0);
+            d.setIdDiscipline(2L); // Simule la génération d'ID
+            return d;
+        });
 
-        // Act
-        Discipline createdDiscipline = disciplineService.creerDiscipline(creerDisciplineDto);
+        Discipline result = disciplineService.creerDiscipline(creerDisciplineDto);
 
-        // Assert
-        assertNotNull(createdDiscipline);
-        assertEquals("Natation", createdDiscipline.getNomDiscipline()); // Note: Returns dummyDiscipline, not the one built from DTO
-        verify(adresseRepository, times(1)).findById(creerDisciplineDto.getIdAdresse());
-        verify(disciplineRepository, times(1)).save(any(Discipline.class));
+        assertThat(result).isNotNull();
+        assertThat(result.getNomDiscipline()).isEqualTo(creerDisciplineDto.getNomDiscipline());
+        assertThat(result.getIdDiscipline()).isEqualTo(2L);
+        verify(adresseRepository).findById(1L);
+        verify(disciplineRepository).save(any(Discipline.class));
     }
 
     @Test
-    void creerDiscipline_AdresseNotFound_ThrowsEntityNotFoundException() {
-        // Arrange
-        when(adresseRepository.findById(creerDisciplineDto.getIdAdresse())).thenReturn(Optional.empty());
+    void creerDiscipline_shouldThrowEntityNotFoundException_whenAdresseDoesNotExist() {
+        when(adresseRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(EntityNotFoundException.class, () -> disciplineService.creerDiscipline(creerDisciplineDto));
-        verify(adresseRepository, times(1)).findById(creerDisciplineDto.getIdAdresse());
-        verify(disciplineRepository, times(0)).save(any(Discipline.class));
+        verify(adresseRepository).findById(1L);
+        verify(disciplineRepository, never()).save(any(Discipline.class));
     }
 
     @Test
-    void mettreAJourDiscipline_Successful() {
-        // Arrange
-        when(disciplineRepository.findById(mettreAJourDisciplineDto.getIdDiscipline())).thenReturn(Optional.of(dummyDiscipline));
-        when(adresseRepository.findById(mettreAJourDisciplineDto.getIdAdresse())).thenReturn(Optional.of(dummyAdresse));
-        when(disciplineRepository.save(any(Discipline.class))).thenReturn(dummyDiscipline);
+    void mettreAJourDiscipline_shouldReturnUpdatedDiscipline_whenExists() {
+        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline)); // Mock pour getDisciplineOrThrow
+        when(adresseRepository.findById(mettreAJourDisciplineDto.getIdAdresse())).thenReturn(Optional.of(adresse));
+        when(disciplineRepository.save(any(Discipline.class))).thenAnswer(invocation -> invocation.getArgument(0)); // Retourne l'entité modifiée
 
-        // Act
-        Discipline updatedDiscipline = disciplineService.mettreAJourDiscipline(mettreAJourDisciplineDto);
+        Discipline result = disciplineService.mettreAJourDiscipline(mettreAJourDisciplineDto);
 
-        // Assert
-        assertNotNull(updatedDiscipline);
-        assertEquals("Natation Synchronisée", updatedDiscipline.getNomDiscipline()); // Expecting updated name
-        assertEquals(150, updatedDiscipline.getNbPlaceDispo()); // Expecting updated places
-        verify(disciplineRepository, times(1)).findById(mettreAJourDisciplineDto.getIdDiscipline());
-        verify(adresseRepository, times(1)).findById(mettreAJourDisciplineDto.getIdAdresse());
-        verify(disciplineRepository, times(1)).save(any(Discipline.class));
+        assertThat(result).isNotNull();
+        assertThat(result.getNomDiscipline()).isEqualTo(mettreAJourDisciplineDto.getNomDiscipline());
+        assertThat(result.getNbPlaceDispo()).isEqualTo(mettreAJourDisciplineDto.getNbPlaceDispo());
+        verify(disciplineService).getDisciplineOrThrow(1L); // Vérifie l'appel interne espionné
+        verify(disciplineRepository).findById(1L); // Vérifie l'appel fait par la vraie méthode getDisciplineOrThrow
+        verify(adresseRepository).findById(mettreAJourDisciplineDto.getIdAdresse());
+        verify(disciplineRepository).save(any(Discipline.class));
     }
 
     @Test
-    void mettreAJourDiscipline_DisciplineNotFound_ThrowsEntityNotFoundException() {
-        // Arrange
-        when(disciplineRepository.findById(mettreAJourDisciplineDto.getIdDiscipline())).thenReturn(Optional.empty());
+    void mettreAJourDiscipline_shouldThrowEntityNotFoundException_whenDisciplineDoesNotExist() {
+        Long nonExistentId = 99L;
+        mettreAJourDisciplineDto.setIdDiscipline(nonExistentId); // Cibler un ID non existant
+        when(disciplineRepository.findById(nonExistentId)).thenReturn(Optional.empty()); // Mock pour getDisciplineOrThrow
 
-        // Act & Assert
         assertThrows(EntityNotFoundException.class, () -> disciplineService.mettreAJourDiscipline(mettreAJourDisciplineDto));
-        verify(disciplineRepository, times(1)).findById(mettreAJourDisciplineDto.getIdDiscipline());
-        verify(adresseRepository, times(0)).findById(anyLong());
-        verify(disciplineRepository, times(0)).save(any(Discipline.class));
+        verify(disciplineService).getDisciplineOrThrow(nonExistentId);
+        verify(disciplineRepository).findById(nonExistentId);
+        verify(adresseRepository, never()).findById(anyLong());
+        verify(disciplineRepository, never()).save(any(Discipline.class));
     }
 
     @Test
-    void mettreAJourDiscipline_AdresseNotFound_ThrowsEntityNotFoundException() {
-        // Arrange
-        when(disciplineRepository.findById(mettreAJourDisciplineDto.getIdDiscipline())).thenReturn(Optional.of(dummyDiscipline));
-        when(adresseRepository.findById(mettreAJourDisciplineDto.getIdAdresse())).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> disciplineService.mettreAJourDiscipline(mettreAJourDisciplineDto));
-        verify(disciplineRepository, times(1)).findById(mettreAJourDisciplineDto.getIdDiscipline());
-        verify(adresseRepository, times(1)).findById(mettreAJourDisciplineDto.getIdAdresse());
-        verify(disciplineRepository, times(0)).save(any(Discipline.class));
-    }
-
-    @Test
-    void supprimerDiscipline_Successful() {
-        // Arrange
+    void supprimerDiscipline_shouldDeleteDiscipline_whenExists() {
         when(disciplineRepository.existsById(1L)).thenReturn(true);
         doNothing().when(disciplineRepository).deleteById(1L);
 
-        // Act
         disciplineService.supprimerDiscipline(1L);
 
-        // Assert
-        verify(disciplineRepository, times(1)).existsById(1L);
-        verify(disciplineRepository, times(1)).deleteById(1L);
+        verify(disciplineRepository).existsById(1L);
+        verify(disciplineRepository).deleteById(1L);
     }
 
     @Test
-    void supprimerDiscipline_NotFound_ThrowsEntityNotFoundException() {
-        // Arrange
+    void supprimerDiscipline_shouldThrowEntityNotFoundException_whenNotExists() {
         when(disciplineRepository.existsById(1L)).thenReturn(false);
 
-        // Act & Assert
         assertThrows(EntityNotFoundException.class, () -> disciplineService.supprimerDiscipline(1L));
-        verify(disciplineRepository, times(1)).existsById(1L);
-        verify(disciplineRepository, times(0)).deleteById(anyLong());
+        verify(disciplineRepository).existsById(1L);
+        verify(disciplineRepository, never()).deleteById(anyLong());
+    }
+
+
+    @Test
+    void retirerPlaces_shouldReturnUpdatedDiscipline_whenSuccessful() {
+        int nbToRetire = 10;
+        discipline.setNbPlaceDispo(50); // Assurer assez de places
+
+        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline)); // Mock pour getDisciplineOrThrow
+        when(disciplineRepository.decrementerPlaces(1L, nbToRetire)).thenReturn(1); // Simule succès
+
+        Discipline result = disciplineService.retirerPlaces(1L, nbToRetire);
+
+        assertThat(result).isNotNull();
+        verify(disciplineService, times(2)).getDisciplineOrThrow(1L); // Une fois au début, une fois à la fin
+        verify(disciplineRepository, times(2)).findById(1L); // Suite aux appels de getDisciplineOrThrow
+        verify(disciplineRepository).decrementerPlaces(1L, nbToRetire);
     }
 
     @Test
-    void retirerPlaces_Successful() {
-        // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(dummyDiscipline));
-        when(disciplineRepository.decrementerPlaces(1L, 10)).thenReturn(1); // Indicates one row updated
-        // We don't need to re-stub findById for the second call inside getDisciplineOrThrow, Mockito handles this.
+    void retirerPlaces_shouldThrowIllegalStateException_whenNotEnoughPlaces() {
+        int nbToRetire = 10;
+        discipline.setNbPlaceDispo(5); // Pas assez de places
 
-        // Act
-        Discipline updatedDiscipline = disciplineService.retirerPlaces(1L, 10);
+        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline)); // Mock pour getDisciplineOrThrow
+        when(disciplineRepository.decrementerPlaces(1L, nbToRetire)).thenReturn(0); // Simule échec
 
-        // Assert
-        assertNotNull(updatedDiscipline);
-        // The actual place count change isn't reflected in dummyDiscipline here,
-        // but the repository method was called and the result is the fetched entity.
-        // Verified that findById is called twice by getDisciplineOrThrow (before and after decrement)
-        verify(disciplineRepository, times(2)).findById(1L);
-        verify(disciplineRepository, times(1)).decrementerPlaces(1L, 10);
+        assertThrows(IllegalStateException.class, () -> disciplineService.retirerPlaces(1L, nbToRetire));
+        verify(disciplineService).getDisciplineOrThrow(1L); // Appel initial
+        verify(disciplineRepository).findById(1L);
+        verify(disciplineRepository).decrementerPlaces(1L, nbToRetire);
     }
 
     @Test
-    void retirerPlaces_DisciplineNotFound_ThrowsEntityNotFoundException() {
-        // Arrange
+    void retirerPlaces_shouldThrowIllegalArgumentException_whenNbIsNegative() {
+        assertThrows(IllegalArgumentException.class, () -> disciplineService.retirerPlaces(1L, -5));
+        verify(disciplineRepository, never()).decrementerPlaces(anyLong(), anyInt());
+        verify(disciplineService, never()).getDisciplineOrThrow(anyLong()); // Ne devrait pas être atteint
+    }
+
+    @Test
+    void ajouterPlaces_shouldReturnUpdatedDiscipline() {
+        int nbToAdd = 10;
+        int initialPlaces = discipline.getNbPlaceDispo();
+
+        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline)); // Mock pour getDisciplineOrThrow
+        when(disciplineRepository.save(any(Discipline.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+
+        Discipline result = disciplineService.ajouterPlaces(1L, nbToAdd);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getNbPlaceDispo()).isEqualTo(initialPlaces + nbToAdd);
+        verify(disciplineService).getDisciplineOrThrow(1L);
+        verify(disciplineRepository).findById(1L);
+        verify(disciplineRepository).save(discipline);
+    }
+
+    @Test
+    void ajouterPlaces_shouldThrowIllegalArgumentException_whenNbIsNegative() {
+        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline));
+
+        assertThrows(IllegalArgumentException.class, () -> disciplineService.ajouterPlaces(1L, -5));
+        verify(disciplineService).getDisciplineOrThrow(1L); // Appel a lieu
+        verify(disciplineRepository).findById(1L);         // Suite à getDisciplineOrThrow
+        verify(disciplineRepository, never()).save(any(Discipline.class));
+    }
+
+    @Test
+    void updateDate_shouldReturnUpdatedDiscipline_whenDateIsValid() {
+        LocalDateTime nouvelleDate = LocalDateTime.now().plusDays(20);
+        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline)); // Mock pour getDisciplineOrThrow
+        when(disciplineRepository.save(any(Discipline.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Discipline result = disciplineService.updateDate(1L, nouvelleDate);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getDateDiscipline()).isEqualTo(nouvelleDate);
+        verify(disciplineService).getDisciplineOrThrow(1L);
+        verify(disciplineRepository).findById(1L);
+        verify(disciplineRepository).save(discipline);
+    }
+
+    @Test
+    void updateDate_shouldThrowIllegalArgumentException_whenDateIsInPast() {
+        LocalDateTime nouvelleDate = LocalDateTime.now().minusDays(1);
+        assertThrows(IllegalArgumentException.class, () -> disciplineService.updateDate(1L, nouvelleDate));
+        verify(disciplineService, never()).getDisciplineOrThrow(anyLong());
+        verify(disciplineRepository, never()).save(any(Discipline.class));
+    }
+
+    @Test
+    void getDisciplinesAvenir_shouldReturnPagedDisciplines() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Discipline> disciplineList = List.of(discipline);
+        Page<Discipline> disciplinePage = new PageImpl<>(disciplineList, pageable, disciplineList.size());
+        when(disciplineRepository.findFutureDisciplinesWithAdresse(any(LocalDateTime.class), eq(pageable))).thenReturn(disciplinePage);
+
+        Page<Discipline> result = disciplineService.getDisciplinesAvenir(pageable);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().getNomDiscipline()).isEqualTo("Test Discipline");
+        verify(disciplineRepository).findFutureDisciplinesWithAdresse(any(LocalDateTime.class), eq(pageable));
+    }
+
+    @Test
+    void getDisciplineOrThrow_shouldReturnDiscipline_whenExists() {
+        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline));
+
+        Discipline result = disciplineService.getDisciplineOrThrow(1L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getIdDiscipline()).isEqualTo(1L);
+        verify(disciplineRepository).findById(1L);
+    }
+
+    @Test
+    void getDisciplineOrThrow_shouldThrowEntityNotFoundException_whenNotExists() {
         when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> disciplineService.retirerPlaces(1L, 10));
-        // Verified that findById is called once by the first getDisciplineOrThrow
-        verify(disciplineRepository, times(1)).findById(1L);
-        verify(disciplineRepository, times(0)).decrementerPlaces(anyLong(), anyInt());
+        assertThrows(EntityNotFoundException.class, () -> disciplineService.getDisciplineOrThrow(1L));
+        verify(disciplineRepository).findById(1L);
     }
 
     @Test
-    void retirerPlaces_InvalidNb_ThrowsIllegalArgumentException() {
-        // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(dummyDiscipline));
+    void findDisciplinesFiltered_shouldCallFindAll_whenNoFiltersProvided() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Discipline> expectedPage = new PageImpl<>(List.of(discipline));
+        when(disciplineRepository.findAllWithAdresse(pageable)).thenReturn(expectedPage);
 
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> disciplineService.retirerPlaces(1L, 0));
-        assertThrows(IllegalArgumentException.class, () -> disciplineService.retirerPlaces(1L, -50));
-        // findById is called once for each call to retirerPlaces before the exception is thrown
-        verify(disciplineRepository, times(2)).findById(1L);
-        verify(disciplineRepository, times(0)).decrementerPlaces(anyLong(), anyInt());
-    }
+        Page<Discipline> result = disciplineService.findDisciplinesFiltered(null, null, null, pageable);
 
-    @Test
-    void retirerPlaces_NoRowsUpdated_ThrowsIllegalStateException() {
-        // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(dummyDiscipline));
-        when(disciplineRepository.decrementerPlaces(1L, 10)).thenReturn(0); // Indicates no rows updated
-
-        // Act & Assert
-        assertThrows(IllegalStateException.class, () -> disciplineService.retirerPlaces(1L, 10));
-        // Verified that findById is called once by the first getDisciplineOrThrow
-        verify(disciplineRepository, times(1)).findById(1L);
-        verify(disciplineRepository, times(1)).decrementerPlaces(1L, 10);
+        assertThat(result).isEqualTo(expectedPage);
+        verify(disciplineRepository).findAllWithAdresse(pageable);
     }
 
 
     @Test
-    void ajouterPlaces_Successful() {
-        // Arrange
-        Discipline disciplineBeforeUpdate = new Discipline();
-        disciplineBeforeUpdate.setIdDiscipline(1L);
-        disciplineBeforeUpdate.setNbPlaceDispo(100);
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(disciplineBeforeUpdate));
-        when(disciplineRepository.save(any(Discipline.class))).thenReturn(disciplineBeforeUpdate); // Returns the updated entity
+    void getDisciplinesEnVedette_shouldReturnDisciplines_whenEpreuvesEnVedetteExist() {
+        List<Epreuve> epreuvesVedette = List.of(epreuveEnVedette);
+        List<Long> idsEpreuvesVedette = List.of(epreuveEnVedette.getIdEpreuve());
+        Set<Discipline> expectedDisciplines = Set.of(discipline);
 
-        // Act
-        Discipline updatedDiscipline = disciplineService.ajouterPlaces(1L, 50);
+        when(epreuveService.getEpreuvesEnVedette()).thenReturn(epreuvesVedette);
+        when(disciplineRepository.findDisciplinesByEpreuveIdsWithAdresse(idsEpreuvesVedette)).thenReturn(expectedDisciplines);
 
-        // Assert
-        assertNotNull(updatedDiscipline);
-        assertEquals(150, updatedDiscipline.getNbPlaceDispo());
-        // Verified that findById is called once by getDisciplineOrThrow
-        verify(disciplineRepository, times(1)).findById(1L);
-        verify(disciplineRepository, times(1)).save(any(Discipline.class));
-    }
-
-    @Test
-    void ajouterPlaces_DisciplineNotFound_ThrowsEntityNotFoundException() {
-        // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> disciplineService.ajouterPlaces(1L, 50));
-        // Verified that findById is called once by getDisciplineOrThrow
-        verify(disciplineRepository, times(1)).findById(1L);
-        verify(disciplineRepository, times(0)).save(any(Discipline.class));
-    }
-
-    @Test
-    void ajouterPlaces_InvalidNb_ThrowsIllegalArgumentException() {
-        // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(dummyDiscipline));
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> disciplineService.ajouterPlaces(1L, 0));
-        assertThrows(IllegalArgumentException.class, () -> disciplineService.ajouterPlaces(1L, -50));
-        // findById is called once for each call to ajouterPlaces before the exception is thrown
-        verify(disciplineRepository, times(2)).findById(1L);
-        verify(disciplineRepository, times(0)).save(any(Discipline.class));
-    }
-
-    @Test
-    void updateDate_Successful() {
-        // Arrange
-        LocalDateTime futureDate = LocalDateTime.now().plusDays(30);
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(dummyDiscipline));
-        when(disciplineRepository.save(any(Discipline.class))).thenReturn(dummyDiscipline);
-
-        // Act
-        Discipline updatedDiscipline = disciplineService.updateDate(1L, futureDate);
-
-        // Assert
-        assertNotNull(updatedDiscipline);
-        assertEquals(futureDate, updatedDiscipline.getDateDiscipline());
-        // Verified that findById is called once by getDisciplineOrThrow
-        verify(disciplineRepository, times(1)).findById(1L);
-        verify(disciplineRepository, times(1)).save(any(Discipline.class));
-    }
-
-    @Test
-    void updateDate_DisciplineNotFound_ThrowsEntityNotFoundException() {
-        // Arrange
-        LocalDateTime futureDate = LocalDateTime.now().plusDays(30);
-        // Mock findById to return empty only when called with the specific ID
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        // Note: The date check passes here, so getDisciplineOrThrow is called
-        assertThrows(EntityNotFoundException.class, () -> disciplineService.updateDate(1L, futureDate));
-        // Verified that findById is called once by getDisciplineOrThrow before the EntityNotFoundException
-        verify(disciplineRepository, times(1)).findById(1L);
-        verify(disciplineRepository, times(0)).save(any(Discipline.class));
-    }
-
-    @Test
-    void updateDate_DateInPast_ThrowsIllegalArgumentException() {
-        // Arrange
-        LocalDateTime pastDate = LocalDateTime.now().minusDays(1);
-        // We don't need to mock findById here because it's never called when the date is in the past.
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> disciplineService.updateDate(1L, pastDate));
-        // Verified that findById was NOT called because the IllegalArgumentException was thrown first
-        verify(disciplineRepository, times(0)).findById(anyLong()); // Use anyLong() as findById(1L) is never called
-        verify(disciplineRepository, times(0)).save(any(Discipline.class));
-    }
-
-    @Test
-    void getDisciplinesAvenir_Successful() {
-        // Arrange
-        List<Discipline> futureDisciplines = Collections.singletonList(dummyDiscipline);
-        when(disciplineRepository.findByDateDisciplineAfter(any(LocalDateTime.class))).thenReturn(futureDisciplines);
-
-        // Act
-        List<Discipline> result = disciplineService.getDisciplinesAvenir();
-
-        // Assert
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(dummyDiscipline, result.getFirst());
-        verify(disciplineRepository, times(1)).findByDateDisciplineAfter(any(LocalDateTime.class));
-    }
-
-    @Test
-    void findDisciplinesFiltered_ByVille() {
-        // Arrange
-        List<Discipline> disciplinesInVille = Collections.singletonList(dummyDiscipline);
-        String ville = "Paris";
-        when(disciplineRepository.findDisciplinesByVille(ville)).thenReturn(disciplinesInVille);
-
-        // Act
-        List<Discipline> result = disciplineService.findDisciplinesFiltered(ville, null, null);
-
-        // Assert
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(dummyDiscipline, result.getFirst());
-        verify(disciplineRepository, times(1)).findDisciplinesByVille(ville);
-        verify(disciplineRepository, times(0)).findDisciplinesByDateDiscipline(any(LocalDateTime.class));
-        verify(disciplineRepository, times(0)).findDisciplinesByEpreuveId(anyLong());
-        verify(disciplineRepository, times(0)).findAll();
-    }
-
-    @Test
-    void findDisciplinesFiltered_ByDate() {
-        // Arrange
-        List<Discipline> disciplinesOnDate = Collections.singletonList(dummyDiscipline);
-        LocalDateTime date = LocalDateTime.now();
-        when(disciplineRepository.findDisciplinesByDateDiscipline(date)).thenReturn(disciplinesOnDate);
-
-        // Act
-        List<Discipline> result = disciplineService.findDisciplinesFiltered(null, date, null);
-
-        // Assert
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(dummyDiscipline, result.getFirst());
-        verify(disciplineRepository, times(0)).findDisciplinesByVille(anyString());
-        verify(disciplineRepository, times(1)).findDisciplinesByDateDiscipline(date);
-        verify(disciplineRepository, times(0)).findDisciplinesByEpreuveId(anyLong());
-        verify(disciplineRepository, times(0)).findAll();
-    }
-
-    @Test
-    void findDisciplinesFiltered_ByEpreuveId() {
-        // Arrange
-        List<Discipline> disciplinesForEpreuve = Collections.singletonList(dummyDiscipline);
-        Long epreuveId = 10L;
-        when(disciplineRepository.findDisciplinesByEpreuveId(epreuveId)).thenReturn(disciplinesForEpreuve);
-
-        // Act
-        List<Discipline> result = disciplineService.findDisciplinesFiltered(null, null, epreuveId);
-
-        // Assert
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(dummyDiscipline, result.getFirst());
-        verify(disciplineRepository, times(0)).findDisciplinesByVille(anyString());
-        verify(disciplineRepository, times(0)).findDisciplinesByDateDiscipline(any(LocalDateTime.class));
-        verify(disciplineRepository, times(1)).findDisciplinesByEpreuveId(epreuveId);
-        verify(disciplineRepository, times(0)).findAll();
-    }
-
-    @Test
-    void findDisciplinesFiltered_NoFilters() {
-        // Arrange
-        List<Discipline> allDisciplines = Collections.singletonList(dummyDiscipline);
-        when(disciplineRepository.findAll()).thenReturn(allDisciplines);
-
-        // Act
-        List<Discipline> result = disciplineService.findDisciplinesFiltered(null, null, null);
-
-        // Assert
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(dummyDiscipline, result.getFirst());
-        verify(disciplineRepository, times(0)).findDisciplinesByVille(anyString());
-        verify(disciplineRepository, times(0)).findDisciplinesByDateDiscipline(any(LocalDateTime.class));
-        verify(disciplineRepository, times(0)).findDisciplinesByEpreuveId(anyLong());
-        verify(disciplineRepository, times(1)).findAll();
-    }
-
-    @Test
-    void getDisciplinesEnVedette_Successful() {
-        // Arrange
-        Epreuve epreuveEnVedette1 = new Epreuve();
-        epreuveEnVedette1.setIdEpreuve(1L);
-        Epreuve epreuveEnVedette2 = new Epreuve();
-        epreuveEnVedette2.setIdEpreuve(2L);
-
-        Discipline discipline1 = new Discipline();
-        discipline1.setIdDiscipline(1L);
-        discipline1.setNomDiscipline("Danse");
-
-        Discipline discipline2 = new Discipline();
-        discipline2.setIdDiscipline(2L);
-        discipline2.setNomDiscipline("Boxe");
-
-        Comporter comporteur1 = new Comporter();
-        comporteur1.setDiscipline(discipline1);
-        comporteur1.setEpreuve(epreuveEnVedette1);
-
-        Comporter comporteur2 = new Comporter();
-        comporteur2.setDiscipline(discipline2);
-        comporteur2.setEpreuve(epreuveEnVedette1);
-
-        Comporter comporteur3 = new Comporter();
-        comporteur3.setDiscipline(discipline1); // Same discipline as comporteur1
-        comporteur3.setEpreuve(epreuveEnVedette2);
-
-        epreuveEnVedette1.setComporters(new HashSet<>(Arrays.asList(comporteur1, comporteur2)));
-        epreuveEnVedette2.setComporters(new HashSet<>(Collections.singletonList(comporteur3)));
-
-        List<Epreuve> epreuvesEnVedetteList = Arrays.asList(epreuveEnVedette1, epreuveEnVedette2);
-
-        when(epreuveService.getEpreuvesEnVedette()).thenReturn(epreuvesEnVedetteList);
-
-        // Act
         Set<Discipline> result = disciplineService.getDisciplinesEnVedette();
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.contains(discipline1));
-        assertTrue(result.contains(discipline2));
-        verify(epreuveService, times(1)).getEpreuvesEnVedette();
+        assertThat(result).isEqualTo(expectedDisciplines);
+        verify(epreuveService).getEpreuvesEnVedette();
+        verify(disciplineRepository).findDisciplinesByEpreuveIdsWithAdresse(idsEpreuvesVedette);
     }
 
     @Test
-    void getDisciplinesEnVedette_NoFeaturedEpreuves() {
-        // Arrange
-        List<Epreuve> emptyEpreuvesList = Collections.emptyList();
-        when(epreuveService.getEpreuvesEnVedette()).thenReturn(emptyEpreuvesList);
+    void getDisciplinesEnVedette_shouldReturnEmptySet_whenNoEpreuvesEnVedette() {
+        when(epreuveService.getEpreuvesEnVedette()).thenReturn(Collections.emptyList());
 
-        // Act
         Set<Discipline> result = disciplineService.getDisciplinesEnVedette();
 
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(epreuveService, times(1)).getEpreuvesEnVedette();
+        assertThat(result).isEmpty();
+        verify(epreuveService).getEpreuvesEnVedette();
+        verify(disciplineRepository, never()).findDisciplinesByEpreuveIdsWithAdresse(anyList());
     }
 }

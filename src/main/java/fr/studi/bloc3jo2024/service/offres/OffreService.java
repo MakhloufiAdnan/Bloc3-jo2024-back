@@ -1,42 +1,53 @@
 package fr.studi.bloc3jo2024.service.offres;
 
 import fr.studi.bloc3jo2024.entity.Offre;
-import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.repository.OffreRepository;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
+@RequiredArgsConstructor
 public class OffreService {
 
-    private static final String OFFER_NOT_FOUND = "Offre introuvable avec l'ID : ";
+    private static final Logger log = LoggerFactory.getLogger(OffreService.class);
+    private static final String OFFRE_NOT_FOUND_ID_PREFIX = "Offre non trouvée avec l'ID : ";
 
     private final OffreRepository offreRepository;
 
-    public OffreService(OffreRepository offreRepository) {
-        this.offreRepository = offreRepository;
-    }
-
+    /**
+     * Récupère une offre par son ID.
+     * @param id L'ID de l'offre.
+     * @return L'entité Offre.
+     * @throws ResourceNotFoundException si l'offre n'est pas trouvée.
+     */
+    @Transactional(readOnly = true)
     public Offre getOffreById(Long id) {
         return offreRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(OFFER_NOT_FOUND + id));
+                .orElseThrow(() -> new ResourceNotFoundException(OFFRE_NOT_FOUND_ID_PREFIX + id));
     }
 
+    /**
+     * Tâche planifiée pour mettre à jour le statut des offres expirées.
+     * S'exécute toutes les minutes par défaut (configurable via application.properties).
+     * Utilise une requête de mise à jour en masse pour l'efficacité.
+     */
     @Transactional
-    @Scheduled(cron = "0 * * * * *") // Exécute cette méthode chaque minute
+    @Scheduled(cron = "${application.scheduling.updateExpiredOffersCron:0 * * * * ?}")
     public void mettreAJourStatutOffresExpirees() {
-        List<Offre> offres = offreRepository.findByStatutOffre(StatutOffre.DISPONIBLE);
-        LocalDateTime now = LocalDateTime.now();
-        for (Offre offre : offres) {
-            if (offre.getDateExpiration() != null && offre.getDateExpiration().isBefore(now)) {
-                offre.setStatutOffre(StatutOffre.EXPIRE);
-                offreRepository.save(offre);
-            }
+        LocalDateTime maintenant = LocalDateTime.now();
+        log.info("Exécution de la tâche de mise à jour des offres expirées à {}", maintenant);
+        int updatedCount = offreRepository.updateStatusForExpiredOffers(maintenant);
+        if (updatedCount > 0) {
+            log.info("{} offres ont été mises à jour comme EXPIREES.", updatedCount);
+        } else {
+            log.info("Aucune offre à mettre à jour comme EXPIREE.");
         }
     }
 }

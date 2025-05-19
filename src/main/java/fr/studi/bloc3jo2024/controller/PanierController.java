@@ -20,106 +20,105 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Validated
 public class PanierController {
+
     private final PanierService panierService;
 
     /**
      * Récupère le panier en cours de l'utilisateur.
-     * @param userId L'ID de l'utilisateur.
-     * @return ResponseEntity contenant le PanierDto et le statut HTTP 200 OK,
-     * ou le statut HTTP 404 NOT_FOUND si l'utilisateur n'existe pas (potentiellement géré dans le service).
+     * @param userId L'ID de l'utilisateur (UUID).
+     * @return ResponseEntity contenant le PanierDto.
+     * @throws ResponseStatusException avec statut 404 si non trouvé.
      */
     @GetMapping("/{userId}")
     public ResponseEntity<PanierDto> getPanier(@PathVariable UUID userId) {
         try {
-            PanierDto dto = panierService.getPanierUtilisateur(userId.toString()); // Utilisez getPanierUtilisateur
+            PanierDto dto = panierService.getPanierUtilisateur(userId.toString());
             return ResponseEntity.ok(dto);
         } catch (ResourceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
     }
 
     /**
      * Ajoute une offre au panier de l'utilisateur.
      * @param userId L'ID de l'utilisateur.
-     * @param request DTO contenant l'ID de l'offre et la quantité à ajouter.
-     * @return ResponseEntity contenant le PanierDto mis à jour et le statut HTTP 201 CREATED,
-     * ou le statut HTTP 400 BAD_REQUEST en cas de données invalides.
+     * @param request DTO pour l'ajout d'offre.
+     * @return ResponseEntity avec le PanierDto mis à jour et statut 201.
+     * @throws ResponseStatusException pour les erreurs 400, 404, 409.
      */
     @PostMapping("/{userId}/offres")
     public ResponseEntity<PanierDto> ajouterOffre(
             @PathVariable UUID userId,
             @Valid @RequestBody AjouterOffrePanierDto request) {
         try {
-            PanierDto dto = panierService.ajouterOffreAuPanier(userId.toString(), request); // Convertir UUID en String
+            PanierDto dto = panierService.ajouterOffreAuPanier(userId.toString(), request);
             return new ResponseEntity<>(dto, HttpStatus.CREATED);
         } catch (ResourceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage()); // Conflit si stock insuffisant
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
     }
 
     /**
-     * Modifie la quantité d'une offre dans le panier de l'utilisateur.
+     * Modifie la quantité d'une offre dans le panier.
      * @param userId L'ID de l'utilisateur.
-     * @param request DTO contenant l'ID de l'offre et la nouvelle quantité.
-     * @return ResponseEntity contenant le PanierDto mis à jour et le statut HTTP 200 OK,
-     * ou le statut HTTP 400 BAD_REQUEST en cas de données invalides,
-     * ou le statut HTTP 404 NOT_FOUND si l'offre n'est pas dans le panier.
+     * @param request DTO pour la modification.
+     * @return ResponseEntity avec le PanierDto mis à jour.
+     * @throws ResponseStatusException pour les erreurs.
      */
     @PatchMapping("/{userId}/offres")
     public ResponseEntity<PanierDto> modifierQuantite(
             @PathVariable UUID userId,
             @Valid @RequestBody ModifierContenuPanierDto request) {
         try {
-            PanierDto dto = panierService.modifierQuantiteOffrePanier(userId.toString(), request); // Convertir UUID en String
+            PanierDto dto = panierService.modifierQuantiteOffrePanier(userId.toString(), request);
             return ResponseEntity.ok(dto);
         } catch (ResourceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage()); // Conflit si places insuffisantes
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
     }
 
     /**
-     * Supprime une offre du panier de l'utilisateur.
+     * Supprime une offre du panier.
      * @param userId L'ID de l'utilisateur.
      * @param offreId L'ID de l'offre à supprimer.
-     * @return ResponseEntity avec le statut HTTP 200 OK et le PanierDto mis à jour,
-     * ou le statut HTTP 404 NOT_FOUND si l'offre n'est pas dans le panier.
+     * @return ResponseEntity avec le PanierDto mis à jour.
+     * @throws ResponseStatusException si l'offre n'est pas trouvée dans le panier.
      */
     @DeleteMapping("/{userId}/offres/{offreId}")
     public ResponseEntity<PanierDto> supprimerOffre(
             @PathVariable UUID userId,
             @PathVariable Long offreId) {
         try {
-            PanierDto dto = panierService.supprimerOffreDuPanier(userId.toString(), offreId); // Convertir UUID en String
+            PanierDto dto = panierService.supprimerOffreDuPanier(userId.toString(), offreId);
             return ResponseEntity.ok(dto);
         } catch (ResourceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
     }
 
     /**
      * Valide (paie) le panier de l'utilisateur.
      * @param userId L'ID de l'utilisateur.
-     * @return ResponseEntity contenant le PanierDto mis à jour (avec statut PAYE) et le statut HTTP 200 OK,
-     * ou le statut HTTP 404 NOT_FOUND si le panier n'existe pas,
-     * ou le statut HTTP 409 CONFLICT si le panier ne peut pas être payé.
+     * @return ResponseEntity avec le PanierDto mis à jour (statut PAYE).
+     * @throws ResponseStatusException pour les erreurs.
      */
     @PostMapping("/{userId}/payer")
     public ResponseEntity<PanierDto> payerPanier(@PathVariable UUID userId) {
         try {
-            PanierDto dto = panierService.finaliserAchat(userId.toString()); // Modifier la signature de finaliserAchat pour prendre l'ID utilisateur
+            PanierDto dto = panierService.finaliserAchat(userId.toString());
             return ResponseEntity.ok(dto);
         } catch (ResourceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
     }
 }

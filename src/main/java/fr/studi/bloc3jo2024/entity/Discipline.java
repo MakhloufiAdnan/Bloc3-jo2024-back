@@ -2,21 +2,24 @@ package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
-@Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
 @Table(name = "disciplines", indexes = {
         @Index(name = "idx_discipline_nom", columnList = "nom_discipline"),
         @Index(name = "idx_discipline_date", columnList = "date_discipline")
@@ -34,9 +37,8 @@ public class Discipline {
     @Column(name = "date_discipline", nullable = false)
     private LocalDateTime dateDiscipline;
 
-    // Nombre de places disponibles pour cette discipline.
-    @Column(name = "nb_place_dispo", nullable = false)
     @Min(value = 0, message = "Il n'y a plus de place disponible.")
+    @Column(name = "nb_place_dispo", nullable = false)
     private int nbPlaceDispo;
 
     @Column(name = "is_featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
@@ -46,30 +48,65 @@ public class Discipline {
     @Version
     private Long version;
 
-    // Chaque discipline pocède une adresse. Une adresse peut accueillir plusieurs épreuves.
+    /**
+     * Adresse où se déroule la discipline.
+     * Relation Many-to-One, chargée en LAZY.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_adresse", nullable = false, foreignKey = @ForeignKey(name = "fk_discipline_adresse"))
-    @EqualsAndHashCode.Exclude // Exclu de la relation ManyToOne l'adresse dans equals/hashCode de Discipline
+    @ToString.Exclude
     private Adresse adresse;
 
-    /// Relation One-to-Many vers l'entité Offre. La discipline peut avoir plusieurs offres associées.
+    /**
+     * Offres associées à cette discipline.
+     */
+    @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
-    @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    // @EqualsAndHashCode.Exclude
     private Set<Offre> offres = new HashSet<>();
 
-    // Relation vers l'association Comporter qui lie la discipline et une épreuve.
-    // Permet de stocker des informations additionnelles (exp. jrDeMedaille).
+    /**
+     * Association vers Comporter, liant cette discipline à des épreuves.
+     */
+    @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
-    @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
-    private Set<Comporter> comporters = new HashSet<>();
+    @ToString.Exclude
+    private Set<Comporter> comporte = new HashSet<>();
 
-    // Vérification avant persistance : la date de la discipline ne doit pas être dans le passé.
+    /**
+     * Vérification avant persistance : la date de la discipline ne doit pas être dans le passé.
+     */
     @PrePersist
     public void verifierDateDiscipline() {
-        if (this.dateDiscipline.isBefore(LocalDateTime.now())) {
+        if (this.dateDiscipline != null && this.dateDiscipline.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("La date de la discipline ne peut pas être dans le passé.");
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Discipline that = (Discipline) o;
+        if (idDiscipline == null && that.idDiscipline == null) return super.equals(o);
+        return Objects.equals(idDiscipline, that.idDiscipline);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idDiscipline);
+    }
+
+    @Override
+    public String toString() {
+        return "Discipline{" +
+                "idDiscipline=" + idDiscipline +
+                ", nomDiscipline='" + nomDiscipline + '\'' +
+                ", dateDiscipline=" + dateDiscipline +
+                ", nbPlaceDispo=" + nbPlaceDispo +
+                ", isFeatured=" + isFeatured +
+                ", version=" + version +
+                '}';
     }
 }

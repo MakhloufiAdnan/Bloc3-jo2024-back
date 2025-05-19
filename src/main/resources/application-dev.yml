@@ -1,4 +1,4 @@
-# Configuration spécifique pour l'environnement de développement et de test bout en bout.
+# Configuration spécifique pour l'environnement de développement et de tests d'intégrations & bout en bout.
 spring:
   # Configuration de la source de données pour le développement et les tests
   datasource:

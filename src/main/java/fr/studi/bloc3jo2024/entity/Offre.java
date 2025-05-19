@@ -3,24 +3,28 @@ package fr.studi.bloc3jo2024.entity;
 import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
-@Entity
-@Table(name = "offres")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
+@Table(name = "offres")
 public class Offre {
 
     @Id
@@ -51,28 +55,67 @@ public class Offre {
     @Version
     private Long version;
 
+    @Builder.Default
+    @Column(name = "featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean featured = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_discipline", nullable = false, foreignKey = @ForeignKey(name = "fk_offre_discipline"))
-    @EqualsAndHashCode.Exclude // Exclu de la relation ManyToOne la discipline dans equals/hashCode de Offre
+    @ToString.Exclude
     private Discipline discipline;
 
-    // Relation Many-to-Many vers l'entité Billet.
-    @ManyToMany(mappedBy = "offres")
-    @EqualsAndHashCode.Exclude
-    private List<Billet> billets;
+    @ManyToMany(mappedBy = "offres", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @Builder.Default
+    private List<Billet> billets = new ArrayList<>();
+
+    @OneToMany(mappedBy = "offre", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    @ToString.Exclude
+    private Set<ContenuPanier> contenuPaniers = new HashSet<>();
 
     @PreUpdate
     @PrePersist
     public void updateStatutOnChange() {
-        if (quantite == 0) statutOffre = StatutOffre.EPUISE;
-        if (dateExpiration != null && dateExpiration.isBefore(LocalDateTime.now())&& statutOffre != StatutOffre.ANNULE && statutOffre != StatutOffre.EPUISE) {
+        if (quantite == 0 && statutOffre != StatutOffre.ANNULE) {
+            statutOffre = StatutOffre.EPUISE;
+        }
+        if (dateExpiration != null && dateExpiration.isBefore(LocalDateTime.now()) &&
+                statutOffre != StatutOffre.ANNULE && statutOffre != StatutOffre.EPUISE) {
             statutOffre = StatutOffre.EXPIRE;
         }
     }
 
-    // Relation One-to-Many vers l'entité ContenuPanier.
-    @Builder.Default
-    @OneToMany(mappedBy = "offre", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
-    private Set<ContenuPanier> contenuPaniers = new HashSet<>();
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Offre offre)) return false;
+        if (this.idOffre == null || offre.idOffre == null) {
+            return false;
+        }
+        return Objects.equals(idOffre, offre.idOffre);
+    }
+
+    @Override
+    public int hashCode() {
+        return idOffre != null ? Objects.hash(idOffre) : System.identityHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return "Offre{" +
+                "idOffre=" + idOffre +
+                ", typeOffre=" + typeOffre +
+                ", quantite=" + quantite +
+                ", prix=" + prix +
+                ", dateExpiration=" + dateExpiration +
+                ", statutOffre=" + statutOffre +
+                ", capacite=" + capacite +
+                ", featured=" + featured + // Ajouté
+                ", version=" + version +
+                (discipline != null ? ", disciplineId=" + discipline.getIdDiscipline() : "") +
+                ", nombreBillets=" + (billets != null ? billets.size() : 0) +
+                ", nombreContenuPaniers=" + (contenuPaniers != null ? contenuPaniers.size() : 0) +
+                '}';
+    }
 }

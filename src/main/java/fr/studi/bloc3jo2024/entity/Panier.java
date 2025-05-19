@@ -2,23 +2,25 @@ package fr.studi.bloc3jo2024.entity;
 
 import fr.studi.bloc3jo2024.entity.enums.StatutPanier;
 import jakarta.persistence.*;
-import jakarta.persistence.Index;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
-@Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
 @Table(name = "paniers", indexes = {
         @Index(name = "idx_paniers_statut", columnList = "statut_panier")
 })
@@ -32,7 +34,6 @@ public class Panier {
     @Column(name = "montant_total", nullable = false)
     private BigDecimal montantTotal;
 
-    // Statut du panier (EN_ATTENTE, PAYE, SAUVEGARDE).
     @Enumerated(EnumType.STRING)
     @Column(name = "statut_panier", nullable = false)
     private StatutPanier statut;
@@ -41,29 +42,68 @@ public class Panier {
     @Builder.Default
     private LocalDateTime dateAjout = LocalDateTime.now();
 
-    // Relation Many-to-One vers l'entité Utilisateur. Chaque panier appartient à un utilisateur.
+    /**
+     * Utilisateur à qui appartient le panier.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
-    @EqualsAndHashCode.Exclude // Excluez la relation ManyToOne
+    @ToString.Exclude
     private Utilisateur utilisateur;
 
-    // Relation One-to-Many vers l'entité ContenuPanier (table d'association avec Offre).
+    /**
+     * Ensemble des éléments contenus dans le panier.
+     */
+    @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
-    @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<ContenuPanier> contenuPaniers = new HashSet<>();
 
-    // Relation One-to-One vers l'entité Payement. Un panier peut être associé à un paiement.
+    /**
+     * Paiement associé à ce panier (si payé).
+     */
     @OneToOne(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Paiement paiement;
 
     @Version
     private Long version;
 
-    // Méthode exécutée avant la persistance pour s'assurer que la date d'ajout est initialisée.
     @PrePersist
     public void prePersist() {
-        if (dateAjout == null) dateAjout = LocalDateTime.now();
+        if (dateAjout == null) {
+            dateAjout = LocalDateTime.now();
+        }
+        if (montantTotal == null) {
+            montantTotal = BigDecimal.ZERO;
+        }
+        if (statut == null) {
+            statut = StatutPanier.EN_ATTENTE;
+        }
+    }
+
+    // equals et hashCode basés sur l'ID métier (idPanier)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Panier panier)) return false;
+        if (idPanier == null && panier.idPanier == null) return super.equals(o);
+        return Objects.equals(idPanier, panier.idPanier);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idPanier);
+    }
+
+    @Override
+    public String toString() {
+        return "Panier{" +
+                "idPanier=" + idPanier +
+                ", montantTotal=" + montantTotal +
+                ", statut=" + statut +
+                ", dateAjout=" + dateAjout +
+                ", version=" + version +
+                (utilisateur != null ? ", utilisateurId=" + utilisateur.getIdUtilisateur() : "") +
+                '}';
     }
 }

@@ -1,6 +1,7 @@
 package fr.studi.bloc3jo2024.service.impl;
 
 import fr.studi.bloc3jo2024.entity.Utilisateur;
+import fr.studi.bloc3jo2024.entity.enums.TypeRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,7 +11,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
-// Implémentation de UserDetails pour Spring Security, basée sur l'entité Utilisateur.
 public record DetailUtilisateurServiceImpl(Utilisateur utilisateur) implements UserDetails, Serializable {
 
     @Serial
@@ -22,8 +22,10 @@ public record DetailUtilisateurServiceImpl(Utilisateur utilisateur) implements U
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String role = utilisateur.getRole().getTypeRole().name();
-        return "ADMIN".equalsIgnoreCase(role)
+        TypeRole typeRoleEnum = utilisateur.getRole().getTypeRole();
+        String roleName = typeRoleEnum.name();
+
+        return "ADMIN".equalsIgnoreCase(roleName)
                 ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
                 : List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }

@@ -35,7 +35,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
 
-        // Log de la tentative d'accès non autorisé.
         log.warn("Accès non autorisé pour la requête : {} {} - Raison : {}",
                 request.getMethod(),
                 request.getRequestURI(),

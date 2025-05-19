@@ -6,9 +6,14 @@ import fr.studi.bloc3jo2024.entity.Pays;
 import fr.studi.bloc3jo2024.exception.AdresseLieeAUneDisciplineException;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.repository.AdresseRepository;
+import fr.studi.bloc3jo2024.repository.PaysRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,53 +24,65 @@ import java.util.UUID;
 @Transactional
 public class AdresseService {
 
-    private static final String ADRESSE_NON_TROUVEE = "Adresse non trouvée avec l'ID : ";
+    private static final Logger log = LoggerFactory.getLogger(AdresseService.class);
+    private static final String ADRESSE_NON_TROUVEE_ID = "Adresse non trouvée avec l'ID : ";
+    private static final String PAYS_NON_TROUVE_ID = "Pays non trouvé avec l'ID : ";
+
 
     private final AdresseRepository adresseRepository;
+    private final PaysRepository paysRepository;
 
     /**
-     * Crée une nouvelle adresse. Vérifie au préalable si une adresse identique existe déjà.
-     * Si une adresse identique est trouvée, retourne l'objet Adresse existant.
-     * Si aucune adresse identique n'est trouvée, crée et persiste la nouvelle adresse.
-     *
-     * @param adresse L'objet {@link Adresse} à créer.
-     * @return L'objet {@link Adresse} créé et persisté ou l'objet {@link Adresse} existant.
+     * Crée une nouvelle adresse si elle n'existe pas déjà (basé sur ses attributs uniques).
+     * @param adresse L'objet Adresse à créer.
+     * @return L'adresse créée ou existante.
+     * @throws IllegalArgumentException si les informations du pays dans l'adresse fournie sont invalides ou manquantes.
      */
     public Adresse creerAdresseSiNonExistante(Adresse adresse) {
+        if (adresse.getPays() == null || adresse.getPays().getIdPays() == null) {
+            log.warn("Tentative de création/vérification d'adresse sans informations de pays valides.");
+            throw new IllegalArgumentException("Les informations du pays (avec ID) sont requises pour créer ou vérifier une adresse.");
+        }
+
         Optional<Adresse> adresseExistante = adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
                 adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
         );
-        return adresseExistante.orElseGet(() -> adresseRepository.save(adresse));
+
+        if (adresseExistante.isPresent()) {
+            log.info("Adresse existante trouvée avec ID : {}", adresseExistante.get().getIdAdresse());
+            return adresseExistante.get();
+        } else {
+            log.info("Aucune adresse existante trouvée. Création d'une nouvelle adresse.");
+            return adresseRepository.save(adresse);
+        }
     }
 
     /**
-     * Récupère une adresse par son identifiant unique.
-     *
-     * @param id L'identifiant unique de l'adresse à récupérer.
-     * @return L'objet {@link Adresse} trouvé.
-     * @throws ResourceNotFoundException Si aucune adresse n'est trouvée avec l'ID spécifié.
+     * Récupère une adresse par son ID.
+     * @param id L'ID de l'adresse.
+     * @return L'adresse trouvée.
+     * @throws ResourceNotFoundException si non trouvée.
      */
     @Transactional(readOnly = true)
     public Adresse getAdresseById(Long id) {
         return adresseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE_ID + id));
     }
 
     /**
-     * Récupère toutes les adresses enregistrées dans la base de données.
-     *
-     * @return Une liste contenant tous les objets {@link Adresse}.
+     * Récupère toutes les adresses, avec pagination.
+     * @param pageable L'objet de pagination.
+     * @return Une page de toutes les adresses.
      */
     @Transactional(readOnly = true)
-    public List<Adresse> getAllAdresses() {
-        return adresseRepository.findAll();
+    public Page<Adresse> getAllAdresses(Pageable pageable) {
+        return adresseRepository.findAll(pageable);
     }
 
     /**
-     * Récupère les adresses associées à un utilisateur spécifique en utilisant son identifiant unique.
-     *
-     * @param idUtilisateur L'UUID de l'utilisateur dont on souhaite récupérer les adresses.
-     * @return Une liste des objets {@link Adresse} associés à l'utilisateur.
+     * Récupère les adresses associées à un utilisateur.
+     * @param idUtilisateur L'ID de l'utilisateur.
+     * @return Liste des adresses de l'utilisateur.
      */
     @Transactional(readOnly = true)
     public List<Adresse> getAdressesByUtilisateurId(UUID idUtilisateur) {
@@ -73,60 +90,73 @@ public class AdresseService {
     }
 
     /**
-     * Récupère l'adresse associée à une discipline spécifique.
-     *
-     * @param discipline L'objet {@link Discipline} pour lequel on souhaite récupérer l'adresse.
-     * @return L'objet {@link Adresse} associé à la discipline.
-     * @throws ResourceNotFoundException Si aucune adresse n'est trouvée pour la discipline spécifiée.
+     * Récupère l'adresse associée à une discipline.
+     * @param discipline L'entité Discipline.
+     * @return L'adresse trouvée.
+     * @throws ResourceNotFoundException si non trouvée.
+     * @throws IllegalArgumentException si l'objet discipline ou son ID est null.
      */
     @Transactional(readOnly = true)
     public Adresse getAdresseByDiscipline(Discipline discipline) {
+        if (discipline == null || discipline.getIdDiscipline() == null) {
+            throw new IllegalArgumentException("L'objet Discipline et son ID ne peuvent pas être null.");
+        }
         return adresseRepository.findByDisciplines(discipline)
                 .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée pour la discipline avec l'ID : " + discipline.getIdDiscipline()));
     }
 
     /**
-     * Récupère toutes les adresses liées à une discipline spécifique.
-     *
-     * @param discipline L'objet {@link Discipline} pour lequel récupérer les adresses liées.
-     * @return Une liste des objets {@link Adresse} liés à cette discipline.
+     * Récupère toutes les adresses liées à une discipline.
+     * @param discipline L'entité Discipline.
+     * @return Liste des adresses liées.
+     * @throws IllegalArgumentException si l'objet discipline ou son ID est null.
      */
     @Transactional(readOnly = true)
     public List<Adresse> getAdressesByDiscipline(Discipline discipline) {
+        if (discipline == null || discipline.getIdDiscipline() == null) {
+            throw new IllegalArgumentException("L'objet Discipline et son ID ne peuvent pas être null.");
+        }
         return adresseRepository.findByDisciplinesContaining(discipline);
     }
 
+
     /**
-     * Vérifie si une adresse existe déjà en se basant sur ses attributs uniques.
-     *
-     * @param adresse L'objet {@link Adresse} à vérifier.
-     * @return {@code true} si une adresse identique existe, {@code false} sinon.
+     * Vérifie si une adresse (par ses attributs) existe déjà.
+     * @param adresse L'objet Adresse à vérifier.
+     * @return true si elle existe, false sinon.
      */
     @Transactional(readOnly = true)
     public boolean adresseExisteDeja(Adresse adresse) {
+        if (adresse.getPays() == null || adresse.getPays().getIdPays() == null) {
+            log.debug("Vérification d'existence d'adresse avec informations de pays manquantes.");
+            return false;
+        }
         return adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
                 adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
         ).isPresent();
     }
 
     /**
-     * Récupère l'identifiant unique d'une adresse existante si elle correspond aux informations fournies.
-     *
-     * @param adresse L'objet {@link Adresse} à rechercher.
-     * @return L'identifiant unique de l'adresse existante, ou {@code null} si aucune correspondance n'est trouvée.
+     * Récupère l'ID d'une adresse si elle existe (basé sur ses attributs).
+     * @param adresse L'objet Adresse à rechercher.
+     * @return L'ID de l'adresse existante, ou null.
      */
     @Transactional(readOnly = true)
     public Long getIdAdresseSiExistante(Adresse adresse) {
+        if (adresse.getPays() == null || adresse.getPays().getIdPays() == null) {
+            log.debug("Tentative de récupération d'ID d'adresse avec informations de pays manquantes.");
+            return null; // Ou lever une exception
+        }
         return adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
                 adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
         ).map(Adresse::getIdAdresse).orElse(null);
     }
 
+
     /**
-     * Vérifie si une adresse est actuellement liée à au moins une discipline.
-     *
-     * @param idAdresse L'identifiant unique de l'adresse à vérifier.
-     * @return {@code true} si l'adresse est liée à une discipline, {@code false} sinon.
+     * Vérifie si une adresse est liée à au moins une discipline.
+     * @param idAdresse L'ID de l'adresse.
+     * @return true si liée, false sinon.
      */
     @Transactional(readOnly = true)
     public boolean isAdresseLieeAUnDiscipline(Long idAdresse) {
@@ -134,27 +164,27 @@ public class AdresseService {
     }
 
     /**
-     * Recherche une adresse complète en fonction de tous ses attributs.
-     *
-     * @param numeroRue  Le numéro de la rue.
-     * @param nomRue     Le nom de la rue.
-     * @param ville      La ville.
-     * @param codePostal Le code postal.
-     * @param pays       L'objet {@link Pays} associé à l'adresse.
-     * @return L'objet {@link Adresse} trouvé, ou {@code null} si aucune correspondance n'est trouvée.
+     * Recherche une adresse par ses attributs complets.
+     * @param numeroRue Numéro de rue.
+     * @param nomRue Nom de rue.
+     * @param ville Ville.
+     * @param codePostal Code postal.
+     * @param pays Pays.
+     * @return L'adresse trouvée, ou null.
      */
     @Transactional(readOnly = true)
-    public Adresse rechercherAdresseComplete(int numeroRue, String nomRue, String ville, String codePostal, Pays pays) {
+    public Adresse rechercherAdresseComplete(Integer numeroRue, String nomRue, String ville, String codePostal, Pays pays) {
+        if (pays == null || pays.getIdPays() == null) {
+            throw new IllegalArgumentException("L'objet Pays avec son ID est requis pour la recherche d'adresse complète.");
+        }
         return adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(numeroRue, nomRue, ville, codePostal, pays)
                 .orElse(null);
     }
 
     /**
-     * Recherche les adresses par ville. Cette méthode est utilisée pour trouver des adresses potentielles
-     * pour des disciplines basées sur leur localisation.
-     *
-     * @param ville Le nom de la ville pour laquelle rechercher les adresses.
-     * @return Une liste des objets {@link Adresse} situés dans la ville spécifiée.
+     * Recherche les adresses par ville (utilisé pour les disciplines).
+     * @param ville La ville.
+     * @return Liste des adresses.
      */
     @Transactional(readOnly = true)
     public List<Adresse> rechercherAdressesParVillePourDisciplines(String ville) {
@@ -162,11 +192,10 @@ public class AdresseService {
     }
 
     /**
-     * Recherche les adresses liées à une discipline spécifique et filtrées par l'identifiant unique du pays.
-     *
-     * @param discipline L'objet {@link Discipline} pour lequel rechercher les adresses.
-     * @param idPays     L'identifiant unique du pays des adresses à rechercher.
-     * @return Une liste des objets {@link Adresse} liés à la discipline et appartenant au pays spécifié.
+     * Recherche les adresses par discipline et ID de pays.
+     * @param discipline La discipline.
+     * @param idPays L'ID du pays.
+     * @return Liste des adresses.
      */
     @Transactional(readOnly = true)
     public List<Adresse> rechercherAdressesParDisciplineEtPays(Discipline discipline, Long idPays) {
@@ -174,40 +203,46 @@ public class AdresseService {
     }
 
     /**
-     * Met à jour les informations d'une adresse existante.
-     *
-     * @param id              L'identifiant unique de l'adresse à mettre à jour.
-     * @param nouvelleAdresse L'objet {@link Adresse} contenant les nouvelles informations.
-     * @return L'objet {@link Adresse} mis à jour et persisté.
-     * @throws ResourceNotFoundException Si aucune adresse n'est trouvée avec l'ID spécifié.
+     * Met à jour une adresse existante.
+     * @param id L'ID de l'adresse à mettre à jour.
+     * @param nouvelleAdresse Les nouvelles informations de l'adresse.
+     * @return L'adresse mise à jour.
+     * @throws ResourceNotFoundException si l'adresse n'est pas trouvée.
      */
     public Adresse updateAdresse(Long id, Adresse nouvelleAdresse) {
-        return adresseRepository.findById(id)
-                .map(adresseExistante -> {
-                    adresseExistante.setNumeroRue(nouvelleAdresse.getNumeroRue());
-                    adresseExistante.setNomRue(nouvelleAdresse.getNomRue());
-                    adresseExistante.setVille(nouvelleAdresse.getVille());
-                    adresseExistante.setCodePostal(nouvelleAdresse.getCodePostal());
-                    adresseExistante.setPays(nouvelleAdresse.getPays());
-                    return adresseRepository.save(adresseExistante);
-                })
-                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE + id));
+        Adresse adresseExistante = adresseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE_ID + id));
+
+        adresseExistante.setNumeroRue(nouvelleAdresse.getNumeroRue());
+        adresseExistante.setNomRue(nouvelleAdresse.getNomRue());
+        adresseExistante.setVille(nouvelleAdresse.getVille());
+        adresseExistante.setCodePostal(nouvelleAdresse.getCodePostal());
+
+        if (nouvelleAdresse.getPays() != null && nouvelleAdresse.getPays().getIdPays() != null) {
+            Pays paysManaged = paysRepository.findById(nouvelleAdresse.getPays().getIdPays())
+                    .orElseThrow(() -> new ResourceNotFoundException(PAYS_NON_TROUVE_ID + nouvelleAdresse.getPays().getIdPays()));
+            adresseExistante.setPays(paysManaged);
+        } else {
+            throw new IllegalArgumentException("L'ID du pays est requis pour mettre à jour l'adresse.");
+        }
+
+        return adresseRepository.save(adresseExistante);
     }
 
     /**
-     * Supprime une adresse de la base de données en vérifiant au préalable qu'elle n'est pas liée à une discipline.
-     *
-     * @param id L'identifiant unique de l'adresse à supprimer.
-     * @throws ResourceNotFoundException        Si aucune adresse n'est trouvée avec l'ID spécifié.
-     * @throws AdresseLieeAUneDisciplineException Si l'adresse est liée à une ou plusieurs disciplines.
+     * Supprime une adresse par son ID, si elle n'est pas liée à une discipline.
+     * @param id L'ID de l'adresse à supprimer.
+     * @throws ResourceNotFoundException si l'adresse n'est pas trouvée.
+     * @throws AdresseLieeAUneDisciplineException si l'adresse est liée à une discipline.
      */
     public void deleteAdresse(Long id) {
         Adresse adresse = adresseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ADRESSE_NON_TROUVEE_ID + id));
 
         if (adresseRepository.isAdresseLieeAUnDiscipline(id)) {
-            throw new AdresseLieeAUneDisciplineException("L'adresse avec l'ID " + id + " est liée à un ou plusieurs événements et ne peut pas être supprimée.");
+            throw new AdresseLieeAUneDisciplineException("L'adresse avec l'ID " + id + " est liée à une ou plusieurs disciplines et ne peut pas être supprimée.");
         }
         adresseRepository.delete(adresse);
+        log.info("Adresse ID {} supprimée avec succès.", id);
     }
 }

@@ -129,11 +129,10 @@ class PaiementServiceImplTest {
     void effectuerPaiement_Successful() {
         // Arrange (Préparer)
         when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
-        when(panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(panier));
-        when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty()); // Aucun paiement existant
-        when(paiementRepository.save(any(Paiement.class))).thenReturn(paiement); // Retourner le paiement créé
+        when(panierRepository.findByIdPanierAndUtilisateur_IdUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(panier));
+        when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty());
+        when(paiementRepository.save(any(Paiement.class))).thenReturn(paiement);
 
-        // Stubbing ModelMapper pour le mappage final (statut EN_ATTENTE car c'est le statut initial)
         when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(paiementDtoInitial);
         when(modelMapper.map(any(Transaction.class), eq(TransactionDto.class))).thenReturn(transactionDtoInitial);
 
@@ -142,7 +141,7 @@ class PaiementServiceImplTest {
 
         // Assert
         assertNotNull(resultDto);
-        assertEquals(paiementDtoInitial, resultDto); // Comparer avec le DTO initial (EN_ATTENTE)
+        assertEquals(paiementDtoInitial, resultDto);
         assertEquals(StatutPaiement.EN_ATTENTE, resultDto.getStatutPaiement());
         assertNotNull(resultDto.getTransaction());
         assertEquals(StatutTransaction.EN_ATTENTE, resultDto.getTransaction().getStatutTransaction());
@@ -150,9 +149,9 @@ class PaiementServiceImplTest {
 
         // Vérifier les interactions avec les dépôts
         verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
+        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_IdUtilisateur(panierId, utilisateurId);
         verify(paiementRepository, times(1)).findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-        verify(paiementRepository, times(1)).save(any(Paiement.class)); // Vérifie qu'un paiement a été sauvegardé
+        verify(paiementRepository, times(1)).save(any(Paiement.class));
 
         // Vérifier les interactions avec ModelMapper
         verify(modelMapper, times(1)).map(any(Paiement.class), eq(PaiementDto.class));
@@ -175,7 +174,7 @@ class PaiementServiceImplTest {
 
         // Vérifier les interactions avec les dépôts
         verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(0)).findByIdPanierAndUtilisateur_idUtilisateur(anyLong(), any(UUID.class));
+        verify(panierRepository, times(0)).findByIdPanierAndUtilisateur_IdUtilisateur(anyLong(), any(UUID.class));
         verify(paiementRepository, times(0)).findByPanier_idPanierAndUtilisateur_idUtilisateur(anyLong(), any(UUID.class));
         verify(paiementRepository, times(0)).save(any(Paiement.class));
         verifyNoInteractions(transactionRepository);
@@ -187,7 +186,7 @@ class PaiementServiceImplTest {
     void effectuerPaiement_PanierNotFound_ThrowsResourceNotFoundException() {
         // Arrange
         when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
-        when(panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty());
+        when(panierRepository.findByIdPanierAndUtilisateur_IdUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
@@ -197,7 +196,7 @@ class PaiementServiceImplTest {
 
         // Vérifier les interactions avec les dépôts
         verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
+        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_IdUtilisateur(panierId, utilisateurId);
         verify(paiementRepository, times(0)).findByPanier_idPanierAndUtilisateur_idUtilisateur(anyLong(), any(UUID.class));
         verify(paiementRepository, times(0)).save(any(Paiement.class));
         verifyNoInteractions(transactionRepository);
@@ -209,7 +208,7 @@ class PaiementServiceImplTest {
     void effectuerPaiement_PaiementDejaExistant_ThrowsIllegalStateException() {
         // Arrange
         when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
-        when(panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(panier));
+        when(panierRepository.findByIdPanierAndUtilisateur_IdUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(panier));
         when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(paiement)); // Paiement existant trouvé
 
         // Act & Assert
@@ -220,7 +219,7 @@ class PaiementServiceImplTest {
 
         // Vérifier les interactions avec les dépôts
         verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
+        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_IdUtilisateur(panierId, utilisateurId);
         verify(paiementRepository, times(1)).findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
         verify(paiementRepository, times(0)).save(any(Paiement.class)); // Aucune sauvegarde ne devrait avoir lieu
         verifyNoInteractions(transactionRepository);

@@ -1,7 +1,6 @@
 package fr.studi.bloc3jo2024.service.impl;
 
 import fr.studi.bloc3jo2024.dto.panier.AjouterOffrePanierDto;
-import fr.studi.bloc3jo2024.dto.panier.ContenuPanierDto;
 import fr.studi.bloc3jo2024.dto.panier.ModifierContenuPanierDto;
 import fr.studi.bloc3jo2024.dto.panier.PanierDto;
 import fr.studi.bloc3jo2024.entity.*;
@@ -10,24 +9,26 @@ import fr.studi.bloc3jo2024.entity.enums.StatutPanier;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.repository.*;
 import fr.studi.bloc3jo2024.service.PanierService;
-import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PanierServiceImpl implements PanierService {
 
-    // Déclaration des dépendances injectées via Lombok's @RequiredArgsConstructor
+    private static final Logger log = LoggerFactory.getLogger(PanierServiceImpl.class);
+
     private final PanierRepository panierRepository;
     private final ContenuPanierRepository contenuPanierRepository;
     private final OffreRepository offreRepository;
@@ -35,516 +36,362 @@ public class PanierServiceImpl implements PanierService {
     private final DisciplineRepository disciplineRepository;
     private final ModelMapper modelMapper;
 
-    // Déclaration des constantes pour les messages d'erreur
-    private static final String DISCIPLINE_NOT_FOUND = "Discipline non trouvée avec l'ID : ";
-    private static final String UTILISATEUR_NOT_FOUND = "Utilisateur non trouvé avec l'ID : ";
-    private static final String OFFRE_NOT_FOUND = "Offre non trouvée avec l'ID : ";
-    private static final String OFFRE_NOT_IN_PANIER = "L'offre avec l'ID %d n'est pas dans le panier";
-    private static final String QUANTITE_INVALIDE_OU_NON_DISPONIBLE = "Quantité invalide ou offre non disponible.";
-    private static final String QUANTITE_NON_POSITIVE = "La quantité demandée doit être positive.";
-    private static final String PLACES_INSUFFISANTES = "Nombre de places disponibles insuffisant pour l'offre ou la discipline.";
-    private static final String PANIER_DEJA_PAYE = "Le panier ne peut pas être payé car son statut est : ";
-    private static final String PANIER_VIDE = "Le panier est vide. Impossible de finaliser l'achat.";
-    private static final String OFFRE_DISCIPLINE_NULL = "L'offre avec l'ID %d n'est associée à aucune discipline ou l'objet discipline est nul.";
-    private static final String CONTENU_PANIER_INVALIDE = "Contenu de panier ou offre invalide trouvé lors de l'opération.";
-    private static final String STOCK_INSUFFISANT_FINALISATION = "Stock de l'offre (%d) insuffisant au moment de la finalisation.";
+    private PanierService self;
 
-    /**
-     * Récupère le panier en cours (avec statut EN_ATTENTE) de l'utilisateur.
-     * Si l'utilisateur n'a pas de panier EN_ATTENTE, un nouveau panier est créé,
-     * sauvegardé et retourné.
-     *
-     * @param utilisateurIdStr L'ID de l'utilisateur au format String.
-     * @return Un PanierDto représentant le panier de l'utilisateur.
-     * @throws ResourceNotFoundException Si l'utilisateur n'est pas trouvé.
-     */
+    @Autowired
+    public PanierServiceImpl(
+            PanierRepository panierRepository,
+            ContenuPanierRepository contenuPanierRepository,
+            OffreRepository offreRepository,
+            UtilisateurRepository utilisateurRepository,
+            DisciplineRepository disciplineRepository,
+            ModelMapper modelMapper) {
+        this.panierRepository = panierRepository;
+        this.contenuPanierRepository = contenuPanierRepository;
+        this.offreRepository = offreRepository;
+        this.utilisateurRepository = utilisateurRepository;
+        this.disciplineRepository = disciplineRepository;
+        this.modelMapper = modelMapper;
+    }
+
+    @Autowired
+    public void setSelf(@Lazy PanierService self) {
+        this.self = self;
+    }
+
+    private static final String DISCIPLINE_NOT_FOUND_ID = "Discipline non trouvée avec l'ID : ";
+    private static final String UTILISATEUR_NOT_FOUND_ID = "Utilisateur non trouvé avec l'ID : ";
+    private static final String OFFRE_NOT_FOUND_ID = "Offre non trouvée avec l'ID : ";
+    private static final String OFFRE_NOT_IN_PANIER_ID = "L'offre avec l'ID %d n'est pas dans le panier de l'utilisateur %s";
+    private static final String QUANTITE_INVALIDE_OU_OFFRE_NON_DISPONIBLE = "Quantité invalide, offre non disponible ou stock insuffisant.";
+    private static final String QUANTITE_NON_POSITIVE = "La quantité demandée doit être positive.";
+    private static final String PLACES_INSUFFISANTES_DISCIPLINE = "Nombre de places disponibles insuffisant pour la discipline : ";
+    private static final String PANIER_STATUT_INCORRECT_POUR_PAIEMENT = "Le panier ne peut pas être payé car son statut est : ";
+    private static final String PANIER_VIDE_POUR_PAIEMENT = "Le panier est vide. Impossible de finaliser l'achat.";
+    private static final String OFFRE_SANS_DISCIPLINE_ID = "L'offre avec l'ID %d n'est associée à aucune discipline valide.";
+    private static final String CONTENU_PANIER_OU_OFFRE_INVALIDE = "Contenu de panier ou offre associée invalide (potentiellement null).";
+    private static final String STOCK_OFFRE_INSUFFISANT_FINALISATION = "Stock de l'offre ID %d insuffisant (%d requis, %d disponibles) au moment de la finalisation.";
+
+
     @Override
-    @Transactional(readOnly = true) // Peut être en lecture seule si creerNouveauPanier n'est pas appelé
+    @Transactional(readOnly = true)
     public PanierDto getPanierUtilisateur(String utilisateurIdStr) {
-        // getPanierUtilisateurEntity gère déjà la recherche de l'utilisateur et la création du panier si nécessaire
         Panier panier = getPanierUtilisateurEntity(utilisateurIdStr);
         return mapPanierToDto(panier);
     }
 
-    /**
-     * Crée un nouveau panier pour un utilisateur spécifié.
-     * Initialise le panier avec le statut EN_ATTENTE, un montant total de 0
-     * et un ensemble vide de contenus panier.
-     *
-     * @param utilisateur L'utilisateur pour lequel créer le panier.
-     * @return Le panier nouvellement créé et persisté.
-     */
     private Panier creerNouveauPanier(Utilisateur utilisateur) {
-        Panier nouveauPanier = new Panier(); // Utilisation du constructeur par défaut
-        nouveauPanier.setUtilisateur(utilisateur);
-        nouveauPanier.setStatut(StatutPanier.EN_ATTENTE);
-        // Initialisation du montant total et du contenu pour éviter les NPE
-        nouveauPanier.setMontantTotal(BigDecimal.ZERO);
-        nouveauPanier.setContenuPaniers(new java.util.HashSet<>());
-        // La date d'ajout peut être définie ici si nécessaire, mais pas dans l'original, donc omis.
-        return panierRepository.save(nouveauPanier); // Persistance du panier
+        Panier nouveauPanier = Panier.builder()
+                .utilisateur(utilisateur)
+                .statut(StatutPanier.EN_ATTENTE)
+                .montantTotal(BigDecimal.ZERO)
+                .contenuPaniers(new HashSet<>())
+                .build();
+        log.info("Création d'un nouveau panier pour l'utilisateur ID: {}", utilisateur.getIdUtilisateur());
+        return panierRepository.save(nouveauPanier);
     }
 
-    /**
-     * Ajoute une offre au panier de l'utilisateur.
-     * Si l'offre est déjà présente, sa quantité est augmentée.
-     * Si l'offre n'est pas présente, un nouvel élément est ajouté au panier.
-     * Les validations sur la disponibilité de l'offre (stock) et les places dans la discipline sont effectuées.
-     *
-     * @param utilisateurIdStr      L'ID de l'utilisateur au format String.
-     * @param ajouterOffrePanierDto Les détails de l'offre à ajouter (ID et quantité).
-     * @return Le PanierDto mis à jour.
-     * @throws ResourceNotFoundException Si l'utilisateur, l'offre ou la discipline n'est pas trouvé.
-     * @throws IllegalArgumentException  Si la quantité demandée est invalide ou l'offre n'est pas disponible/quantité insuffisante.
-     * @throws IllegalStateException     Si l'offre n'est pas associée à une discipline ou si les places disponibles sont insuffisantes dans la discipline.
-     */
     @Override
     @Transactional
     public PanierDto ajouterOffreAuPanier(String utilisateurIdStr, AjouterOffrePanierDto ajouterOffrePanierDto) {
-        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr); // Récupération/création du panier
+        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr); // Le paramètre fetchDetails a été supprimé
         Offre offre = offreRepository.findById(ajouterOffrePanierDto.getIdOffre())
-                .orElseThrow(() -> new ResourceNotFoundException(OFFRE_NOT_FOUND + ajouterOffrePanierDto.getIdOffre())); // Récupération de l'offre
+                .orElseThrow(() -> new ResourceNotFoundException(OFFRE_NOT_FOUND_ID + ajouterOffrePanierDto.getIdOffre()));
 
-        // Vérification de la disponibilité de l'offre et de la quantité globale de l'offre (stock)
-        if (offre.getStatutOffre() != StatutOffre.DISPONIBLE || offre.getQuantite() < ajouterOffrePanierDto.getQuantite()) {
-            throw new IllegalArgumentException(QUANTITE_INVALIDE_OU_NON_DISPONIBLE);
-        }
-        // Vérification de la quantité demandée (doit être positive)
-        if (ajouterOffrePanierDto.getQuantite() <= 0) {
-            throw new IllegalArgumentException(QUANTITE_NON_POSITIVE);
-        }
+        validationsAjoutOffre(offre, ajouterOffrePanierDto.getQuantite());
+        Discipline discipline = validerEtRecupererDisciplineDeLoffre(offre);
 
-        // Toutes les offres ajoutables au panier ont une discipline.
-        if (offre.getDiscipline() == null || offre.getDiscipline().getIdDiscipline() == null) {
-            throw new IllegalStateException(String.format(OFFRE_DISCIPLINE_NULL, offre.getIdOffre()));
-        }
-
-        Discipline discipline = disciplineRepository.findById(offre.getDiscipline().getIdDiscipline())
-                .orElseThrow(() -> new ResourceNotFoundException(DISCIPLINE_NOT_FOUND + offre.getDiscipline().getIdDiscipline())); // Récupération de la discipline
-
-        // Trouver l'élément de ContenuPanier existant pour cette offre (s'il y en a un)
         Optional<ContenuPanier> existingContenuPanierOpt = panier.getContenuPaniers().stream()
-                .filter(cp -> cp != null && cp.getOffre() != null && cp.getOffre().getIdOffre().equals(offre.getIdOffre())) // Ajout null check
+                .filter(cp -> cp != null && cp.getOffre() != null && cp.getOffre().getIdOffre().equals(offre.getIdOffre()))
                 .findFirst();
 
-        int currentQuantityInCart = existingContenuPanierOpt.map(ContenuPanier::getQuantiteCommandee).orElse(0);
-        int quantityToAdd = ajouterOffrePanierDto.getQuantite();
-        int newTotalQuantityForThisItem = currentQuantityInCart + quantityToAdd;
+        int quantiteDejaDansPanier = existingContenuPanierOpt.map(ContenuPanier::getQuantiteCommandee).orElse(0);
+        int quantiteDesireePourCetItem = quantiteDejaDansPanier + ajouterOffrePanierDto.getQuantite();
 
-        // Calculer les places totales dans la discipline après avoir ajouté la nouvelle quantité pour l'offre actuelle
-        int newTotalPlacesInDiscipline = calculateTotalPlacesForDiscipline(panier, discipline, offre, newTotalQuantityForThisItem); // Utilisation de la méthode d'aide
-
-        if (discipline.getNbPlaceDispo() < newTotalPlacesInDiscipline) {
-            throw new IllegalStateException(PLACES_INSUFFISANTES + " (Discipline : " + discipline.getNomDiscipline() + ")"); // Message plus précis
+        if (offre.getQuantite() < quantiteDesireePourCetItem) {
+            throw new IllegalArgumentException(String.format("Stock insuffisant pour l'offre ID %d. Demandé: %d (total), Disponible: %d",
+                    offre.getIdOffre(), quantiteDesireePourCetItem, offre.getQuantite()));
         }
+
+        validerCapaciteDisciplinePourPanier(panier, discipline, offre, quantiteDesireePourCetItem);
 
         ContenuPanier contenuPanier = existingContenuPanierOpt.orElseGet(() -> {
-            // Créer un nouvel élément si l'offre n'est pas déjà dans le panier
-            ContenuPanier nouveauContenuPanier = new ContenuPanier();
-            nouveauContenuPanier.setPanier(panier);
-            nouveauContenuPanier.setOffre(offre);
-            // Assurez-vous que la collection dans le panier est initialisée avant d'y ajouter
-            if (panier.getContenuPaniers() == null) {
-                panier.setContenuPaniers(new java.util.HashSet<>());
-            }
-            panier.getContenuPaniers().add(nouveauContenuPanier); // Ajouter au Set en mémoire
-            return nouveauContenuPanier;
+            ContenuPanier nouveauContenu = ContenuPanier.builder()
+                    .panier(panier)
+                    .offre(offre)
+                    .quantiteCommandee(0)
+                    .build();
+            panier.getContenuPaniers().add(nouveauContenu);
+            return nouveauContenu;
         });
 
-        // Mettre à jour la quantité de l'élément (nouvellement créé ou existant)
-        contenuPanier.setQuantiteCommandee(newTotalQuantityForThisItem);
-        contenuPanierRepository.save(contenuPanier); // Persistance de ContenuPanier
+        contenuPanier.setQuantiteCommandee(quantiteDesireePourCetItem);
 
-        // Recalcul du montant total du panier et persistance du panier mis à jour
-        recalculerMontantTotal(panier);
-
-        return mapPanierToDto(panier); // Conversion en DTO
+        recalculerEtSauvegarderPanier(panier);
+        log.info("Offre ID {} ajoutée/mise à jour (quantité: {}) dans le panier ID {} pour l'utilisateur ID {}",
+                offre.getIdOffre(), quantiteDesireePourCetItem, panier.getIdPanier(), utilisateurIdStr);
+        return mapPanierToDto(panier);
     }
 
-    /**
-     * Modifie la quantité d'une offre spécifique dans le panier de l'utilisateur.
-     * Effectue des validations sur la nouvelle quantité et les places disponibles dans la discipline associée.
-     * Si la nouvelle quantité est 0, l'offre est supprimée du panier en appelant {@link #supprimerOffreDuPanier}.
-     *
-     * @param utilisateurIdStr         L'ID de l'utilisateur au format String.
-     * @param modifierContenuPanierDto Les détails de la modification (ID de l'offre et nouvelle quantité).
-     * @return Le PanierDto mis à jour.
-     * @throws ResourceNotFoundException Si l'utilisateur, l'offre n'est pas trouvé, ou si l'offre n'est pas dans le panier.
-     * @throws IllegalArgumentException  Si la nouvelle quantité est négative.
-     * @throws IllegalStateException     Si l'offre n'est pas associée à une discipline ou si les places disponibles sont insuffisantes pour la nouvelle quantité dans la discipline.
-     */
+    private void validationsAjoutOffre(Offre offre, int quantiteDemandee) {
+        if (offre.getStatutOffre() != StatutOffre.DISPONIBLE) {
+            throw new IllegalArgumentException(QUANTITE_INVALIDE_OU_OFFRE_NON_DISPONIBLE + " L'offre ID " + offre.getIdOffre() + " n'est pas disponible (statut: " + offre.getStatutOffre() + ").");
+        }
+        if (quantiteDemandee <= 0) {
+            throw new IllegalArgumentException(QUANTITE_NON_POSITIVE);
+        }
+    }
+
+    private Discipline validerEtRecupererDisciplineDeLoffre(Offre offre) {
+        if (offre.getDiscipline() == null || offre.getDiscipline().getIdDiscipline() == null) {
+            throw new IllegalStateException(String.format(OFFRE_SANS_DISCIPLINE_ID, offre.getIdOffre()));
+        }
+        return disciplineRepository.findById(offre.getDiscipline().getIdDiscipline())
+                .orElseThrow(() -> new ResourceNotFoundException(DISCIPLINE_NOT_FOUND_ID + offre.getDiscipline().getIdDiscipline()));
+    }
+
+    private int calculerPlacesRequisesAutresOffresMemeDiscipline(Panier panier, Discipline discipline, Offre offreCible) {
+        int placesRequises = 0;
+        if (panier.getContenuPaniers() != null) {
+            for (ContenuPanier cp : panier.getContenuPaniers()) {
+                if (cp != null && cp.getOffre() != null && cp.getOffre().getDiscipline() != null &&
+                        cp.getOffre().getDiscipline().getIdDiscipline().equals(discipline.getIdDiscipline()) &&
+                        !cp.getOffre().getIdOffre().equals(offreCible.getIdOffre())) {
+                    placesRequises += cp.getOffre().getCapacite() * cp.getQuantiteCommandee();
+                }
+            }
+        }
+        return placesRequises;
+    }
+
+    private void validerCapaciteDisciplinePourPanier(Panier panier, Discipline discipline, Offre offreCible, int quantiteCiblePourOffre) {
+        int placesRequisesPourOffreCible = offreCible.getCapacite() * quantiteCiblePourOffre;
+        int placesRequisesParAutresOffresMemeDiscipline = calculerPlacesRequisesAutresOffresMemeDiscipline(panier, discipline, offreCible);
+
+        int totalPlacesRequisesPourDiscipline = placesRequisesPourOffreCible + placesRequisesParAutresOffresMemeDiscipline;
+
+        if (discipline.getNbPlaceDispo() < totalPlacesRequisesPourDiscipline) {
+            throw new IllegalStateException(PLACES_INSUFFISANTES_DISCIPLINE + discipline.getNomDiscipline() +
+                    String.format(". Requis: %d, Disponible: %d", totalPlacesRequisesPourDiscipline, discipline.getNbPlaceDispo()));
+        }
+    }
+
     @Override
     @Transactional
-    public PanierDto modifierQuantiteOffrePanier(String utilisateurIdStr, ModifierContenuPanierDto modifierContenuPanierDto) {
-        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr); // Récupération du panier
-        Offre offre = offreRepository.findById(modifierContenuPanierDto.getIdOffre())
-                .orElseThrow(() -> new ResourceNotFoundException(OFFRE_NOT_FOUND + modifierContenuPanierDto.getIdOffre())); // Récupération de l'offre
-
-        int nouvelleQuantite = modifierContenuPanierDto.getNouvelleQuantite();
-
-        // Vérifier si la nouvelle quantité est raisonnable (non négative)
-        if (nouvelleQuantite < 0) {
-            throw new IllegalArgumentException("La quantité à modifier ne peut pas être négative.");
+    public PanierDto modifierQuantiteOffrePanier(String utilisateurIdStr, ModifierContenuPanierDto dto) {
+        if (dto.getNouvelleQuantite() < 0) {
+            throw new IllegalArgumentException("La nouvelle quantité ne peut pas être négative.");
+        }
+        if (dto.getNouvelleQuantite() == 0) {
+            log.info("Quantité mise à 0 pour l'offre ID {} dans le panier de l'utilisateur ID {}. Suppression de l'offre.", dto.getIdOffre(), utilisateurIdStr);
+            // Appel via 'self' pour assurer que le proxy transactionnel est utilisé
+            return self.supprimerOffreDuPanier(utilisateurIdStr, dto.getIdOffre());
         }
 
-        // Si la nouvelle quantité est 0, supprimer l'offre du panier
-        if (nouvelleQuantite == 0) {
-            return supprimerOffreDuPanier(utilisateurIdStr, offre.getIdOffre());
-        }
+        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr); // Le paramètre fetchDetails a été supprimé
+        Offre offre = offreRepository.findById(dto.getIdOffre())
+                .orElseThrow(() -> new ResourceNotFoundException(OFFRE_NOT_FOUND_ID + dto.getIdOffre()));
 
-        // Rechercher l'élément ContenuPanier dans le Set en mémoire du panier
-        ContenuPanier contenuPanierExistant = panier.getContenuPaniers().stream()
+        ContenuPanier contenuPanier = panier.getContenuPaniers().stream()
                 .filter(cp -> cp != null && cp.getOffre() != null && cp.getOffre().getIdOffre().equals(offre.getIdOffre()))
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException(String.format(OFFRE_NOT_IN_PANIER, offre.getIdOffre())));
+                .orElseThrow(() -> new ResourceNotFoundException(String.format(OFFRE_NOT_IN_PANIER_ID, offre.getIdOffre(), utilisateurIdStr)));
 
+        validationsAjoutOffre(offre, dto.getNouvelleQuantite());
+        Discipline discipline = validerEtRecupererDisciplineDeLoffre(offre);
 
-        // Assurez-vous que l'offre a une discipline associée
-        if (offre.getDiscipline() == null || offre.getDiscipline().getIdDiscipline() == null) {
-            throw new IllegalStateException(String.format(OFFRE_DISCIPLINE_NULL, offre.getIdOffre()));
+        if (offre.getQuantite() < dto.getNouvelleQuantite()) {
+            throw new IllegalArgumentException(String.format("Stock insuffisant pour l'offre ID %d. Demandé: %d, Disponible: %d",
+                    offre.getIdOffre(), dto.getNouvelleQuantite(), offre.getQuantite()));
         }
 
-        Discipline discipline = disciplineRepository.findById(offre.getDiscipline().getIdDiscipline())
-                .orElseThrow(() -> new ResourceNotFoundException(DISCIPLINE_NOT_FOUND + offre.getDiscipline().getIdDiscipline())); // Récupération de la discipline
+        validerCapaciteDisciplinePourPanier(panier, discipline, offre, dto.getNouvelleQuantite());
 
-        // Calculer les places totales dans la discipline après avoir appliqué la nouvelle quantité pour l'offre actuelle
-        int newTotalPlacesInDiscipline = calculateTotalPlacesForDiscipline(panier, discipline, offre, nouvelleQuantite); // Utilisation de la méthode d'aide
-
-        // Vérifier si le nombre total de places après la modification dépasse la capacité de la discipline
-        if (discipline.getNbPlaceDispo() < newTotalPlacesInDiscipline) {
-            throw new IllegalStateException(PLACES_INSUFFISANTES + " (Discipline : " + discipline.getNomDiscipline() + ")"); // Message plus précis
-        }
-
-        // La modification est valide, mettre à jour la quantité sur l'objet en mémoire
-        contenuPanierExistant.setQuantiteCommandee(nouvelleQuantite);
-
-        // Persister l'élément de contenu modifié
-        contenuPanierRepository.save(contenuPanierExistant);
-
-        // Recalcul du montant total du panier et persistance du panier mis à jour
-        recalculerMontantTotal(panier);
-
-        return mapPanierToDto(panier); // Retourne le DTO
+        contenuPanier.setQuantiteCommandee(dto.getNouvelleQuantite());
+        recalculerEtSauvegarderPanier(panier);
+        log.info("Quantité de l'offre ID {} modifiée à {} dans le panier ID {} pour l'utilisateur ID {}",
+                offre.getIdOffre(), dto.getNouvelleQuantite(), panier.getIdPanier(), utilisateurIdStr);
+        return mapPanierToDto(panier);
     }
 
-    /**
-     * Supprime une offre spécifique du panier de l'utilisateur.
-     * Si l'offre n'est pas trouvée dans le panier, l'opération n'a aucun effet.
-     * Le montant total du panier est recalculé après la suppression.
-     *
-     * @param utilisateurIdStr L'ID de l'utilisateur au format String.
-     * @param offreId          L'ID de l'offre à supprimer du panier.
-     * @return Le PanierDto mis à jour.
-     * @throws ResourceNotFoundException Si l'utilisateur n'est pas trouvé.
-     */
     @Override
     @Transactional
     public PanierDto supprimerOffreDuPanier(String utilisateurIdStr, Long offreId) {
-        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr); // Récupération du panier
-
-        // Trouver l'élément dans le Set en mémoire pour le retirer
+        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr);
         Optional<ContenuPanier> contenuARetirerOpt = panier.getContenuPaniers().stream()
                 .filter(cp -> cp != null && cp.getOffre() != null && cp.getOffre().getIdOffre().equals(offreId))
                 .findFirst();
 
         if (contenuARetirerOpt.isPresent()) {
             ContenuPanier contenuARetirer = contenuARetirerOpt.get();
-
-            // Création de la clé composite pour la suppression en base
-            ContenuPanierId key = new ContenuPanierId(panier.getIdPanier(), offreId);
-
-            // Supprimer de la base de données en utilisant la clé composite
-            contenuPanierRepository.deleteById(key);
-
-            // Retirer l'objet du Set en mémoire pour maintenir la cohérence
             panier.getContenuPaniers().remove(contenuARetirer);
-
-            // Recalculer le montant total maintenant que l'élément a été retiré du Set
-            recalculerMontantTotal(panier); // Persiste aussi le panier
+            recalculerEtSauvegarderPanier(panier);
+            log.info("Offre ID {} supprimée du panier ID {} pour l'utilisateur ID {}", offreId, panier.getIdPanier(), utilisateurIdStr);
+        } else {
+            log.warn("Tentative de suppression de l'offre ID {} non trouvée dans le panier ID {} de l'utilisateur ID {}", offreId, panier.getIdPanier(), utilisateurIdStr);
         }
-
-        // Le mappage se fera sur l'objet panier mis à jour (ou inchangé si l'offre n'était pas là)
         return mapPanierToDto(panier);
     }
 
-    /**
-     * Vide complètement le panier en cours de l'utilisateur en supprimant tous ses éléments de contenu.
-     * Le montant total du panier est également mis à zéro.
-     *
-     * @param utilisateurIdStr L'ID de l'utilisateur au format String.
-     * @return Le PanierDto vidé.
-     * @throws ResourceNotFoundException Si l'utilisateur n'est pas trouvé.
-     */
     @Override
     @Transactional
     public PanierDto viderPanier(String utilisateurIdStr) {
-        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr); // Récupération du panier
-
-        // Vérifier si le panier a du contenu avant de tenter de supprimer
-        if (panier != null && panier.getContenuPaniers() != null && !panier.getContenuPaniers().isEmpty()) {
-            // Supprimer tous les éléments de contenu associés à ce panier en base
-            contenuPanierRepository.deleteByPanier(panier);
-
-            // Vider le Set en mémoire pour maintenir la cohérence
+        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr);
+        if (panier.getContenuPaniers() != null && !panier.getContenuPaniers().isEmpty()) {
+            log.info("Vidage de {} items du panier ID {} pour l'utilisateur ID {}", panier.getContenuPaniers().size(), panier.getIdPanier(), utilisateurIdStr);
             panier.getContenuPaniers().clear();
-
-            // Réinitialisation du montant total
-            panier.setMontantTotal(BigDecimal.ZERO);
-
-            // Persistance du panier modifié (vide)
-            panierRepository.save(panier);
-
+            recalculerEtSauvegarderPanier(panier);
+        } else {
+            log.info("Panier ID {} pour l'utilisateur ID {} est déjà vide ou n'a pas de contenu initialisé.", panier.getIdPanier(), utilisateurIdStr);
         }
         return mapPanierToDto(panier);
     }
 
-    /**
-     * Supprime toutes les occurrences d'une offre donnée dans tous les paniers.
-     * Cette méthode est typiquement appelée lors de la suppression d'une offre.
-     * Note : Cette opération ne met pas à jour automatiquement les montants totaux
-     * des paniers affectés en temps réel. Un mécanisme supplémentaire pourrait être nécessaire
-     * si l'affichage immédiat des totaux corrigés est requis après la suppression d'une offre.
-     *
-     * @param offre L'offre à supprimer de tous les paniers.
-     */
     @Override
-    @Transactional // Assurez-vous que cette méthode est transactionnelle car elle modifie la base
+    @Transactional
     public void supprimerOffreDeTousLesPaniers(Offre offre) {
-        // Vérification null pour l'offre avant de tenter la suppression
-        if (offre != null) {
-            // Utilise une méthode de repository personnalisée pour supprimer en masse
-            // Selon l'erreur et la signature du repo, cette méthode renvoie void.
-            contenuPanierRepository.deleteByOffre(offre); // Appel sans capturer la valeur de retour
-        }
-    }
-
-    /**
-     * Finalise le processus d'achat pour le panier en cours de l'utilisateur.
-     * Change le statut du panier à PAYE, décrémente la quantité des offres
-     * correspondantes dans le stock et décrémente les places disponibles dans les disciplines associées.
-     * Cette opération est transactionnelle pour garantir la cohérence des données.
-     *
-     * @param utilisateurIdStr L'ID de l'utilisateur au format String.
-     * @return Le PanierDto mis à jour avec le statut PAYE.
-     * @throws ResourceNotFoundException Si l'utilisateur ou une discipline associée n'est pas trouvée.
-     * @throws IllegalStateException     Si le panier ne peut pas être payé (statut incorrect, vide)
-     *                                   ou si le nombre de places ou le stock de l'offre est insuffisant au moment de la finalisation.
-     */
-    @Override
-    @Transactional // Assure l'atomicité de l'opération d'achat
-    public PanierDto finaliserAchat(String utilisateurIdStr) {
-        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr); // Récupération du panier
-
-        // Vérification du statut du panier
-        if (panier.getStatut() != StatutPanier.EN_ATTENTE) {
-            throw new IllegalStateException(PANIER_DEJA_PAYE + panier.getStatut());
-        }
-
-        // Vérification si le panier est vide
-        if (panier.getContenuPaniers() == null || panier.getContenuPaniers().isEmpty()) {
-            throw new IllegalStateException(PANIER_VIDE);
-        }
-
-        // Parcours des contenus du panier pour valider et mettre à jour
-        for (ContenuPanier contenu : panier.getContenuPaniers()) {
-            // Ajout de vérifications null rigoureuses pour les objets liés essentiels
-            if (contenu == null || contenu.getOffre() == null || contenu.getOffre().getIdOffre() == null) {
-                throw new IllegalStateException(CONTENU_PANIER_INVALIDE + " Détails: Contenu ou Offre null.");
-            }
-            Offre offre = contenu.getOffre();
-            int quantiteCommandee = contenu.getQuantiteCommandee();
-
-            // Vérification de la quantité commandée (doit être positive pour finaliser)
-            if (quantiteCommandee <= 0) {
-                throw new IllegalStateException("Quantité commandée nulle ou négative trouvée pour l'offre " + offre.getIdOffre() + " dans le panier.");
-            }
-
-
-            // Vérification que l'offre a une discipline si elle est censée en avoir une
-            if (offre.getDiscipline() == null || offre.getDiscipline().getIdDiscipline() == null) {
-                throw new IllegalStateException(String.format(OFFRE_DISCIPLINE_NULL, offre.getIdOffre()));
-            }
-            Discipline discipline = disciplineRepository.findById(offre.getDiscipline().getIdDiscipline())
-                    .orElseThrow(() -> {
-                        return new ResourceNotFoundException(DISCIPLINE_NOT_FOUND + offre.getDiscipline().getIdDiscipline());
-                    });
-
-            int placesOccupees = offre.getCapacite() * quantiteCommandee; // Calcul des places à décrémenter
-
-            int updatedPlacesCount = disciplineRepository.decrementerPlaces(discipline.getIdDiscipline(), placesOccupees);
-
-            if (updatedPlacesCount == 0) {
-                throw new IllegalStateException(String.format(PLACES_INSUFFISANTES + " (Discipline : %s, Offre : %d)", discipline.getNomDiscipline(), offre.getIdOffre()));
-            }
-
-            // Vérification de stock avant décrémentation pour double sécurité et robustesse
-            if (offre.getQuantite() < quantiteCommandee) {
-                throw new IllegalStateException(String.format(STOCK_INSUFFISANT_FINALISATION, offre.getIdOffre()));
-            }
-            offre.setQuantite(offre.getQuantite() - quantiteCommandee); // Mise à jour de la quantité de l'offre (stock)
-            offreRepository.save(offre); // Persistance de l'offre modifiée
-        }
-
-        // Si la boucle se termine sans exception, toutes les validations sont passées et les mises à jour sont faites en mémoire.
-        panier.setStatut(StatutPanier.PAYE); // Mise à jour du statut du panier
-        panierRepository.save(panier); // Persistance du panier avec le nouveau statut
-        return mapPanierToDto(panier); // Retourne le PanierDto finalisé
-    }
-
-    /**
-     * Recalcule le montant total du panier en sommant le prix total de chaque élément de contenu.
-     * Le panier est ensuite sauvegardé pour persister le nouveau montant total.
-     * Assure que le Set de contenus panier est initialisé pour éviter les erreurs.
-     *
-     * @param panier Le panier dont le montant total doit être recalculé.
-     */
-    private void recalculerMontantTotal(Panier panier) {
-        // Vérification null pour le panier source
-        if (panier == null) {
+        if (offre == null || offre.getIdOffre() == null) {
+            log.warn("Tentative de supprimer une offre null ou sans ID des paniers.");
             return;
         }
-        // S'assurer que le Set de contenus est initialisé
-        if (panier.getContenuPaniers() == null) {
-            panier.setContenuPaniers(new java.util.HashSet<>()); // Initialiser si null
+        List<Panier> paniersAffectes = panierRepository.findPaniersContenantOffreWithDetails(offre.getIdOffre());
+
+        int deletedCount = contenuPanierRepository.deleteByOffreId(offre.getIdOffre());
+        log.info("{} instances de ContenuPanier pour l'offre ID {} ont été supprimées de la base de données.", deletedCount, offre.getIdOffre());
+
+        for (Panier panierPrecedent : paniersAffectes) {
+            panierRepository.findById(panierPrecedent.getIdPanier()).ifPresent(panierMisAJour -> {
+                recalculerEtSauvegarderPanier(panierMisAJour);
+                log.info("Panier ID {} recalculé après suppression de l'offre ID {}.", panierMisAJour.getIdPanier(), offre.getIdOffre());
+            });
+        }
+    }
+
+    /**
+     * Valide et récupère la quantité commandée d'un contenu de panier pour la finalisation.
+     * @param contenu Le contenu du panier.
+     * @param offre L'offre associée (rechargée).
+     * @param panier Le panier parent.
+     * @return La quantité commandée validée.
+     * @throws IllegalStateException si la quantité est invalide ou le stock de l'offre insuffisant.
+     */
+    private int getAndValidateQuantiteCommandeePourFinalisation(ContenuPanier contenu, Offre offre, Panier panier) {
+        int quantiteCommandee = contenu.getQuantiteCommandee();
+
+        if (quantiteCommandee <= 0) {
+            throw new IllegalStateException("Quantité commandée invalide (" + quantiteCommandee + ") pour l'offre ID " + offre.getIdOffre() + " dans le panier ID " + panier.getIdPanier());
+        }
+        if (offre.getQuantite() < quantiteCommandee) {
+            throw new IllegalStateException(String.format(STOCK_OFFRE_INSUFFISANT_FINALISATION, offre.getIdOffre(), quantiteCommandee, offre.getQuantite()));
+        }
+        return quantiteCommandee;
+    }
+
+    private void processContenuPanierPourFinalisation(ContenuPanier contenu, Panier panier) {
+        if (contenu == null || contenu.getOffre() == null || contenu.getOffre().getIdOffre() == null) {
+            log.error("Contenu de panier invalide (null) trouvé lors de la finalisation pour le panier ID {}", panier.getIdPanier());
+            throw new IllegalStateException(CONTENU_PANIER_OU_OFFRE_INVALIDE);
         }
 
-        BigDecimal total = panier.getContenuPaniers().stream()
-                .filter(contenu -> contenu != null && contenu.getOffre() != null && contenu.getOffre().getPrix() != null) // Filtrer les contenus invalides
-                .map(contenu -> {
-                    try {
-                        BigDecimal prix = contenu.getOffre().getPrix();
-                        BigDecimal quantite = BigDecimal.valueOf(contenu.getQuantiteCommandee());
-                        return prix.multiply(quantite);
-                    } catch (Exception e) {
-                        // Utiliser les IDs du panier et de l'offre pour l'identification
-                        Long panierId = (contenu != null && contenu.getPanier() != null) ? contenu.getPanier().getIdPanier() : null;
-                        Long offreId = (contenu != null && contenu.getOffre() != null) ? contenu.getOffre().getIdOffre() : null;
-                        return BigDecimal.ZERO; // Retourner 0 pour ce contenu invalide
-                    }
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add); // Démarrer l'addition avec ZERO
+        Offre offre = offreRepository.findById(contenu.getOffre().getIdOffre())
+                .orElseThrow(() -> new ResourceNotFoundException(OFFRE_NOT_FOUND_ID + contenu.getOffre().getIdOffre() + " (lors de la finalisation)."));
 
-        panier.setMontantTotal(total);
-        panierRepository.save(panier); // Persister le panier avec le nouveau total
+        int quantiteCommandee = getAndValidateQuantiteCommandeePourFinalisation(contenu, offre, panier);
+
+        offre.setQuantite(offre.getQuantite() - quantiteCommandee);
+        offreRepository.save(offre);
+
+        Discipline discipline = validerEtRecupererDisciplineDeLoffre(offre);
+        int placesOccupeesParCetteOffre = offre.getCapacite() * quantiteCommandee;
+        int updatedRows = disciplineRepository.decrementerPlaces(discipline.getIdDiscipline(), placesOccupeesParCetteOffre);
+
+        if (updatedRows == 0) {
+            Discipline currentDisciplineState = disciplineRepository.findById(discipline.getIdDiscipline())
+                    .orElseThrow(() -> new ResourceNotFoundException(DISCIPLINE_NOT_FOUND_ID + discipline.getIdDiscipline() + " (lors de la vérification des places)."));
+            throw new IllegalStateException(
+                    PLACES_INSUFFISANTES_DISCIPLINE + discipline.getNomDiscipline() +
+                            String.format(". Requis: %d, Disponible: %d pour l'offre ID %d",
+                                    placesOccupeesParCetteOffre, currentDisciplineState.getNbPlaceDispo(), offre.getIdOffre()));
+        }
+        log.info("Offre ID {} (quantité: {}) traitée, stock mis à jour. Places décrémentées ({} places) pour discipline ID {}.",
+                offre.getIdOffre(), quantiteCommandee, placesOccupeesParCetteOffre, discipline.getIdDiscipline());
     }
 
-    /**
-     * Méthode utilitaire pour récupérer l'entité Panier en cours (statut EN_ATTENTE)
-     * de l'utilisateur identifié par son ID String.
-     * Gère la conversion de l'ID String en UUID et la recherche de l'utilisateur.
-     * Si aucun panier EN_ATTENTE n'est trouvé, en crée un nouveau.
-     *
-     * @param utilisateurIdStr L'ID de l'utilisateur au format String.
-     * @return L'entité Panier de l'utilisateur avec le statut EN_ATTENTE.
-     * @throws ResourceNotFoundException Si l'utilisateur n'est pas trouvé.
-     */
-    private Panier getPanierUtilisateurEntity(String utilisateurIdStr) {
-        UUID utilisateurId = UUID.fromString(utilisateurIdStr);
-        Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new ResourceNotFoundException(UTILISATEUR_NOT_FOUND + utilisateurId));
-        // Tente de trouver un panier EN_ATTENTE existant
-        return panierRepository.findByUtilisateur_idUtilisateurAndStatut(utilisateur.getIdUtilisateur(), StatutPanier.EN_ATTENTE)
-                // Si aucun panier EN_ATTENTE n'est trouvé, en crée un nouveau et le retourne
-                .orElseGet(() -> creerNouveauPanier(utilisateur));
+
+    @Override
+    @Transactional
+    public PanierDto finaliserAchat(String utilisateurIdStr) {
+        Panier panier = getPanierUtilisateurEntity(utilisateurIdStr);
+
+        if (panier.getStatut() != StatutPanier.EN_ATTENTE) {
+            throw new IllegalStateException(PANIER_STATUT_INCORRECT_POUR_PAIEMENT + panier.getStatut());
+        }
+        if (panier.getContenuPaniers() == null || panier.getContenuPaniers().isEmpty()) {
+            throw new IllegalStateException(PANIER_VIDE_POUR_PAIEMENT);
+        }
+
+        for (ContenuPanier contenu : new HashSet<>(panier.getContenuPaniers())) {
+            processContenuPanierPourFinalisation(contenu, panier);
+        }
+
+        panier.setStatut(StatutPanier.PAYE);
+        panierRepository.save(panier);
+        log.info("Achat finalisé pour le panier ID {} de l'utilisateur ID {}", panier.getIdPanier(), utilisateurIdStr);
+        return mapPanierToDto(panier);
     }
 
-    /**
-     * Convertit une entité {@link Panier} en son DTO correspondant {@link PanierDto}.
-     * Utilise ModelMapper pour la conversion et gère spécifiquement la conversion
-     * de l'ensemble des {@link ContenuPanier} en liste de {@link ContenuPanierDto}.
-     * Ajoute des vérifications null pour garantir la robustesse.
-     *
-     * @param panier L'entité Panier à convertir. Peut être null.
-     * @return Le PanierDto correspondant, ou null si le panier d'entrée est null.
-     */
-    private PanierDto mapPanierToDto(Panier panier) {
-        // Vérification null pour le panier source
+    private void recalculerEtSauvegarderPanier(Panier panier) {
         if (panier == null) {
+            log.warn("Tentative de recalculer le montant d'un panier null.");
+            return;
+        }
+
+        BigDecimal total = BigDecimal.ZERO;
+        if (panier.getContenuPaniers() != null) {
+            total = panier.getContenuPaniers().stream()
+                    .filter(contenu -> contenu != null && contenu.getOffre() != null && contenu.getOffre().getPrix() != null)
+                    .map(contenu -> contenu.getOffre().getPrix().multiply(BigDecimal.valueOf(contenu.getQuantiteCommandee())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+        panier.setMontantTotal(total);
+        panierRepository.save(panier);
+    }
+
+    private Panier getPanierUtilisateurEntity(String utilisateurIdStr) {
+        UUID utilisateurId;
+        try {
+            utilisateurId = UUID.fromString(utilisateurIdStr);
+        } catch (IllegalArgumentException e) {
+            throw new ResourceNotFoundException(UTILISATEUR_NOT_FOUND_ID + utilisateurIdStr + " (Format UUID invalide)");
+        }
+
+        Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
+                .orElseThrow(() -> new ResourceNotFoundException(UTILISATEUR_NOT_FOUND_ID + utilisateurId));
+
+        Optional<Panier> panierOpt = panierRepository.findByUtilisateurIdAndStatutWithDetails(utilisateur.getIdUtilisateur(), StatutPanier.EN_ATTENTE);
+
+        return panierOpt.orElseGet(() -> creerNouveauPanier(utilisateur));
+    }
+
+    private PanierDto mapPanierToDto(Panier panier) {
+        if (panier == null) {
+            log.warn("Tentative de mapper un panier null en DTO.");
             return null;
         }
-
-        // Mappage de l l'entité Panier vers PanierDto par ModelMapper
         PanierDto panierDto = modelMapper.map(panier, PanierDto.class);
 
-        // Mappage manuel de l'ID utilisateur si ModelMapper ne le gère pas via la relation
-        if (panier.getUtilisateur() != null && panier.getUtilisateur().getIdUtilisateur() != null) {
+        if (panier.getUtilisateur() != null) {
             panierDto.setIdUtilisateur(panier.getUtilisateur().getIdUtilisateur());
         } else {
-            panierDto.setIdUtilisateur(null); // S'assurer que l'ID est null dans le DTO aussi
+            log.warn("Panier ID {} n'a pas d'utilisateur associé lors du mapping.", panier.getIdPanier());
         }
 
-        // S'assurer que le Set de contenus en mémoire est initialisé avant de le streamer
-        if (panier.getContenuPaniers() == null) {
-            panier.setContenuPaniers(new java.util.HashSet<>()); // Initialiser un set vide si null
+        if (panierDto.getContenuPaniers() == null && panier.getContenuPaniers() != null && !panier.getContenuPaniers().isEmpty()) {
+            log.warn("La collection contenuPaniers était null dans PanierDto après le mapping initial par ModelMapper pour Panier ID {}. Vérifiez la configuration de ModelMapper.", panier.getIdPanier());
+        } else if (panierDto.getContenuPaniers() == null) {
+            panierDto.setContenuPaniers(Collections.emptyList());
         }
-
-
-        // Conversion de l'ensemble des ContenuPanier en liste de ContenuPanierDto
-        // Utilise ModelMapper pour chaque élément de contenu via le flux Stream
-        List<ContenuPanierDto> contenuPaniersDto = panier.getContenuPaniers().stream()
-                // Filtrer les éléments de contenu qui pourraient être nuls ou invalides (sans offre ou sans prix)
-                .filter(contenu -> contenu != null && contenu.getOffre() != null && contenu.getOffre().getPrix() != null)
-                .map(contenu -> {
-                    try {
-                        // Mappe l'entité ContenuPanier vers ContenuPanierDto
-                        // Votre ModelMapperConfig devrait gérer le mappage des champs, y compris le calcul de prixTotalOffre
-                        ContenuPanierDto dto = modelMapper.map(contenu, ContenuPanierDto.class);
-                        if (dto.getIdOffre() == null && contenu.getOffre().getIdOffre() != null) {
-                            dto.setIdOffre(contenu.getOffre().getIdOffre());
-                        }
-                        if (dto.getPrixUnitaire() == null && contenu.getOffre().getPrix() != null) {
-                            dto.setPrixUnitaire(contenu.getOffre().getPrix());
-                        }
-                        // Si prixTotalOffre n'est pas mappé automatiquement et correctement par ModelMapperConfig:
-                        if (dto.getPrixTotalOffre() == null && dto.getPrixUnitaire() != null) {
-                            dto.setPrixTotalOffre(dto.getPrixUnitaire().multiply(BigDecimal.valueOf(dto.getQuantiteCommandee())));
-                        }
-
-                        return dto;
-                    } catch (Exception e) {
-                        // Utiliser les IDs du panier et de l'offre pour l'identification
-                        Long panierId = (contenu != null && contenu.getPanier() != null) ? contenu.getPanier().getIdPanier() : null;
-                        Long offreId = (contenu != null && contenu.getOffre() != null) ? contenu.getOffre().getIdOffre() : null;
-                        return null; // Retourner null pour cet élément invalide après logging
-                    }
-                })
-                .filter(Objects::nonNull) // Supprimer les éléments null qui pourraient résulter du mappage d'éléments invalides
-                .collect(Collectors.toList()); // Collecter dans une liste
-
-        // Assigner la liste des DTOs de contenu au PanierDto
-        panierDto.setContenuPaniers(contenuPaniersDto);
 
         return panierDto;
-    }
-
-    /**
-     * Calcule le nombre total de places occupées dans une discipline spécifique par les offres
-     * présentes dans un panier, en utilisant une quantité potentiellement modifiée pour une offre donnée.
-     * Cette méthode est utilisée pour les validations de capacité lors de l'ajout ou la modification
-     * d'éléments dans le panier.
-     *
-     * @param panier                   L'entité Panier.
-     * @param discipline               La discipline concernée.
-     * @return Le nombre total de places occupées pour cette discipline dans le panier après application de la quantité spécifiée pour l'offre donnée.
-     */
-    private int calculateTotalPlacesForDiscipline(Panier panier, Discipline discipline, Offre targetOffre, int quantityForTargetOffre) {
-        if (panier == null || panier.getContenuPaniers() == null || discipline == null || discipline.getIdDiscipline() == null || targetOffre == null) {
-            return 0;
-        }
-
-
-        int currentTotalPlacesExcludingTarget = 0;
-        for (ContenuPanier cp : panier.getContenuPaniers()) {
-            if (cp == null || cp.getOffre() == null || cp.getOffre().getDiscipline() == null || cp.getOffre().getDiscipline().getIdDiscipline() == null) {
-                continue;
-            }
-
-            if (cp.getOffre().getDiscipline().getIdDiscipline().equals(discipline.getIdDiscipline()) && !cp.getOffre().getIdOffre().equals(targetOffre.getIdOffre())) {
-                int itemPlaces = cp.getOffre().getCapacite() * cp.getQuantiteCommandee();
-                currentTotalPlacesExcludingTarget += itemPlaces;
-            }
-        }
-        int finalTotal = currentTotalPlacesExcludingTarget + (targetOffre.getCapacite() * quantityForTargetOffre);
-        return finalTotal;
     }
 }

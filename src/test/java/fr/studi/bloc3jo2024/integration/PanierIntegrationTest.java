@@ -6,147 +6,204 @@ import fr.studi.bloc3jo2024.entity.enums.StatutPanier;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
 import fr.studi.bloc3jo2024.repository.*;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+/**
+ * Tests d'intégration pour la création et la récupération d'un Panier avec ses contenus.
+ * Utilise Testcontainers pour une base de données PostgreSQL.
+ * Chaque méthode de test est transactionnelle pour assurer l'isolation.
+ */
+@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Transactional
 class PanierIntegrationTest {
 
-    @Autowired
-    private UtilisateurRepository utilisateurRepository;
+    @Container
+    @SuppressWarnings("resource") // Testcontainers gère le cycle de vie
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
+            .withDatabaseName("test_db_panier_integ_" + UUID.randomUUID().toString().substring(0, 8))
+            .withUsername("testuser_panier")
+            .withPassword("testpass_panier");
 
-    @Autowired
-    private AdresseRepository adresseRepository;
+    @DynamicPropertySource
+    static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
+        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
+        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop"); // Schéma recréé à chaque exécution de la suite de tests
+    }
 
-    @Autowired
-    private RoleRepository roleRepository;
+    // Injection des repositories nécessaires
+    @Autowired private UtilisateurRepository utilisateurRepository;
+    @Autowired private AdresseRepository adresseRepository;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private PaysRepository paysRepository;
+    @Autowired private PanierRepository panierRepository;
+    @Autowired private OffreRepository offreRepository;
+    @Autowired private ContenuPanierRepository contenuPanierRepository;
+    @Autowired private DisciplineRepository disciplineRepository;
+    @Autowired private EntityManager entityManager; // Pour un contrôle fin du contexte de persistance
 
-    @Autowired
-    private PaysRepository paysRepository;
+    // Entités de test réutilisables
+    private Utilisateur utilisateurTest;
+    private Discipline disciplineTest;
+    private Offre offreSoloTest;
+    private Offre offreDuoTest;
+    private Panier panierTest;
 
-    @Autowired
-    private PanierRepository panierRepository;
+    @BeforeEach
+    void setUpDatabase() {
+        // 1. Pays
+        Pays france = paysRepository.findByNomPays("France_PanierTest_Setup").orElseGet(() ->
+                paysRepository.saveAndFlush(Pays.builder().nomPays("France_PanierTest_Setup").build())
+        );
 
-    @Autowired
-    private OffreRepository offreRepository;
-
-    @Autowired
-    private EpreuveRepository epreuveRepository;
-
-    @Autowired
-    private ContenuPanierRepository contenuPanierRepository;
-
-    @Autowired
-    private DisciplineRepository disciplineRepository;
-
-    @Test
-    @Transactional
-    void testPanierAvecOffresEtContenuPanier() {
-
-        Pays france = Pays.builder().nomPays("France").build();
-        paysRepository.save(france);
-
+        // 2. Adresse
         Adresse adresse = Adresse.builder()
-                .numeroRue(2)
-                .nomRue("Rue de Lyon")
-                .ville("Lyon")
-                .codePostal("69000")
+                .numeroRue(15)
+                .nomRue("Rue du Setup Panier")
+                .ville("Setupville")
+                .codePostal("12345")
                 .pays(france)
                 .build();
-        adresseRepository.save(adresse);
+        adresse = adresseRepository.saveAndFlush(adresse);
 
-        Role role = Role.builder().typeRole(TypeRole.USER).build();
-        roleRepository.save(role);
+        // 3. Rôle
+        Role roleUser = roleRepository.findByTypeRole(TypeRole.USER).orElseGet(() -> {
+            Role newRole = Role.builder().typeRole(TypeRole.USER).build();
+            return roleRepository.saveAndFlush(newRole);
+        });
 
-        Utilisateur user = Utilisateur.builder()
-                .email("client@jo.fr")
-                .nom("Client")
-                .prenom("Pierre")
-                .dateNaissance(LocalDate.of(1995, 5, 10))
+        // 4. Utilisateur
+        String uniqueEmail = "setup_user_" + UUID.randomUUID().toString().substring(0, 8) + "@example.com";
+        Authentification auth = Authentification.builder().motPasseHache(UUID.randomUUID().toString()).build(); // Simuler un mot de passe haché
+
+        utilisateurTest = Utilisateur.builder()
+                .email(uniqueEmail)
+                .nom("Utilisateur")
+                .prenom("DeTest")
+                .dateNaissance(LocalDate.of(1985, 5, 20))
                 .adresse(adresse)
-                .role(role)
+                .role(roleUser)
+                .isVerified(true)
+                .authentification(auth) // Associer l'authentification
                 .build();
-        user = utilisateurRepository.save(user);
+        auth.setUtilisateur(utilisateurTest); // Lier l'utilisateur à l'authentification (relation bidirectionnelle)
+        utilisateurTest = utilisateurRepository.saveAndFlush(utilisateurTest); // Sauvegarder l'utilisateur (et l'auth par cascade si configuré)
 
-        Epreuve epreuve = Epreuve.builder().nomEpreuve("100m").build();
-        epreuveRepository.save(epreuve);
-
-        // Correction : La date doit être dans le futur
-        Discipline discipline = Discipline.builder()
-                .nomDiscipline("Athlétisme")
-                .dateDiscipline(LocalDateTime.now().plusDays(10)) // Date dans 10 jours
-                .nbPlaceDispo(80000)
+        // 5. Discipline
+        disciplineTest = Discipline.builder()
+                .nomDiscipline("Test Discipline Panier Setup " + UUID.randomUUID().toString().substring(0, 6))
+                .dateDiscipline(LocalDateTime.now().plusDays(20))
+                .nbPlaceDispo(500)
                 .adresse(adresse)
                 .build();
-        discipline = disciplineRepository.save(discipline);
+        disciplineTest = disciplineRepository.saveAndFlush(disciplineTest);
 
-        Offre offre1 = Offre.builder()
-                .prix(BigDecimal.valueOf(100.00))
-                .quantite(1000)
+        // 6. Offres
+        offreSoloTest = Offre.builder()
+                .prix(new BigDecimal("150.00"))
+                .quantite(200)
                 .capacite(1)
                 .statutOffre(StatutOffre.DISPONIBLE)
                 .typeOffre(TypeOffre.SOLO)
-                .discipline(discipline)
+                .discipline(disciplineTest)
+                .dateExpiration(LocalDateTime.now().plusDays(45))
                 .build();
-        offre1 = offreRepository.save(offre1);
+        offreSoloTest = offreRepository.saveAndFlush(offreSoloTest);
 
-        Offre offre2 = Offre.builder()
-                .prix(BigDecimal.valueOf(70.00))
-                .quantite(500)
+        offreDuoTest = Offre.builder()
+                .prix(new BigDecimal("250.00"))
+                .quantite(100)
                 .capacite(2)
                 .statutOffre(StatutOffre.DISPONIBLE)
                 .typeOffre(TypeOffre.DUO)
-                .discipline(discipline)
+                .discipline(disciplineTest)
+                .dateExpiration(LocalDateTime.now().plusDays(45))
                 .build();
-        offre2 = offreRepository.save(offre2);
+        offreDuoTest = offreRepository.saveAndFlush(offreDuoTest);
 
-        Panier panier = Panier.builder()
+        // 7. Panier
+        panierTest = Panier.builder()
                 .statut(StatutPanier.EN_ATTENTE)
-                .montantTotal(BigDecimal.valueOf(140.00))
-                .utilisateur(user)
+                .montantTotal(BigDecimal.ZERO)
+                .utilisateur(utilisateurTest)
+                .contenuPaniers(new HashSet<>()) // Important pour éviter NullPointerException
                 .build();
-        panier = panierRepository.save(panier);
+        panierTest = panierRepository.saveAndFlush(panierTest);
+    }
 
-        ContenuPanier cp1 = ContenuPanier.builder()
-                .offre(offre1)
-                .quantiteCommandee(1)
-                .panier(panier)
+    @Test
+    void testPanierAvecOffresEtContenuPanier_creationCalculEtRecuperation() {
+        // Arrange: Ajouter des contenus au panier de test
+        ContenuPanier cpSolo = ContenuPanier.builder()
+                .offre(offreSoloTest)
+                .quantiteCommandee(1) // 1 offre SOLO
+                .panier(panierTest)
                 .build();
-        contenuPanierRepository.save(cp1);
+        contenuPanierRepository.saveAndFlush(cpSolo);
 
-        ContenuPanier cp2 = ContenuPanier.builder()
-                .offre(offre2)
-                .quantiteCommandee(1)
-                .panier(panier)
+        ContenuPanier cpDuo = ContenuPanier.builder()
+                .offre(offreDuoTest)
+                .quantiteCommandee(2) // 2 offres DUO
+                .panier(panierTest)
                 .build();
-        contenuPanierRepository.save(cp2);
+        contenuPanierRepository.saveAndFlush(cpDuo);
 
-        Panier fromDb = panierRepository.findById(panier.getIdPanier()).orElseThrow();
-        assertThat(fromDb.getMontantTotal()).isEqualTo(BigDecimal.valueOf(140.00));
-        assertThat(fromDb.getUtilisateur().getEmail()).isEqualTo("client@jo.fr");
+        // Rafraîchir l'entité panierTest pour que sa collection contenuPaniers soit à jour
+        // avec les ContenuPanier persistés ci-dessus.
+        entityManager.refresh(panierTest);
 
-        List<ContenuPanier> contenuPaniers = contenuPanierRepository.findAll();
-        assertThat(contenuPaniers)
+        // Calculer manuellement le montant total attendu pour la vérification
+        BigDecimal montantAttendu = BigDecimal.ZERO;
+        montantAttendu = montantAttendu.add(offreSoloTest.getPrix().multiply(BigDecimal.valueOf(cpSolo.getQuantiteCommandee())));
+        montantAttendu = montantAttendu.add(offreDuoTest.getPrix().multiply(BigDecimal.valueOf(cpDuo.getQuantiteCommandee())));
+
+        // Simuler la mise à jour du montant total du panier (ce que ferait un service)
+        panierTest.setMontantTotal(montantAttendu);
+        panierRepository.saveAndFlush(panierTest);
+
+        // Act: Récupérer le panier depuis la base de données.
+        // Utiliser la méthode du repository qui charge les détails peut être une bonne option.
+        // Ici, on va chercher par ID et s'appuyer sur @Transactional pour les collections.
+        Panier panierFromDb = panierRepository.findById(panierTest.getIdPanier())
+                .orElseThrow(() -> new AssertionError("Le panier avec l'ID " + panierTest.getIdPanier() + " n'a pas été trouvé."));
+
+        // Assert: Vérifier les propriétés du panier récupéré
+        assertThat(panierFromDb.getMontantTotal()).isEqualByComparingTo(montantAttendu);
+        assertThat(panierFromDb.getUtilisateur().getIdUtilisateur()).isEqualTo(utilisateurTest.getIdUtilisateur());
+
+        // Vérifier les contenus du panier.
+        // La collection panierFromDb.getContenuPaniers() devrait être chargée grâce à @Transactional
+        // et au refresh précédent.
+        assertThat(panierFromDb.getContenuPaniers())
                 .hasSize(2)
                 .extracting(
-                        c -> c.getOffre().getIdOffre(),
-                        ContenuPanier::getQuantiteCommandee,
-                        c -> c.getPanier().getIdPanier()
+                        item -> item.getOffre().getIdOffre(), // Extrait l'ID de l'offre
+                        ContenuPanier::getQuantiteCommandee  // Extrait la quantité commandée
                 )
                 .containsExactlyInAnyOrder(
-                        tuple(offre1.getIdOffre(), 1, panier.getIdPanier()),
-                        tuple(offre2.getIdOffre(), 1, panier.getIdPanier())
+                        tuple(offreSoloTest.getIdOffre(), cpSolo.getQuantiteCommandee()),
+                        tuple(offreDuoTest.getIdOffre(), cpDuo.getQuantiteCommandee())
                 );
     }
 }
-

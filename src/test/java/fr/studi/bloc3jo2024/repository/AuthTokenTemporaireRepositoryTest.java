@@ -83,7 +83,7 @@ class AuthTokenTemporaireRepositoryTest {
                 .role(userRoleEntity)
                 .adresse(userAdresse)
                 .dateCreation(LocalDateTime.now())
-                .isVerified(true) // Ou false selon les besoins des tests de token
+                .isVerified(true)
                 .build();
         entityManager.persist(testUser);
         entityManager.flush();

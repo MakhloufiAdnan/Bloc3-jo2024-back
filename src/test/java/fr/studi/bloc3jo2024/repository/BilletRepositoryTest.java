@@ -28,12 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class BilletRepositoryTest {
 
-    // L'annotation @Container avec un champ static assure que Testcontainers gère
-    // le cycle de vie (start/stop) du conteneur pour toutes les méthodes de test de cette classe.
-    // L'avertissement IDE sur "try-with-resources" peut être ignoré ici.
-    @SuppressWarnings("resource") // Optionnel, pour supprimer l'avertissement IDE si persistant
     @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("test_billet_db_" + UUID.randomUUID().toString().substring(0,8))
             .withUsername("test_user_billet")
             .withPassword("test_pass_billet");
@@ -119,8 +115,7 @@ class BilletRepositoryTest {
                 .build();
         entityManager.persist(disciplineEntity);
 
-        // Créer Offre - Supposant que votre entité Offre a un constructeur ou des setters
-        testOffre = new Offre(); // Si @Builder n'est pas disponible
+        testOffre = new Offre();
         testOffre.setTypeOffre(TypeOffre.SOLO);
         testOffre.setPrix(java.math.BigDecimal.valueOf(60.00));
         testOffre.setQuantite(10);
@@ -133,8 +128,7 @@ class BilletRepositoryTest {
 
     @Test
     void testBilletCreationAvecQRCode() {
-        // Créer Billet - Supposant que votre entité Billet a un constructeur ou des setters
-        Billet billet = new Billet(); // Si @Builder n'est pas disponible
+        Billet billet = new Billet();
         billet.setCleFinaleBillet("BILLET-UNIQUE-" + UUID.randomUUID());
         billet.setQrCodeImage("fake-qrcode-image-billet-test".getBytes());
         billet.setUtilisateur(testUser);

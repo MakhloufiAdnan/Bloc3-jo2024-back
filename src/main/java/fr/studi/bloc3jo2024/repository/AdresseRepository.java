@@ -17,7 +17,6 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
 
     /**
      * Recherche les adresses par ville.
-     * Utilisé pour la recherche d'adresses pour des disciplines ou utilisateurs.
      * @param ville Le nom de la ville.
      * @return Une liste d'adresses situées dans la ville spécifiée.
      */
@@ -25,7 +24,6 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
 
     /**
      * Recherche une adresse complète en fonction de tous ses attributs.
-     * Utilisé pour vérifier si une adresse existe déjà, notamment lors de la création d'une offre.
      * @param numeroRue Le numéro de la rue.
      * @param nomRue Le nom de la rue.
      * @param ville La ville.
@@ -34,11 +32,18 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
      * @return Un Optional contenant l'adresse si elle existe, sinon un Optional vide.
      */
     Optional<Adresse> findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-            int numeroRue, String nomRue, String ville, String codePostal, Pays pays
+            Integer numeroRue,
+            String nomRue,
+            String ville,
+            String codePostal,
+            Pays pays
     );
 
     /**
      * Récupère les adresses associées à un utilisateur spécifique.
+     * La relation est définie dans Adresse via `private Set<Utilisateur> utilisateurs;`
+     * et dans Utilisateur via `private Adresse adresse;`.
+     * Cette requête cherche les Adresses où la collection `utilisateurs` contient un utilisateur avec l'ID donné.
      * @param idUtilisateur L'UUID de l'utilisateur.
      * @return Une liste des adresses de l'utilisateur.
      */
@@ -46,13 +51,14 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
 
     /**
      * Récupère l'adresse associée à une discipline spécifique.
-     * Étant donné la relation Many-to-One de Discipline vers Adresse,
-     * nous recherchons les adresses où la collection 'disciplines' contient la discipline spécifié.
+     * Une Discipline a une relation @ManyToOne vers Adresse.
+     * Cette requête trouve l'Adresse où sa collection `disciplines` (côté Adresse) contient la discipline donnée.
      * @param discipline L'objet Discipline.
      * @return L'adresse de la discipline, ou un Optional vide si non trouvée.
      */
-    @Query("SELECT a FROM Adresse a JOIN a.disciplines e WHERE e = :discipline")
+    @Query("SELECT a FROM Adresse a JOIN a.disciplines d WHERE d = :discipline")
     Optional<Adresse> findByDisciplines(@Param("discipline") Discipline discipline);
+
 
     /**
      * Récupère la liste des adresses associées à une discipline spécifique.
@@ -64,11 +70,11 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
 
     /**
      * Vérifie si une adresse est liée à au moins une discipline.
-     * Utilisé avant de supprimer une adresse pour éviter de supprimer une adresse utilisée.
+     * Cette requête compte le nombre de disciplines qui référencent cette adresse.
      * @param idAdresse L'ID de l'adresse à vérifier.
      * @return true si l'adresse est liée à une discipline, false sinon.
      */
-    @Query("SELECT COUNT(a) > 0 FROM Adresse a JOIN a.disciplines e WHERE a.idAdresse = :idAdresse")
+    @Query("SELECT COUNT(d) > 0 FROM Discipline d WHERE d.adresse.idAdresse = :idAdresse")
     boolean isAdresseLieeAUnDiscipline(@Param("idAdresse") Long idAdresse);
 
     /**
@@ -77,6 +83,6 @@ public interface AdresseRepository extends JpaRepository<Adresse, Long> {
      * @param idPays L'ID du pays des adresses à rechercher.
      * @return Une liste d'adresses liées à la discipline et appartenant au pays spécifié.
      */
-    @Query("SELECT a FROM Adresse a JOIN a.disciplines e WHERE e = :discipline AND a.pays.idPays = :idPays")
+    @Query("SELECT a FROM Adresse a JOIN a.disciplines d WHERE d = :discipline AND a.pays.idPays = :idPays")
     List<Adresse> findByDisciplinesAndPays_IdPays(@Param("discipline") Discipline discipline, @Param("idPays") Long idPays);
 }

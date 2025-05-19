@@ -8,7 +8,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException; // Spécifique pour les erreurs de signature
+import io.jsonwebtoken.security.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +28,7 @@ public class JwtService {
     private String secretKey;
 
     @Value("${jwt.expiration}")
-    private long expirationTimeMillis; // Renommé pour clarifier l'unité
+    private long expirationTimeMillis;
 
     // Durée de tolérance pour les décalages d'horloge (en secondes) lors de la validation des timestamps (exp, nbf)
     private static final long CLOCK_SKEW_SECONDS = 60L;
@@ -54,7 +54,6 @@ public class JwtService {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTimeMillis);
 
-        // Log pour débogage des timestamps (surtout si des problèmes de fuseau horaire/iat persistent)
         log.debug("Génération du token pour l'email : {}. Date d'émission (iat): {}. Date d'expiration (exp): {}", email, now, expiryDate);
 
         return Jwts.builder()
@@ -121,7 +120,6 @@ public class JwtService {
      * @throws JwtException Si la date d'expiration ne peut être extraite (token invalide).
      */
     private boolean isTokenExpired(String token) {
-        // extractClaim gère déjà les exceptions si le token est invalide pour obtenir l'expiration
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
@@ -135,10 +133,7 @@ public class JwtService {
      */
     public boolean isTokenValid(String token, String email) {
         try {
-            final String extractedEmail = extractEmail(token); // Peut lever JwtException
-            // Vérifie la correspondance de l'email et que le token n'est pas expiré.
-            // isTokenExpired peut aussi lever JwtException si le token est malformé au point où l'expiration ne peut être lue,
-            // mais extractEmail l'aurait probablement déjà intercepté.
+            final String extractedEmail = extractEmail(token);
             return email.equals(extractedEmail) && !isTokenExpired(token);
         } catch (ExpiredJwtException e) {
             log.warn("Validation du JWT échouée pour l'email '{}' : Token expiré. Token : [{}...]", email, formatTokenForLog(token), e);

@@ -10,13 +10,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,162 +32,119 @@ class EpreuveServiceTest {
     @InjectMocks
     private EpreuveService epreuveService;
 
-    private Epreuve epreuveNonVedette;
-    private Epreuve epreuveVedette;
-    private MettreAJourEpreuveVedetteDto dtoMettreEnVedette;
-    private MettreAJourEpreuveVedetteDto dtoRetirerVedette;
+    private Epreuve epreuve1;
+    private Epreuve epreuve2;
+    private MettreAJourEpreuveVedetteDto dtoUpdateVedette;
 
     @BeforeEach
     void setUp() {
-        // Arrange (
+        epreuve1 = Epreuve.builder()
+                .idEpreuve(1L)
+                .nomEpreuve("100m Sprint")
+                .isFeatured(false)
+                .build();
 
-        epreuveNonVedette = new Epreuve();
-        epreuveNonVedette.setIdEpreuve(1L);
-        epreuveNonVedette.setNomEpreuve("Épreuve Non Vedette");
-        epreuveNonVedette.setFeatured(false);
+        epreuve2 = Epreuve.builder()
+                .idEpreuve(2L)
+                .nomEpreuve("Saut en longueur")
+                .isFeatured(true)
+                .build();
 
-        epreuveVedette = new Epreuve();
-        epreuveVedette.setIdEpreuve(2L);
-        epreuveVedette.setNomEpreuve("Épreuve Vedette");
-        epreuveVedette.setFeatured(true);
-
-        dtoMettreEnVedette = new MettreAJourEpreuveVedetteDto();
-        dtoMettreEnVedette.setIdEpreuve(1L); // Cible epreuveNonVedette
-        dtoMettreEnVedette.setIsFeatured(true); // Veut la mettre en vedette
-
-        dtoRetirerVedette = new MettreAJourEpreuveVedetteDto();
-        dtoRetirerVedette.setIdEpreuve(2L); // Cible epreuveVedette
-        dtoRetirerVedette.setIsFeatured(false); // Veut lui retirer le statut vedette
+        dtoUpdateVedette = new MettreAJourEpreuveVedetteDto();
+        dtoUpdateVedette.setIdEpreuve(1L);
+        dtoUpdateVedette.setIsFeatured(true);
     }
 
-    // --- Tests pour getEpreuvesEnVedette ---
-
     @Test
-    void getEpreuvesEnVedette_RetourneListeCorrecte() {
-        // Arrange
-        List<Epreuve> epreuvesEnVedetteList = Collections.singletonList(epreuveVedette);
-        when(epreuveRepository.findByIsFeaturedTrue()).thenReturn(epreuvesEnVedetteList);
-
-        // Act
+    void getEpreuvesEnVedette_shouldReturnListOfFeaturedEpreuves() {
+        when(epreuveRepository.findByIsFeaturedTrueWithComportersAndDisciplines()).thenReturn(Collections.singletonList(epreuve2));
         List<Epreuve> result = epreuveService.getEpreuvesEnVedette();
-
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(epreuveVedette.getIdEpreuve(), result.getFirst().getIdEpreuve());
-        assertTrue(result.getFirst().isFeatured());
-        verify(epreuveRepository, times(1)).findByIsFeaturedTrue(); // Vérifie que la méthode du repository a été appelée
+        assertEquals(epreuve2, result.getFirst());
+        verify(epreuveRepository).findByIsFeaturedTrueWithComportersAndDisciplines();
     }
 
     @Test
-    void getEpreuvesEnVedette_RetourneListeVideSiAucune() {
-        // Arrange
-        List<Epreuve> epreuvesEnVedetteList = Collections.emptyList(); // Liste vide
-        when(epreuveRepository.findByIsFeaturedTrue()).thenReturn(epreuvesEnVedetteList);
+    void getEpreuvesEnVedette_withPageable_shouldReturnPagedFeaturedEpreuves() {
+        Pageable pageable = PageRequest.of(0, 5);
+        Page<Epreuve> page = new PageImpl<>(Collections.singletonList(epreuve2), pageable, 1);
+        when(epreuveRepository.findByIsFeaturedTrueWithComportersAndDisciplines(pageable)).thenReturn(page);
 
-        // Act
-        List<Epreuve> result = epreuveService.getEpreuvesEnVedette();
+        Page<Epreuve> result = epreuveService.getEpreuvesEnVedette(pageable);
 
-        // Assert
         assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(epreuveRepository, times(1)).findByIsFeaturedTrue(); // Vérifie que la méthode du repository a été appelée
-    }
-
-    // --- Tests pour mettreAJourStatutVedette ---
-
-    @Test
-    void mettreAJourStatutVedette_MetEnVedetteAvecSucces() {
-        // Arrange
-        Long targetId = dtoMettreEnVedette.getIdEpreuve(); // ID de l'épreuve non vedette
-        // Le repository trouve l'épreuve non vedette
-        when(epreuveRepository.findById(targetId)).thenReturn(Optional.of(epreuveNonVedette));
-        // Le repository retourne l'épreuve après la sauvegarde (simule le comportement de save)
-        when(epreuveRepository.save(any(Epreuve.class))).thenReturn(epreuveNonVedette); // Save retourne la même instance modifiée
-
-        // Act
-        Epreuve updatedEpreuve = epreuveService.mettreAJourStatutVedette(dtoMettreEnVedette);
-
-        // Assert
-        assertNotNull(updatedEpreuve);
-        assertEquals(targetId, updatedEpreuve.getIdEpreuve());
-        assertTrue(updatedEpreuve.isFeatured()); // Vérifie que le statut a été mis à jour
-        verify(epreuveRepository, times(1)).findById(targetId); // Vérifie la recherche par ID
-        verify(epreuveRepository, times(1)).save(epreuveNonVedette); // Vérifie la sauvegarde de l'instance modifiée
+        assertEquals(1, result.getTotalElements());
+        assertEquals(epreuve2, result.getContent().getFirst());
+        verify(epreuveRepository).findByIsFeaturedTrueWithComportersAndDisciplines(pageable);
     }
 
     @Test
-    void mettreAJourStatutVedette_RetireStatutVedetteAvecSucces() {
-        // Arrange
-        Long targetId = dtoRetirerVedette.getIdEpreuve(); // ID de l'épreuve vedette
-        // Le repository trouve l'épreuve vedette
-        when(epreuveRepository.findById(targetId)).thenReturn(Optional.of(epreuveVedette));
-        // Le repository retourne l'épreuve après la sauvegarde (simule le comportement de save)
-        when(epreuveRepository.save(any(Epreuve.class))).thenReturn(epreuveVedette); // Save retourne la même instance modifiée
+    void mettreAJourStatutVedette_existingEpreuve_shouldUpdateAndReturnEpreuve() {
+        when(epreuveRepository.findById(dtoUpdateVedette.getIdEpreuve())).thenReturn(Optional.of(epreuve1));
+        // Mock the save operation to return the argument passed to it
+        when(epreuveRepository.save(any(Epreuve.class))).thenAnswer(invocation -> {
+            Epreuve epreuveToSave = invocation.getArgument(0);
+            epreuveToSave.setFeatured(dtoUpdateVedette.getIsFeatured());
+            return epreuveToSave;
+        });
 
-        // Act
-        Epreuve updatedEpreuve = epreuveService.mettreAJourStatutVedette(dtoRetirerVedette);
 
-        // Assert
-        assertNotNull(updatedEpreuve);
-        assertEquals(targetId, updatedEpreuve.getIdEpreuve());
-        assertFalse(updatedEpreuve.isFeatured()); // Vérifie que le statut a été mis à jour
-        verify(epreuveRepository, times(1)).findById(targetId); // Vérifie la recherche par ID
-        verify(epreuveRepository, times(1)).save(epreuveVedette); // Vérifie la sauvegarde de l'instance modifiée
+        Epreuve result = epreuveService.mettreAJourStatutVedette(dtoUpdateVedette);
+
+        assertNotNull(result);
+        assertTrue(result.isFeatured());
+        assertEquals(dtoUpdateVedette.getIdEpreuve(), result.getIdEpreuve());
+        verify(epreuveRepository).findById(dtoUpdateVedette.getIdEpreuve());
+        verify(epreuveRepository).save(epreuve1);
+        assertTrue(epreuve1.isFeatured(), "Epreuve1's featured status should be true after service call");
     }
 
-
     @Test
-    void mettreAJourStatutVedette_LanceEntityNotFoundExceptionSiEpreuveNonTrouvee() {
-        // Arrange
-        Long targetId = 99L; // Un ID qui n'existe pas
-        dtoMettreEnVedette.setIdEpreuve(targetId); // Modifier le DTO pour cibler l'ID non existant
+    void mettreAJourStatutVedette_nonExistingEpreuve_shouldThrowEntityNotFoundException() {
+        when(epreuveRepository.findById(dtoUpdateVedette.getIdEpreuve())).thenReturn(Optional.empty());
 
-        // Le repository ne trouve pas l'épreuve
-        when(epreuveRepository.findById(targetId)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        // On s'attend à ce que le service lance EntityNotFoundException
-        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
-                () -> epreuveService.mettreAJourStatutVedette(dtoMettreEnVedette)
+        assertThrows(EntityNotFoundException.class, () ->
+                epreuveService.mettreAJourStatutVedette(dtoUpdateVedette)
         );
-
-        assertTrue(exception.getMessage().contains("Épreuve non trouvée avec l'id : " + targetId)); // Vérifie le message d'exception
-        verify(epreuveRepository, times(1)).findById(targetId); // Vérifie la recherche par ID
-        verify(epreuveRepository, never()).save(any(Epreuve.class)); // Vérifie que save n'a pas été appelée
-    }
-
-    // --- Tests pour getAllEpreuves ---
-
-    @Test
-    void getAllEpreuves_RetourneListeCorrecte() {
-        // Arrange
-        List<Epreuve> toutesLesEpreuves = Arrays.asList(epreuveNonVedette, epreuveVedette);
-        when(epreuveRepository.findAll()).thenReturn(toutesLesEpreuves);
-
-        // Act
-        List<Epreuve> result = epreuveService.getAllEpreuves();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals(epreuveNonVedette.getIdEpreuve(), result.get(0).getIdEpreuve());
-        assertEquals(epreuveVedette.getIdEpreuve(), result.get(1).getIdEpreuve());
-        verify(epreuveRepository, times(1)).findAll(); // Vérifie que la méthode du repository a été appelée
+        verify(epreuveRepository).findById(dtoUpdateVedette.getIdEpreuve());
+        verify(epreuveRepository, never()).save(any(Epreuve.class));
     }
 
     @Test
-    void getAllEpreuves_RetourneListeVideSiAucune() {
-        // Arrange
-        List<Epreuve> toutesLesEpreuves = Collections.emptyList(); // Liste vide
-        when(epreuveRepository.findAll()).thenReturn(toutesLesEpreuves);
+    void getAllEpreuves_shouldReturnPagedEpreuves() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Epreuve> epreuvesList = List.of(epreuve1, epreuve2);
+        Page<Epreuve> expectedPage = new PageImpl<>(epreuvesList, pageable, epreuvesList.size());
 
-        // Act
-        List<Epreuve> result = epreuveService.getAllEpreuves();
+        when(epreuveRepository.findAllWithComportersAndDisciplines(any(Pageable.class))).thenReturn(expectedPage);
 
-        // Assert
+        Page<Epreuve> actualPage = epreuveService.getAllEpreuves(pageable);
+
+        assertNotNull(actualPage);
+        assertEquals(2, actualPage.getTotalElements());
+        assertEquals(epreuvesList, actualPage.getContent());
+        verify(epreuveRepository, times(1)).findAllWithComportersAndDisciplines(any(Pageable.class));
+    }
+
+    @Test
+    void getEpreuveById_existingId_shouldReturnEpreuve() {
+        when(epreuveRepository.findByIdWithComportersAndDisciplines(1L)).thenReturn(Optional.of(epreuve1));
+
+        Epreuve result = epreuveService.getEpreuveById(1L);
+
         assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(epreuveRepository, times(1)).findAll(); // Vérifie que la méthode du repository a été appelée
+        assertEquals(epreuve1, result);
+        verify(epreuveRepository).findByIdWithComportersAndDisciplines(1L);
+    }
+
+    @Test
+    void getEpreuveById_nonExistingId_shouldThrowEntityNotFoundException() {
+        when(epreuveRepository.findByIdWithComportersAndDisciplines(99L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () ->
+                epreuveService.getEpreuveById(99L)
+        );
+        verify(epreuveRepository).findByIdWithComportersAndDisciplines(99L);
     }
 }

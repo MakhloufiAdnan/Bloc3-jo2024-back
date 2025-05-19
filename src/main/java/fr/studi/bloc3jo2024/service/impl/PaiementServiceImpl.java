@@ -50,7 +50,7 @@ public class PaiementServiceImpl implements PaiementService {
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException(UTILISATEUR_NOT_FOUND + utilisateurId));
 
-        Panier panier = panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(idPanier, utilisateurId)
+        Panier panier = panierRepository.findByIdPanierAndUtilisateur_IdUtilisateur(idPanier, utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         String.format("Panier non trouvé avec l'ID : %d pour l'utilisateur ID : %s", idPanier, utilisateurId)
                 ));

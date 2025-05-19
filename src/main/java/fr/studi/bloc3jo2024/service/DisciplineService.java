@@ -3,19 +3,22 @@ package fr.studi.bloc3jo2024.service;
 import fr.studi.bloc3jo2024.dto.disciplines.CreerDisciplineDto;
 import fr.studi.bloc3jo2024.dto.disciplines.MettreAJourDisciplineDto;
 import fr.studi.bloc3jo2024.entity.Adresse;
-import fr.studi.bloc3jo2024.entity.Comporter;
 import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Epreuve;
 import fr.studi.bloc3jo2024.repository.AdresseRepository;
 import fr.studi.bloc3jo2024.repository.DisciplineRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -25,10 +28,18 @@ public class DisciplineService {
     private final AdresseRepository adresseRepository;
     private final EpreuveService epreuveService;
 
-    public DisciplineService(DisciplineRepository disciplineRepository, AdresseRepository adresseRepository, EpreuveService epreuveService) {
+    private DisciplineService self;
+
+    public DisciplineService(DisciplineRepository disciplineRepository,
+                             AdresseRepository adresseRepository,
+                             EpreuveService epreuveService) {
         this.disciplineRepository = disciplineRepository;
         this.adresseRepository = adresseRepository;
         this.epreuveService = epreuveService;
+    }
+    @Autowired
+    public void setSelf(@Lazy DisciplineService self) {
+        this.self = self;
     }
 
     public Discipline creerDiscipline(CreerDisciplineDto creerDisciplineDto) {
@@ -44,7 +55,8 @@ public class DisciplineService {
     }
 
     public Discipline mettreAJourDiscipline(MettreAJourDisciplineDto mettreAJourDisciplineDto) {
-        Discipline discipline = getDisciplineOrThrow(mettreAJourDisciplineDto.getIdDiscipline());
+        // Utilisation de self pour appeler la méthode transactionnelle
+        Discipline discipline = self.getDisciplineOrThrow(mettreAJourDisciplineDto.getIdDiscipline());
         Adresse adresse = adresseRepository.findById(mettreAJourDisciplineDto.getIdAdresse())
                 .orElseThrow(() -> new EntityNotFoundException("Adresse non trouvée avec l'id " + mettreAJourDisciplineDto.getIdAdresse()));
 
@@ -63,60 +75,85 @@ public class DisciplineService {
     }
 
     public Discipline retirerPlaces(Long idDiscipline, int nb) {
-        getDisciplineOrThrow(idDiscipline); // Vérifier que la discipline existe
-        if (nb <= 0) throw new IllegalArgumentException("Le nombre à retirer doit être positif.");
+        if (nb <= 0) {
+            throw new IllegalArgumentException("Le nombre de places à retirer doit être positif.");
+        }
         int updatedRows = disciplineRepository.decrementerPlaces(idDiscipline, nb);
         if (updatedRows == 0) {
-            throw new IllegalStateException("Impossible de retirer les places. Vérifiez l'ID et le nombre de places disponibles.");
+            // Utilisation de self pour appeler la méthode transactionnelle
+            Discipline discipline = self.getDisciplineOrThrow(idDiscipline);
+            throw new IllegalStateException("Impossible de retirer les places. Nombre de places disponibles ("+ discipline.getNbPlaceDispo() +") insuffisant pour la discipline ID " + idDiscipline + ".");
         }
-        return getDisciplineOrThrow(idDiscipline); // Récupérer l'entité mise à jour
+        // Utilisation de self pour appeler la méthode transactionnelle
+        return self.getDisciplineOrThrow(idDiscipline);
     }
 
     public Discipline ajouterPlaces(Long idDiscipline, int nb) {
-        Discipline discipline = getDisciplineOrThrow(idDiscipline);
-        if (nb <= 0) throw new IllegalArgumentException("Le nombre à ajouter doit être positif.");
+        // Utilisation de self pour appeler la méthode transactionnelle
+        Discipline discipline = self.getDisciplineOrThrow(idDiscipline);
+        if (nb <= 0) {
+            throw new IllegalArgumentException("Le nombre de places à ajouter doit être positif.");
+        }
         discipline.setNbPlaceDispo(discipline.getNbPlaceDispo() + nb);
         return disciplineRepository.save(discipline);
     }
 
     public Discipline updateDate(Long idDiscipline, LocalDateTime nouvelleDate) {
         if (nouvelleDate.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("La nouvelle date ne peut pas être dans le passé.");
+            throw new IllegalArgumentException("La nouvelle date de la discipline ne peut pas être dans le passé.");
         }
-        Discipline disciplineToUpdate = getDisciplineOrThrow(idDiscipline);
+        // Utilisation de self pour appeler la méthode transactionnelle
+        Discipline disciplineToUpdate = self.getDisciplineOrThrow(idDiscipline);
         disciplineToUpdate.setDateDiscipline(nouvelleDate);
         return disciplineRepository.save(disciplineToUpdate);
     }
 
-    public List<Discipline> getDisciplinesAvenir() {
-        return disciplineRepository.findByDateDisciplineAfter(LocalDateTime.now());
+    @Transactional(readOnly = true)
+    public Page<Discipline> getDisciplinesAvenir(Pageable pageable) {
+        return disciplineRepository.findFutureDisciplinesWithAdresse(LocalDateTime.now(), pageable);
     }
 
-    private Discipline getDisciplineOrThrow(Long id) {
+    /**
+     * Récupère une discipline par son ID ou lève une exception si non trouvée.
+     * Changée en protected pour permettre la proxyfication par Spring AOP pour @Transactional.
+     * Cette méthode sera appelée via l'instance 'self' injectée pour assurer le comportement transactionnel.
+     * @param id L'ID de la discipline.
+     * @return La discipline trouvée.
+     * @throws EntityNotFoundException si la discipline n'est pas trouvée.
+     */
+    @Transactional(readOnly = true)
+    protected Discipline getDisciplineOrThrow(Long id) {
         return disciplineRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Discipline non trouvée avec l'id " + id));
     }
 
-    public List<Discipline> findDisciplinesFiltered(String ville, LocalDateTime date, Long epreuveId) {
-        if (ville != null) {
-            return disciplineRepository.findDisciplinesByVille(ville);
+    @Transactional(readOnly = true)
+    public Page<Discipline> findDisciplinesFiltered(String ville, LocalDateTime date, Long epreuveId, Pageable pageable) {
+        if (ville != null && !ville.trim().isEmpty()) {
+            return disciplineRepository.findDisciplinesByVilleWithAdresse(ville, pageable);
         } else if (date != null) {
-            return disciplineRepository.findDisciplinesByDateDiscipline(date);
+            return disciplineRepository.findDisciplinesByDateDisciplineWithAdresse(date, pageable);
         } else if (epreuveId != null) {
-            return disciplineRepository.findDisciplinesByEpreuveId(epreuveId);
+            return disciplineRepository.findDisciplinesByEpreuveIdWithAdresse(epreuveId, pageable);
         } else {
-            return disciplineRepository.findAll();
+            return disciplineRepository.findAllWithAdresse(pageable);
         }
     }
 
+    @Transactional(readOnly = true)
     public Set<Discipline> getDisciplinesEnVedette() {
         List<Epreuve> epreuvesEnVedette = epreuveService.getEpreuvesEnVedette();
-        Set<Discipline> disciplinesEnVedette = new HashSet<>();
-        for (Epreuve epreuve : epreuvesEnVedette) {
-            for (Comporter comporteur : epreuve.getComporters()) {
-                disciplinesEnVedette.add(comporteur.getDiscipline());
-            }
+        if (epreuvesEnVedette.isEmpty()) {
+            return Set.of();
         }
-        return disciplinesEnVedette;
+
+        List<Long> idsEpreuvesEnVedette = epreuvesEnVedette.stream()
+                .map(Epreuve::getIdEpreuve)
+                .collect(Collectors.toList());
+
+        if (idsEpreuvesEnVedette.isEmpty()) {
+            return Set.of();
+        }
+        return disciplineRepository.findDisciplinesByEpreuveIdsWithAdresse(idsEpreuvesEnVedette);
     }
 }

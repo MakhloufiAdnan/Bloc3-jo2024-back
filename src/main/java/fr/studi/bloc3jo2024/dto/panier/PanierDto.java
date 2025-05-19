@@ -23,7 +23,7 @@ public class PanierDto {
     private StatutPanier statut;
     private LocalDateTime dateAjout;
 
-    @NotNull
+    @NotNull(message = "L'ID de l'utilisateur est obligatoire pour le panier.")
     private UUID idUtilisateur;
 
     @Valid

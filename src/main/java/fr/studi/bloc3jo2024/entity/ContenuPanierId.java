@@ -3,21 +3,25 @@ package fr.studi.bloc3jo2024.entity;
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 
 import java.io.Serializable;
 
+/**
+ * Clé primaire composite pour l'entité contenue du panier.
+ */
 @Embeddable
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode
+@Builder
 public class ContenuPanierId implements Serializable {
 
-    // Partie de la clé primaire composite référençant l'ID du panier.
+    @java.io.Serial
+    private static final long serialVersionUID = 1L;
+
     private Long panier;
 
-    // Partie de la clé primaire composite référençant l'ID de l'offre.
     private Long offre;
 }

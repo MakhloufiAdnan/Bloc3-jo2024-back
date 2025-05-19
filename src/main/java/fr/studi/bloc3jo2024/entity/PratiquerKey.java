@@ -1,19 +1,27 @@
 package fr.studi.bloc3jo2024.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 
 import java.io.Serializable;
 
+/**
+ * Clé primaire composite pour l'entité Pratiquer.
+ */
 @Embeddable
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-class PratiquerKey implements Serializable {
+public class PratiquerKey implements Serializable {
+
+    @java.io.Serial
+    private static final long serialVersionUID = 1L;
+
     @Column(name = "id_athlete")
     private Long idAthlete;
 

@@ -29,7 +29,7 @@ class PaiementRepositoryTest {
 
     @SuppressWarnings("resource")
     @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("test_paiement_db_" + UUID.randomUUID().toString().substring(0,8))
             .withUsername("test_user_paiement")
             .withPassword("test_pass_paiement");
@@ -50,9 +50,8 @@ class PaiementRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    private Panier panierEntity; // Renommé pour clarté
-    private Utilisateur utilisateurEntity; // Renommé pour clarté
-    // Le paiement sera créé dans les méthodes de test ou setUp si besoin constant
+    private Panier panierEntity;
+    private Utilisateur utilisateurEntity;
 
     @BeforeEach
     void setUp() {
@@ -73,7 +72,6 @@ class PaiementRepositoryTest {
                 .nom("NomPaiement").prenom("PrenomPaiement").dateNaissance(LocalDate.now().minusYears(30))
                 .adresse(adresse).role(role).dateCreation(LocalDateTime.now()).isVerified(true).build());
 
-        // Créer Panier - Utilisation des setters
         panierEntity = new Panier();
         panierEntity.setMontantTotal(BigDecimal.valueOf(100.00));
         panierEntity.setStatut(StatutPanier.EN_ATTENTE);
@@ -84,8 +82,7 @@ class PaiementRepositoryTest {
     }
 
     @Test
-    void testSaveAndRetrievePaiement() { // Renommé pour clarté, combinant les assertions
-        // Créer Paiement - Utilisation des setters
+    void testSaveAndRetrievePaiement() {
         Paiement paiement = new Paiement();
         paiement.setStatutPaiement(StatutPaiement.EN_ATTENTE);
         paiement.setMethodePaiement(MethodePaiementEnum.PAYPAL);
@@ -95,7 +92,7 @@ class PaiementRepositoryTest {
         paiement.setUtilisateur(utilisateurEntity);
 
         Paiement savedPaiement = paiementRepository.save(paiement);
-        entityManager.flush(); // Assure la persistance et la génération d'ID
+        entityManager.flush();
 
         Optional<Paiement> retrievedOpt = paiementRepository.findById(savedPaiement.getIdPaiement());
         assertTrue(retrievedOpt.isPresent(), "Le paiement sauvegardé devrait être récupérable.");

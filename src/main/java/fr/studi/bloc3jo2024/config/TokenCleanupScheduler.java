@@ -1,21 +1,21 @@
 package fr.studi.bloc3jo2024.config;
 
 import fr.studi.bloc3jo2024.service.AuthTokenTemporaireService;
-import lombok.RequiredArgsConstructor; // Assure l'injection du service via le constructeur
-import lombok.extern.slf4j.Slf4j; // Facilite la création d'un logger SLF4J
-import org.springframework.scheduling.annotation.Scheduled; // Pour la planification de tâches
-import org.springframework.stereotype.Component; // Indique que c'est un bean Spring
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 /**
  * Planificateur de tâches pour le nettoyage périodique des tokens expirés.
  * Utilise @Scheduled pour exécuter des tâches à intervalles réguliers ou à des moments précis.
  */
 @Component
-@RequiredArgsConstructor // Génère un constructeur avec les champs 'final' requis
-@Slf4j // Injecte automatiquement un logger SLF4J (nommé 'log')
+@RequiredArgsConstructor
+@Slf4j
 public class TokenCleanupScheduler {
 
-    private final AuthTokenTemporaireService tokenService; // Service responsable de la gestion des tokens
+    private final AuthTokenTemporaireService tokenService;
 
     /**
      * Tâche planifiée pour purger les tokens temporaires expirés.

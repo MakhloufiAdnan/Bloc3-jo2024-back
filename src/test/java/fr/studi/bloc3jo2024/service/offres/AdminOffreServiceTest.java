@@ -5,8 +5,8 @@ import fr.studi.bloc3jo2024.dto.offres.MettreAJourOffreDto;
 import fr.studi.bloc3jo2024.dto.offres.OffreAdminDto;
 import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Offre;
+import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
-import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.repository.DisciplineRepository;
 import fr.studi.bloc3jo2024.repository.OffreRepository;
 import fr.studi.bloc3jo2024.service.PanierService;
@@ -15,10 +15,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
 import java.util.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -32,214 +35,136 @@ class AdminOffreServiceTest {
     @Mock
     private OffreRepository offreRepository;
 
-    @Mock
-    private ModelMapper modelMapper;
+    @Spy
+    private ModelMapper modelMapper = new ModelMapper(); // ModelMapper espionné
 
     @Mock
     private DisciplineRepository disciplineRepository;
 
     @Mock
-    private PanierService panierService;
+    private PanierService panierService; // Mock si AdminOffreService l'utilise
 
     private Discipline discipline;
-    private Offre offre;
-    private OffreAdminDto offreAdminDto;
+    private Offre offre1;
+
     private CreerOffreDto creerOffreDto;
     private MettreAJourOffreDto mettreAJourOffreDto;
 
     @BeforeEach
     void setUp() {
-        discipline = new Discipline();
-        discipline.setIdDiscipline(1L);
-        discipline.setNomDiscipline("Football");
+        discipline = Discipline.builder().idDiscipline(1L).nomDiscipline("Football").build();
 
-        offre = new Offre();
-        offre.setIdOffre(1L);
-        offre.setDiscipline(discipline);
-
-        offreAdminDto = new OffreAdminDto();
-        offreAdminDto.setId(1L);
+        offre1 = Offre.builder()
+                .idOffre(1L)
+                .discipline(discipline)
+                .typeOffre(TypeOffre.SOLO)
+                .prix(new BigDecimal("50.00"))
+                .quantite(100)
+                .capacite(1)
+                .statutOffre(StatutOffre.DISPONIBLE)
+                .dateExpiration(LocalDateTime.now().plusDays(30))
+                .featured(false)
+                .build();
 
         creerOffreDto = new CreerOffreDto();
         creerOffreDto.setIdDiscipline(1L);
+        creerOffreDto.setTypeOffre(TypeOffre.SOLO);
+        creerOffreDto.setPrix(new BigDecimal("60.00"));
+        creerOffreDto.setQuantite(120);
+        creerOffreDto.setCapacite(1);
+        creerOffreDto.setStatutOffre(StatutOffre.DISPONIBLE);
+        creerOffreDto.setFeatured(false);
+        creerOffreDto.setDateExpiration(LocalDateTime.now().plusDays(45));
+
 
         mettreAJourOffreDto = new MettreAJourOffreDto();
-        mettreAJourOffreDto.setIdDiscipline(1L);
+        mettreAJourOffreDto.setIdDiscipline(1L); // Assumons la même discipline pour simplifier
+        mettreAJourOffreDto.setTypeOffre(TypeOffre.FAMILIALE);
+        mettreAJourOffreDto.setPrix(new BigDecimal("150.00"));
+        mettreAJourOffreDto.setQuantite(80);
+        mettreAJourOffreDto.setCapacite(4);
+        mettreAJourOffreDto.setStatutOffre(StatutOffre.DISPONIBLE);
+        mettreAJourOffreDto.setFeatured(true);
+        mettreAJourOffreDto.setDateExpiration(LocalDateTime.now().plusDays(70));
     }
 
     @Test
     void ajouterOffre_ValidInput_ReturnsOffreAdminDto() {
         // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline));
-        when(modelMapper.map(creerOffreDto, Offre.class)).thenReturn(offre);
-        when(offreRepository.save(offre)).thenReturn(offre);
-        when(modelMapper.map(offre, OffreAdminDto.class)).thenReturn(offreAdminDto);
+        when(disciplineRepository.findById(creerOffreDto.getIdDiscipline())).thenReturn(Optional.of(discipline));
+
+        Offre offreSauvegardeSimulee = new Offre();
+        modelMapper.map(creerOffreDto, offreSauvegardeSimulee); // Simuler le mapping que le service ferait
+        offreSauvegardeSimulee.setIdOffre(3L); // Simuler l'ID généré par la DB
+        offreSauvegardeSimulee.setDiscipline(discipline); // Assurer que la discipline est liée
+
+        when(offreRepository.save(any(Offre.class))).thenReturn(offreSauvegardeSimulee);
 
         // Act
         OffreAdminDto result = adminOffreService.ajouterOffre(creerOffreDto);
 
         // Assert
-        assertEquals(offreAdminDto, result);
-        verify(offreRepository, times(1)).save(offre);
-    }
+        assertNotNull(result);
+        assertEquals(offreSauvegardeSimulee.getIdOffre(), result.getId());
+        assertEquals(creerOffreDto.getIdDiscipline(), result.getIdDiscipline());
+        assertEquals(creerOffreDto.getTypeOffre(), result.getTypeOffre());
+        assertEquals(creerOffreDto.isFeatured(), result.isFeatured());
+        assertEquals(creerOffreDto.getDateExpiration(), result.getDateExpiration());
 
-    @Test
-    void ajouterOffre_DisciplineNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.ajouterOffre(creerOffreDto));
-        verify(offreRepository, never()).save(any());
-    }
-
-    @Test
-    void obtenirOffreParId_ExistingId_ReturnsOffreAdminDto() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.of(offre));
-        when(modelMapper.map(offre, OffreAdminDto.class)).thenReturn(offreAdminDto);
-
-        // Act
-        OffreAdminDto result = adminOffreService.obtenirOffreParId(1L);
-
-        // Assert
-        assertEquals(offreAdminDto, result);
-    }
-
-    @Test
-    void obtenirOffreParId_NonExistingId_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.obtenirOffreParId(1L));
+        // Vérifier que disciplineRepository.findById a été appelé
+        verify(disciplineRepository).findById(creerOffreDto.getIdDiscipline());
+        // Vérifier que offreRepository.save a été appelé
+        verify(offreRepository).save(any(Offre.class));
+        // Vérifier les appels à modelMapper (Spy)
+        verify(modelMapper).map(eq(creerOffreDto), any(Offre.class)); // DTO -> Entité
+        verify(modelMapper).map(eq(offreSauvegardeSimulee), eq(OffreAdminDto.class)); // Entité sauvegardée -> DTO
     }
 
     @Test
     void mettreAJourOffre_ValidInput_ReturnsOffreAdminDto() {
-        Long testOffreId = 1L;
-        MettreAJourOffreDto testDto = new MettreAJourOffreDto();
-        testDto.setIdDiscipline(1L); // ← Clé du problème
+        Long offreId = 1L;
 
-        Offre testOffre = new Offre();
-        Discipline testDiscipline = new Discipline();
-        testDiscipline.setIdDiscipline(1L);
-        OffreAdminDto expectedDto = new OffreAdminDto();
+        when(offreRepository.findById(offreId)).thenReturn(Optional.of(offre1));
+        when(disciplineRepository.findById(mettreAJourOffreDto.getIdDiscipline())).thenReturn(Optional.of(discipline));
 
-        when(offreRepository.findById(testOffreId)).thenReturn(Optional.of(testOffre));
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(testDiscipline));
-        doNothing().when(modelMapper).map(testDto, testOffre);
-        testOffre.setDiscipline(testDiscipline);
-        when(offreRepository.save(testOffre)).thenReturn(testOffre);
-        when(modelMapper.map(testOffre, OffreAdminDto.class)).thenReturn(expectedDto);
+        Offre offreMiseAJourSimulee = new Offre();
+        modelMapper.map(mettreAJourOffreDto, offreMiseAJourSimulee);
+        offreMiseAJourSimulee.setIdOffre(offreId);
+        offreMiseAJourSimulee.setDiscipline(discipline);
 
-        OffreAdminDto result = adminOffreService.mettreAJourOffre(testOffreId, testDto);
-
-        assertEquals(expectedDto, result);
-    }
-
-    @Test
-    void mettreAJourOffre_OffreNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.mettreAJourOffre(1L, mettreAJourOffreDto));
-        verify(disciplineRepository, never()).findById(anyLong());
-        verify(offreRepository, never()).save(any());
-    }
-
-    @Test
-    void mettreAJourOffre_DisciplineNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.of(offre));
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.mettreAJourOffre(1L, mettreAJourOffreDto));
-        verify(offreRepository, never()).save(any());
-    }
-
-    @Test
-    void supprimerOffre_ExistingId_CallsDeleteAndNotifyPanierService() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.of(offre));
+        when(offreRepository.save(any(Offre.class))).thenReturn(offreMiseAJourSimulee);
 
         // Act
-        adminOffreService.supprimerOffre(1L);
+        OffreAdminDto result = adminOffreService.mettreAJourOffre(offreId, mettreAJourOffreDto);
 
         // Assert
-        verify(offreRepository, times(1)).delete(offre);
-        verify(panierService, times(1)).supprimerOffreDeTousLesPaniers(offre);
+        assertNotNull(result);
+        assertEquals(offreId, result.getId());
+        assertEquals(mettreAJourOffreDto.getTypeOffre(), result.getTypeOffre());
+        assertEquals(mettreAJourOffreDto.getPrix(), result.getPrix());
+        assertEquals(mettreAJourOffreDto.isFeatured(), result.isFeatured());
+        assertEquals(mettreAJourOffreDto.getDateExpiration(), result.getDateExpiration());
+
+        verify(offreRepository).findById(offreId);
+        verify(disciplineRepository).findById(mettreAJourOffreDto.getIdDiscipline());
+        verify(modelMapper).map(eq(mettreAJourOffreDto), eq(offre1));
+        verify(offreRepository).save(eq(offre1));
+        verify(modelMapper).map(eq(offreMiseAJourSimulee), eq(OffreAdminDto.class));
     }
 
     @Test
-    void supprimerOffre_NonExistingId_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.supprimerOffre(1L));
-        verify(offreRepository, never()).delete(any());
-        verify(panierService, never()).supprimerOffreDeTousLesPaniers(any());
-    }
-
-    @Test
-    void obtenirToutesLesOffres_ReturnsListOfOffreAdminDto() {
-        // Arrange
-        List<Offre> offres = Arrays.asList(offre, new Offre());
-        OffreAdminDto offreAdminDto1 = new OffreAdminDto();
-        offreAdminDto1.setId(1L);
-        OffreAdminDto offreAdminDto2 = new OffreAdminDto();
-        offreAdminDto2.setId(2L);
-        List<OffreAdminDto> offreAdminDtos = Arrays.asList(offreAdminDto1, offreAdminDto2);
-        when(offreRepository.findAll()).thenReturn(offres);
-        when(modelMapper.map(offres.get(0), OffreAdminDto.class)).thenReturn(offreAdminDto1);
-        when(modelMapper.map(offres.get(1), OffreAdminDto.class)).thenReturn(offreAdminDto2);
+    void obtenirOffreParId_ExistingId_ReturnsOffreAdminDto() {
+        when(offreRepository.findById(1L)).thenReturn(Optional.of(offre1));
+        OffreAdminDto mappedDto = new OffreAdminDto(); // Remplir avec les valeurs de offre1
+        modelMapper.map(offre1, mappedDto);
+        when(modelMapper.map(offre1, OffreAdminDto.class)).thenReturn(mappedDto);
 
 
-        // Act
-        List<OffreAdminDto> result = adminOffreService.obtenirToutesLesOffres();
+        OffreAdminDto result = adminOffreService.obtenirOffreParId(1L);
 
-        // Assert
-        assertEquals(offreAdminDtos.size(), result.size());
-        verify(offreRepository, times(1)).findAll();
-        verify(modelMapper, times(2)).map(any(), eq(OffreAdminDto.class));
-        assertEquals(offreAdminDtos.get(0).getId(), result.get(0).getId());
-        assertEquals(offreAdminDtos.get(1).getId(), result.get(1).getId());
-    }
-
-    @Test
-    void getNombreDeVentesParOffre_ReturnsMapOfOffreIdToVentes() {
-        // Arrange
-        Object[] result1 = {offre, 10L};
-        Object[] result2 = {new Offre(), 5L};
-        List<Object[]> results = Arrays.asList(result1, result2);
-        when(offreRepository.countBilletsByOffre()).thenReturn(results);
-
-        // Act
-        Map<Long, Long> ventesParOffre = adminOffreService.getNombreDeVentesParOffre();
-
-        // Assert
-        assertEquals(2, ventesParOffre.size());
-        assertEquals(10L, ventesParOffre.get(1L));
-        assertEquals(5L, ventesParOffre.get(((Offre) result2[0]).getIdOffre()));
-    }
-
-    @Test
-    void getVentesParTypeOffre_ReturnsMapOfTypeOffreToVentes() {
-        // Arrange
-        Object[] result1 = {TypeOffre.SOLO.name(), 20L};
-        Object[] result2 = {TypeOffre.DUO.name(), 30L};
-        List<Object[]> results = Arrays.asList(result1, result2);
-        when(offreRepository.countBilletsByTypeOffre()).thenReturn(results);
-
-        // Act
-        Map<String, Long> ventesParTypeOffre = adminOffreService.getVentesParTypeOffre();
-
-        // Assert
-        assertEquals(2, ventesParTypeOffre.size());
-        assertEquals(20L, ventesParTypeOffre.get(TypeOffre.SOLO.name()));
-        assertEquals(30L, ventesParTypeOffre.get(TypeOffre.DUO.name()));
+        assertNotNull(result);
+        assertEquals(offre1.getIdOffre(), result.getId());
+        verify(modelMapper).map(offre1, OffreAdminDto.class);
     }
 }

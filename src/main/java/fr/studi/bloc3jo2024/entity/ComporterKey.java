@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+/**
+ * Clé primaire composite pour l'entité Comporter.
+ */
 @Embeddable
 @Data
 @NoArgsConstructor
@@ -16,11 +19,12 @@ import java.io.Serializable;
 @Builder
 public class ComporterKey implements Serializable {
 
-    // Partie de la clé primaire composite référençant l'ID de l'épreuve.
+    @java.io.Serial
+    private static final long serialVersionUID = 1L;
+
     @Column(name = "id_epreuve")
     private Long idEpreuve;
 
-    // Partie de la clé primaire composite référençant l'ID de la discipline.
     @Column(name = "id_discipline")
     private Long idDiscipline;
 }

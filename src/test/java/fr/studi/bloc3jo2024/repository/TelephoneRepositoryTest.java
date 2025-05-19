@@ -30,7 +30,7 @@ class TelephoneRepositoryTest {
 
     @SuppressWarnings("resource")
     @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("test_tel_db_" + UUID.randomUUID().toString().substring(0,8))
             .withUsername("test_user_tel")
             .withPassword("test_pass_tel");
@@ -60,7 +60,13 @@ class TelephoneRepositoryTest {
                 .createQuery("SELECT r FROM Role r WHERE r.typeRole = :type", Role.class)
                 .setParameter("type", TypeRole.USER)
                 .getResultStream().findFirst()
-                .orElseGet(() -> entityManager.persist(Role.builder().typeRole(TypeRole.USER).build()));
+                .orElseGet(() -> {
+                    Role newRole = Role.builder()
+                            .typeRole(TypeRole.USER)
+                            .build();
+                    return entityManager.persist(newRole);
+                });
+        entityManager.flush();
 
         Pays francePays;
         francePays = entityManager.getEntityManager()
@@ -71,6 +77,7 @@ class TelephoneRepositoryTest {
                     newPays.setNomPays("France");
                     return entityManager.persist(newPays);
                 });
+        entityManager.flush();
 
         userAdresse = Adresse.builder()
                 .nomRue("Rue du Telephone")
@@ -108,7 +115,6 @@ class TelephoneRepositoryTest {
 
         Telephone savedTelephone = telephoneRepository.save(telephone);
         assertThat(savedTelephone.getIdTelephone()).isNotNull();
-        entityManager.flush();
 
         Optional<Telephone> retrievedTelephoneOptional = telephoneRepository.findById(savedTelephone.getIdTelephone());
         assertThat(retrievedTelephoneOptional)
@@ -153,7 +159,7 @@ class TelephoneRepositoryTest {
         Utilisateur user2 = createUser("user2tel");
         Telephone tel3 = Telephone.builder().typeTel(TypeTel.MOBILE).numeroTelephone("+33633333333").utilisateur(user2).build();
         entityManager.persist(tel3);
-        entityManager.flush();
+        entityManager.flush(); // Assure que toutes les persistances sont écrites en base avant la requête
 
         List<Telephone> telephonesUser1 = telephoneRepository.findByUtilisateur_IdUtilisateur(user1.getIdUtilisateur());
         assertThat(telephonesUser1).hasSize(2)

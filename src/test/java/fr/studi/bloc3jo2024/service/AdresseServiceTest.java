@@ -7,11 +7,18 @@ import fr.studi.bloc3jo2024.exception.AdresseLieeAUneDisciplineException;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.repository.AdresseRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,9 +28,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Tests unitaires pour {@link AdresseService}.
+ * Ces tests se concentrent sur la logique métier du service,
+ * en moquant le repository {@link AdresseRepository}.
+ */
 @ExtendWith(MockitoExtension.class)
 class AdresseServiceTest {
 
@@ -33,453 +44,323 @@ class AdresseServiceTest {
     @InjectMocks
     private AdresseService adresseService;
 
-    private Adresse adresse;
-    private Pays pays;
-    private Discipline discipline;
-    // Champ 'utilisateur' inutile supprimé
-    private final Long adresseId = 1L;
-    private final UUID userId = UUID.randomUUID();
-    private final Long disciplineId = 10L;
-    private final Long paysId = 100L;
+    // Données de test communes
+    private Adresse adresseValide;
+    private Pays paysFrance;
+    private Discipline disciplineAssociee;
+    private final Long adresseIdExistant = 1L;
+    private final UUID utilisateurIdExistant = UUID.randomUUID();
 
+    private static final String ADRESSE_NON_TROUVEE_MSG_PREFIX = "Adresse non trouvée avec l'ID : ";
 
     @BeforeEach
     void setUp() {
-        // Arrange
-        pays = Pays.builder().idPays(paysId).nomPays("France").build();
-        adresse = Adresse.builder()
-                .idAdresse(adresseId)
+
+        final Long disciplineId = 10L;
+        final Long paysIdExistant = 100L;
+
+        paysFrance = Pays.builder().idPays(paysIdExistant).nomPays("France").build();
+        adresseValide = Adresse.builder()
+                .idAdresse(adresseIdExistant)
                 .numeroRue(10)
                 .nomRue("Rue de la Paix")
                 .ville("Paris")
                 .codePostal("75001")
-                .pays(pays)
+                .pays(paysFrance)
                 .build();
-        discipline = Discipline.builder().idDiscipline(disciplineId).nomDiscipline("Natation").build();
+        disciplineAssociee = Discipline.builder().idDiscipline(disciplineId).nomDiscipline("Natation").build();
     }
 
-    @Test
-    void creerAdresseSiNonExistante_shouldReturnExistingAdresseWhenFound() {
-        // Arrange
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        )).thenReturn(Optional.of(adresse));
+    @Nested
+    @DisplayName("Tests pour creerAdresseSiNonExistante")
+    class CreerAdresseSiNonExistanteTests {
 
-        // Act
-        Adresse result = adresseService.creerAdresseSiNonExistante(adresse);
+        @Test
+        @DisplayName("Doit retourner l'adresse existante si trouvée par ses détails")
+        void shouldReturnExistingAdresse_whenAdresseFoundByDetails() {
+            // Arrange
+            when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
+                    adresseValide.getNumeroRue(), adresseValide.getNomRue(), adresseValide.getVille(), adresseValide.getCodePostal(), adresseValide.getPays()
+            )).thenReturn(Optional.of(adresseValide));
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(adresse.getIdAdresse(), result.getIdAdresse()); // Devrait retourner l'adresse existante
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-        verify(adresseRepository, never()).save(any(Adresse.class)); // Save ne devrait pas être appelé
+            // Act
+            Adresse result = adresseService.creerAdresseSiNonExistante(adresseValide);
+
+            // Assert
+            assertNotNull(result, "Le résultat ne doit pas être null.");
+            assertEquals(adresseValide.getIdAdresse(), result.getIdAdresse(), "L'ID de l'adresse retournée doit être celui de l'adresse existante.");
+            verify(adresseRepository).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
+                    adresseValide.getNumeroRue(), adresseValide.getNomRue(), adresseValide.getVille(), adresseValide.getCodePostal(), adresseValide.getPays()
+            );
+            verify(adresseRepository, never()).save(any(Adresse.class)); // Ne doit pas appeler save
+        }
+
+        @Test
+        @DisplayName("Doit sauvegarder et retourner une nouvelle adresse si non trouvée")
+        void shouldSaveAndReturnNewAdresse_whenAdresseNotFound() {
+            // Arrange
+            Adresse nouvelleAdresseInput = Adresse.builder() // Adresse en entrée, sans ID
+                    .numeroRue(20).nomRue("Avenue des Champs-Élysées").ville("Paris").codePostal("75008").pays(paysFrance)
+                    .build();
+            Adresse adresseSauvegardeeSimulee = Adresse.builder() // Adresse simulée après sauvegarde (avec ID)
+                    .idAdresse(2L).numeroRue(20).nomRue("Avenue des Champs-Élysées").ville("Paris").codePostal("75008").pays(paysFrance)
+                    .build();
+
+            when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
+                    nouvelleAdresseInput.getNumeroRue(), nouvelleAdresseInput.getNomRue(), nouvelleAdresseInput.getVille(), nouvelleAdresseInput.getCodePostal(), nouvelleAdresseInput.getPays()
+            )).thenReturn(Optional.empty()); // Adresse non trouvée
+            when(adresseRepository.save(any(Adresse.class))).thenReturn(adresseSauvegardeeSimulee); // Comportement de save
+
+            // Act
+            Adresse result = adresseService.creerAdresseSiNonExistante(nouvelleAdresseInput);
+
+            // Assert
+            assertNotNull(result, "Le résultat ne doit pas être null.");
+            assertEquals(adresseSauvegardeeSimulee.getIdAdresse(), result.getIdAdresse(), "L'ID de l'adresse retournée doit être celui de l'adresse sauvegardée.");
+            assertEquals(nouvelleAdresseInput.getVille(), result.getVille(), "La ville doit correspondre.");
+
+            ArgumentCaptor<Adresse> adresseCaptor = ArgumentCaptor.forClass(Adresse.class);
+            verify(adresseRepository).save(adresseCaptor.capture()); // Capture l'argument passé à save
+            assertEquals(paysFrance, adresseCaptor.getValue().getPays(), "L'entité Pays de l'adresse sauvegardée doit être correcte.");
+            assertNull(adresseCaptor.getValue().getIdAdresse(), "L'ID de l'adresse doit être null avant la sauvegarde pour une nouvelle adresse.");
+        }
+
+        @Test
+        @DisplayName("Doit lever IllegalArgumentException si Pays est null dans l'adresse en entrée")
+        void shouldThrowIllegalArgumentException_whenPaysInInputIsNull() {
+            Adresse adresseSansPays = Adresse.builder().numeroRue(1).nomRue("Test").ville("Test").codePostal("123").pays(null).build();
+
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> adresseService.creerAdresseSiNonExistante(adresseSansPays));
+
+            assertEquals("L'objet Pays avec son ID est requis pour créer ou vérifier une adresse.", thrown.getMessage());
+            verify(adresseRepository, never()).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(any(), any(), any(), any(), any());
+            verify(adresseRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Doit lever IllegalArgumentException si l'ID de Pays est null dans l'adresse en entrée")
+        void shouldThrowIllegalArgumentException_whenPaysIdInInputIsNull() {
+            Pays paysSansId = Pays.builder().nomPays("Inconnu").build(); // ID est null
+            Adresse adresseAvecPaysSansId = Adresse.builder().numeroRue(1).nomRue("Test").ville("Test").codePostal("123").pays(paysSansId).build();
+
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> adresseService.creerAdresseSiNonExistante(adresseAvecPaysSansId));
+
+            assertEquals("L'objet Pays avec son ID est requis pour créer ou vérifier une adresse.", thrown.getMessage());
+        }
     }
 
-    @Test
-    void creerAdresseSiNonExistante_shouldSaveAndReturnNewAdresseWhenNotFound() {
-        // Arrange
-        Adresse nouvelleAdresse = Adresse.builder()
-                .numeroRue(20)
-                .nomRue("Avenue des Champs-Élysées")
-                .ville("Paris")
-                .codePostal("75008")
-                .pays(pays)
-                .build();
-        Adresse savedAdresse = Adresse.builder()
-                .idAdresse(2L) // Simule un ID généré par la BDD
-                .numeroRue(20)
-                .nomRue("Avenue des Champs-Élysées")
-                .ville("Paris")
-                .codePostal("75008")
-                .pays(pays)
-                .build();
+    @Nested
+    @DisplayName("Tests pour getAdresseById")
+    class GetAdresseByIdTests {
+        @Test
+        @DisplayName("Doit retourner l'adresse si trouvée par ID")
+        void shouldReturnAdresse_whenFoundById() {
+            when(adresseRepository.findById(adresseIdExistant)).thenReturn(Optional.of(adresseValide));
+            Adresse result = adresseService.getAdresseById(adresseIdExistant);
+            assertNotNull(result);
+            assertEquals(adresseIdExistant, result.getIdAdresse());
+            verify(adresseRepository).findById(adresseIdExistant);
+        }
 
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                nouvelleAdresse.getNumeroRue(), nouvelleAdresse.getNomRue(), nouvelleAdresse.getVille(), nouvelleAdresse.getCodePostal(), nouvelleAdresse.getPays()
-        )).thenReturn(Optional.empty());
-        when(adresseRepository.save(any(Adresse.class))).thenReturn(savedAdresse);
-
-        // Act
-        Adresse result = adresseService.creerAdresseSiNonExistante(nouvelleAdresse);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(savedAdresse.getIdAdresse(), result.getIdAdresse()); // Devrait retourner l'adresse sauvegardée
-        // Supprimé le eq() redondant
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                nouvelleAdresse.getNumeroRue(), nouvelleAdresse.getNomRue(), nouvelleAdresse.getVille(), nouvelleAdresse.getCodePostal(), nouvelleAdresse.getPays()
-        );
-        verify(adresseRepository, times(1)).save(eq(nouvelleAdresse));
+        @Test
+        @DisplayName("Doit lever ResourceNotFoundException si non trouvée par ID")
+        void shouldThrowResourceNotFoundException_whenNotFoundById() {
+            Long idInexistant = 99L;
+            when(adresseRepository.findById(idInexistant)).thenReturn(Optional.empty());
+            ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
+                    () -> adresseService.getAdresseById(idInexistant));
+            assertEquals(ADRESSE_NON_TROUVEE_MSG_PREFIX + idInexistant, thrown.getMessage());
+        }
     }
 
-    @Test
-    void getAdresseById_shouldReturnAdresseWhenFound() {
-        // Arrange
-        when(adresseRepository.findById(adresseId)).thenReturn(Optional.of(adresse));
+    @Nested
+    @DisplayName("Tests pour getAllAdresses (avec pagination)")
+    class GetAllAdressesTests {
+        @Test
+        @DisplayName("Doit retourner une page d'adresses")
+        void shouldReturnPageOfAdresses() {
+            Pageable pageable = PageRequest.of(0, 10);
+            List<Adresse> adressesList = Arrays.asList(adresseValide, Adresse.builder().idAdresse(2L).build());
+            Page<Adresse> adressesPage = new PageImpl<>(adressesList, pageable, adressesList.size());
+            when(adresseRepository.findAll(pageable)).thenReturn(adressesPage);
 
-        // Act
-        Adresse result = adresseService.getAdresseById(adresseId);
+            Page<Adresse> result = adresseService.getAllAdresses(pageable);
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(adresseId, result.getIdAdresse());
-        // Supprimé le eq() redondant
-        verify(adresseRepository, times(1)).findById(adresseId);
+            assertNotNull(result, "La page retournée ne doit pas être null.");
+            assertEquals(2, result.getTotalElements(), "Le nombre total d'éléments doit être correct.");
+            assertTrue(result.getContent().contains(adresseValide), "Le contenu doit inclure l'adresse de test.");
+            verify(adresseRepository).findAll(pageable);
+        }
     }
 
-    @Test
-    void getAdresseById_shouldThrowResourceNotFoundExceptionWhenNotFound() {
-        // Arrange
-        when(adresseRepository.findById(adresseId)).thenReturn(Optional.empty());
+    @Nested
+    @DisplayName("Tests pour adresseExisteDeja")
+    class AdresseExisteDejaTests {
+        @Test
+        @DisplayName("Doit retourner true si l'adresse existe")
+        void shouldReturnTrue_whenAdresseExists() {
+            when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
+                    adresseValide.getNumeroRue(), adresseValide.getNomRue(), adresseValide.getVille(), adresseValide.getCodePostal(), adresseValide.getPays()
+            )).thenReturn(Optional.of(adresseValide));
 
-        // Act & Assert
-        ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
-                () -> adresseService.getAdresseById(adresseId));
+            assertTrue(adresseService.adresseExisteDeja(adresseValide));
+        }
 
-        assertTrue(thrown.getMessage().contains("Adresse non trouvée avec l'ID : " + adresseId));
-        verify(adresseRepository, times(1)).findById(adresseId);
+        @Test
+        @DisplayName("Doit retourner false si l'adresse n'existe pas")
+        void shouldReturnFalse_whenAdresseNotExists() {
+            when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
+                    adresseValide.getNumeroRue(), adresseValide.getNomRue(), adresseValide.getVille(), adresseValide.getCodePostal(), adresseValide.getPays()
+            )).thenReturn(Optional.empty());
+
+            assertFalse(adresseService.adresseExisteDeja(adresseValide));
+        }
+
+        @Test
+        @DisplayName("Doit retourner false si Pays est null dans l'adresse en entrée")
+        void shouldReturnFalse_whenPaysInInputIsNull() {
+            Adresse adresseSansPays = Adresse.builder().numeroRue(1).nomRue("Test").ville("Test").codePostal("123").pays(null).build();
+            assertFalse(adresseService.adresseExisteDeja(adresseSansPays));
+            verify(adresseRepository, never()).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(any(), any(), any(), any(), any());
+        }
     }
 
-    @Test
-    void getAllAdresses_shouldReturnListOfAdresses() {
-        // Arrange
-        List<Adresse> adresses = Arrays.asList(adresse, Adresse.builder().idAdresse(2L).build());
-        when(adresseRepository.findAll()).thenReturn(adresses);
+    @Nested
+    @DisplayName("Tests pour rechercherAdresseComplete")
+    class RechercherAdresseCompleteTests {
+        @Test
+        @DisplayName("Doit lever IllegalArgumentException si Pays est null")
+        void shouldThrowIllegalArgumentException_whenPaysIsNull() {
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
+                    adresseService.rechercherAdresseComplete(10, "Rue", "Ville", "CP", null)
+            );
+            assertEquals("L'objet Pays avec son ID est requis pour la recherche d'adresse complète.", thrown.getMessage());
+        }
 
-        // Act
-        List<Adresse> result = adresseService.getAllAdresses();
+        @Test
+        @DisplayName("Doit lever IllegalArgumentException si l'ID de Pays est null")
+        void shouldThrowIllegalArgumentException_whenPaysIdIsNull() {
+            Pays paysSansId = Pays.builder().nomPays("France").build(); // ID est null
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
+                    adresseService.rechercherAdresseComplete(10, "Rue", "Ville", "CP", paysSansId)
+            );
+            assertEquals("L'objet Pays avec son ID est requis pour la recherche d'adresse complète.", thrown.getMessage());
+        }
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.contains(adresse));
-        verify(adresseRepository, times(1)).findAll();
+        @Test
+        @DisplayName("Doit retourner l'adresse si trouvée")
+        void shouldReturnAdresse_whenFound() {
+            when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
+                    adresseValide.getNumeroRue(), adresseValide.getNomRue(), adresseValide.getVille(), adresseValide.getCodePostal(), adresseValide.getPays()
+            )).thenReturn(Optional.of(adresseValide));
+
+            Adresse result = adresseService.rechercherAdresseComplete(
+                    adresseValide.getNumeroRue(), adresseValide.getNomRue(), adresseValide.getVille(), adresseValide.getCodePostal(), adresseValide.getPays()
+            );
+            assertNotNull(result);
+            assertEquals(adresseValide.getIdAdresse(), result.getIdAdresse());
+        }
     }
 
-    @Test
-    void getAdressesByUtilisateurId_shouldReturnListOfAdresses() {
-        // Arrange
-        List<Adresse> userAdresses = Arrays.asList(adresse, Adresse.builder().idAdresse(2L).build());
-        // Utilise le champ userId
-        when(adresseRepository.findByUtilisateurs_IdUtilisateur(userId)).thenReturn(userAdresses);
+    @Nested
+    @DisplayName("Tests pour updateAdresse")
+    class UpdateAdresseTests {
+        @Test
+        @DisplayName("Doit mettre à jour et retourner l'adresse si trouvée")
+        void shouldUpdateAndReturnAdresse_whenFound() {
+            // Arrange
+            Adresse detailsMiseAJour = Adresse.builder()
+                    .numeroRue(99).nomRue("Nouvelle Rue").ville("Nouvelle Ville").codePostal("99999")
+                    .pays(Pays.builder().idPays(200L).nomPays("Canada").build()) // Nouveau pays pour la mise à jour
+                    .build();
 
-        // Act
-        // Utilise le champ userId
-        List<Adresse> result = adresseService.getAdressesByUtilisateurId(userId);
+            when(adresseRepository.findById(adresseIdExistant)).thenReturn(Optional.of(adresseValide));
+            // Simule que save retourne l'entité mise à jour (l'argument qui lui est passé)
+            when(adresseRepository.save(any(Adresse.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.contains(adresse));
-        // Utilise le champ userId
-        verify(adresseRepository, times(1)).findByUtilisateurs_IdUtilisateur(userId);
+            // Act
+            Adresse updatedAdresse = adresseService.updateAdresse(adresseIdExistant, detailsMiseAJour);
+
+            // Assert
+            assertNotNull(updatedAdresse, "L'adresse mise à jour ne doit pas être null.");
+            assertEquals(adresseIdExistant, updatedAdresse.getIdAdresse(), "L'ID doit rester le même.");
+            assertEquals(detailsMiseAJour.getNumeroRue(), updatedAdresse.getNumeroRue());
+            assertEquals(detailsMiseAJour.getNomRue(), updatedAdresse.getNomRue());
+            assertEquals(detailsMiseAJour.getVille(), updatedAdresse.getVille());
+            assertEquals(detailsMiseAJour.getCodePostal(), updatedAdresse.getCodePostal());
+            assertEquals(detailsMiseAJour.getPays().getIdPays(), updatedAdresse.getPays().getIdPays(), "L'ID du pays doit être mis à jour.");
+
+            verify(adresseRepository).findById(adresseIdExistant);
+            verify(adresseRepository).save(any(Adresse.class));
+        }
+
+        @Test
+        @DisplayName("Doit lever ResourceNotFoundException si l'adresse à mettre à jour n'est pas trouvée")
+        void shouldThrowResourceNotFoundException_whenUpdateTargetNotFound() {
+            Long idInexistant = 99L;
+            Adresse detailsMiseAJour = Adresse.builder().pays(paysFrance).build(); // Pays est requis
+            when(adresseRepository.findById(idInexistant)).thenReturn(Optional.empty());
+
+            ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
+                    () -> adresseService.updateAdresse(idInexistant, detailsMiseAJour));
+            assertEquals(ADRESSE_NON_TROUVEE_MSG_PREFIX + idInexistant, thrown.getMessage());
+            verify(adresseRepository, never()).save(any(Adresse.class));
+        }
+
+        @Test
+        @DisplayName("Doit lever IllegalArgumentException pour update si Pays est null")
+        void updateAdresse_shouldThrowIllegalArgumentException_whenPaysIsNull() {
+            Adresse detailsMiseAJour = Adresse.builder().pays(null).build();
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> adresseService.updateAdresse(adresseIdExistant, detailsMiseAJour));
+            assertEquals("L'objet Pays avec son ID est requis pour la mise à jour de l'adresse.", thrown.getMessage());
+        }
+
     }
 
-    @Test
-    void getAdresseByDiscipline_shouldReturnAdresseWhenFound() {
-        // Arrange
-        when(adresseRepository.findByDisciplines(discipline)).thenReturn(Optional.of(adresse));
+    @Nested
+    @DisplayName("Tests pour deleteAdresse")
+    class DeleteAdresseTests {
+        @Test
+        @DisplayName("Doit supprimer l'adresse si elle existe et n'est pas liée")
+        void shouldDeleteAdresse_whenExistsAndNotLinked() {
+            when(adresseRepository.findById(adresseIdExistant)).thenReturn(Optional.of(adresseValide));
+            when(adresseRepository.isAdresseLieeAUnDiscipline(adresseIdExistant)).thenReturn(false); // Non liée
+            doNothing().when(adresseRepository).delete(adresseValide); // Comportement pour delete
 
-        // Act
-        Adresse result = adresseService.getAdresseByDiscipline(discipline);
+            assertDoesNotThrow(() -> adresseService.deleteAdresse(adresseIdExistant));
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(adresse.getIdAdresse(), result.getIdAdresse());
-        verify(adresseRepository, times(1)).findByDisciplines(discipline);
-    }
+            verify(adresseRepository).findById(adresseIdExistant);
+            verify(adresseRepository).isAdresseLieeAUnDiscipline(adresseIdExistant);
+            verify(adresseRepository).delete(adresseValide);
+        }
 
-    @Test
-    void getAdresseByDiscipline_shouldThrowResourceNotFoundExceptionWhenNotFound() {
-        // Arrange
-        when(adresseRepository.findByDisciplines(discipline)).thenReturn(Optional.empty());
+        @Test
+        @DisplayName("Doit lever ResourceNotFoundException si l'adresse à supprimer n'est pas trouvée")
+        void shouldThrowResourceNotFoundException_whenDeleteTargetNotFound() {
+            Long idInexistant = 99L;
+            when(adresseRepository.findById(idInexistant)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
-                () -> adresseService.getAdresseByDiscipline(discipline));
+            ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
+                    () -> adresseService.deleteAdresse(idInexistant));
+            assertEquals(ADRESSE_NON_TROUVEE_MSG_PREFIX + idInexistant, thrown.getMessage());
+            verify(adresseRepository, never()).isAdresseLieeAUnDiscipline(anyLong());
+            verify(adresseRepository, never()).delete(any(Adresse.class));
+        }
 
-        assertTrue(thrown.getMessage().contains("Adresse non trouvée pour la discipline avec l'ID : " + discipline.getIdDiscipline()));
-        verify(adresseRepository, times(1)).findByDisciplines(discipline);
-    }
+        @Test
+        @DisplayName("Doit lever AdresseLieeAUneDisciplineException si l'adresse est liée")
+        void shouldThrowAdresseLieeAUneDisciplineException_whenLinkedToDiscipline() {
+            when(adresseRepository.findById(adresseIdExistant)).thenReturn(Optional.of(adresseValide));
+            when(adresseRepository.isAdresseLieeAUnDiscipline(adresseIdExistant)).thenReturn(true); // Liée!
 
-    @Test
-    void getAdressesByDisciplineList_shouldReturnListOfAdresses() {
-        // Arrange
-        List<Adresse> disciplineAdresses = Arrays.asList(adresse, Adresse.builder().idAdresse(2L).build());
-        when(adresseRepository.findByDisciplinesContaining(discipline)).thenReturn(disciplineAdresses);
-
-        // Act
-        List<Adresse> result = adresseService.getAdressesByDiscipline(discipline);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.contains(adresse));
-        verify(adresseRepository, times(1)).findByDisciplinesContaining(discipline);
-    }
-
-
-    @Test
-    void adresseExisteDeja_shouldReturnTrueWhenExists() {
-        // Arrange
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        )).thenReturn(Optional.of(adresse));
-
-        // Act
-        boolean exists = adresseService.adresseExisteDeja(adresse);
-
-        // Assert
-        assertTrue(exists);
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-    }
-
-    @Test
-    void adresseExisteDeja_shouldReturnFalseWhenNotExists() {
-        // Arrange
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        )).thenReturn(Optional.empty());
-
-        // Act
-        boolean exists = adresseService.adresseExisteDeja(adresse);
-
-        // Assert
-        assertFalse(exists);
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-    }
-
-    @Test
-    void getIdAdresseSiExistante_shouldReturnIdWhenExists() {
-        // Arrange
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        )).thenReturn(Optional.of(adresse));
-
-        // Act
-        Long resultId = adresseService.getIdAdresseSiExistante(adresse);
-
-        // Assert
-        assertNotNull(resultId);
-        assertEquals(adresseId, resultId);
-        // Supprimé le eq() redondant
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-    }
-
-    @Test
-    void getIdAdresseSiExistante_shouldReturnNullWhenNotExists() {
-        // Arrange
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        )).thenReturn(Optional.empty());
-
-        // Act
-        Long resultId = adresseService.getIdAdresseSiExistante(adresse);
-
-        // Assert
-        assertNull(resultId);
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-    }
-
-    @Test
-    void isAdresseLieeAUnDiscipline_shouldReturnTrueWhenLinked() {
-        // Arrange
-        when(adresseRepository.isAdresseLieeAUnDiscipline(adresseId)).thenReturn(true);
-
-        // Act
-        boolean isLinked = adresseService.isAdresseLieeAUnDiscipline(adresseId);
-
-        // Assert
-        assertTrue(isLinked);
-        verify(adresseRepository, times(1)).isAdresseLieeAUnDiscipline(adresseId);
-    }
-
-    @Test
-    void isAdresseLieeAUnDiscipline_shouldReturnFalseWhenNotLinked() {
-        // Arrange
-        when(adresseRepository.isAdresseLieeAUnDiscipline(adresseId)).thenReturn(false);
-
-        // Act
-        boolean isLinked = adresseService.isAdresseLieeAUnDiscipline(adresseId);
-
-        // Assert
-        assertFalse(isLinked);
-        verify(adresseRepository, times(1)).isAdresseLieeAUnDiscipline(adresseId);
-    }
-
-    @Test
-    void rechercherAdresseComplete_shouldReturnAdresseWhenFound() {
-        // Arrange
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        )).thenReturn(Optional.of(adresse));
-
-        // Act
-        Adresse result = adresseService.rechercherAdresseComplete(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(adresse.getIdAdresse(), result.getIdAdresse());
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-    }
-
-    @Test
-    void rechercherAdresseComplete_shouldReturnNullWhenNotFound() {
-        // Arrange
-        when(adresseRepository.findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        )).thenReturn(Optional.empty());
-
-        // Act
-        Adresse result = adresseService.rechercherAdresseComplete(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-
-        // Assert
-        assertNull(result);
-        verify(adresseRepository, times(1)).findByNumeroRueAndNomRueAndVilleAndCodePostalAndPays(
-                adresse.getNumeroRue(), adresse.getNomRue(), adresse.getVille(), adresse.getCodePostal(), adresse.getPays()
-        );
-    }
-
-    @Test
-    void rechercherAdressesParVillePourDisciplines_shouldReturnListOfAdresses() {
-        // Arrange
-        List<Adresse> cityAdresses = Arrays.asList(adresse, Adresse.builder().idAdresse(2L).build());
-        when(adresseRepository.findByVille(adresse.getVille())).thenReturn(cityAdresses);
-
-        // Act
-        List<Adresse> result = adresseService.rechercherAdressesParVillePourDisciplines(adresse.getVille());
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.contains(adresse));
-        // Supprimé le eq() redondant
-        verify(adresseRepository, times(1)).findByVille(adresse.getVille());
-    }
-
-    @Test
-    void rechercherAdressesParDisciplineEtPays_shouldReturnListOfAdresses() {
-        // Arrange
-        List<Adresse> filteredAdresses = Arrays.asList(adresse, Adresse.builder().idAdresse(2L).build());
-        when(adresseRepository.findByDisciplinesAndPays_IdPays(discipline, paysId)).thenReturn(filteredAdresses);
-
-        // Act
-        List<Adresse> result = adresseService.rechercherAdressesParDisciplineEtPays(discipline, paysId);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.contains(adresse));
-        verify(adresseRepository, times(1)).findByDisciplinesAndPays_IdPays(discipline, paysId);
-    }
-
-    @Test
-    void updateAdresse_shouldUpdateAndReturnAdresseWhenFound() {
-        // Arrange
-        Adresse nouvelleAdresseDetails = Adresse.builder()
-                .numeroRue(99)
-                .nomRue("Nouvelle Rue")
-                .ville("Nouvelle Ville")
-                .codePostal("99999")
-                // Utilise nomPays basé sur le code fourni par l'utilisateur
-                .pays(Pays.builder().idPays(200L).nomPays("Canada").build())
-                .build();
-
-        when(adresseRepository.findById(adresseId)).thenReturn(Optional.of(adresse));
-        when(adresseRepository.save(any(Adresse.class))).thenReturn(adresse); // Retourne l'instance mise à jour
-
-        // Act
-        Adresse updatedAdresse = adresseService.updateAdresse(adresseId, nouvelleAdresseDetails);
-
-        // Assert
-        assertNotNull(updatedAdresse);
-        assertEquals(adresseId, updatedAdresse.getIdAdresse()); // L'ID devrait rester le même
-        assertEquals(nouvelleAdresseDetails.getNumeroRue(), updatedAdresse.getNumeroRue());
-        assertEquals(nouvelleAdresseDetails.getNomRue(), updatedAdresse.getNomRue());
-        assertEquals(nouvelleAdresseDetails.getVille(), updatedAdresse.getVille());
-        assertEquals(nouvelleAdresseDetails.getCodePostal(), updatedAdresse.getCodePostal());
-        assertEquals(nouvelleAdresseDetails.getPays(), updatedAdresse.getPays());
-
-        // Supprimé le eq() redondant
-        verify(adresseRepository, times(1)).findById(adresseId);
-        verify(adresseRepository, times(1)).save(eq(adresse)); // Vérifie que save a été appelé sur l'adresse existante
-    }
-
-    @Test
-    void updateAdresse_shouldThrowResourceNotFoundExceptionWhenNotFound() {
-        // Arrange
-        Adresse nouvelleAdresseDetails = Adresse.builder().build();
-        when(adresseRepository.findById(adresseId)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
-                () -> adresseService.updateAdresse(adresseId, nouvelleAdresseDetails));
-
-        assertTrue(thrown.getMessage().contains("Adresse non trouvée avec l'ID : " + adresseId));
-        verify(adresseRepository, times(1)).findById(adresseId);
-        verify(adresseRepository, never()).save(any(Adresse.class)); // Save ne devrait pas être appelé
-    }
-
-    @Test
-    void deleteAdresse_shouldDeleteAdresseWhenNotLinkedToDiscipline() {
-        // Arrange
-        when(adresseRepository.findById(adresseId)).thenReturn(Optional.of(adresse));
-        when(adresseRepository.isAdresseLieeAUnDiscipline(adresseId)).thenReturn(false);
-        doNothing().when(adresseRepository).delete(adresse);
-
-        // Act
-        adresseService.deleteAdresse(adresseId);
-
-        // Assert
-        verify(adresseRepository, times(1)).findById(adresseId);
-        verify(adresseRepository, times(1)).isAdresseLieeAUnDiscipline(adresseId);
-        verify(adresseRepository, times(1)).delete(adresse);
-    }
-
-    @Test
-    void deleteAdresse_shouldThrowResourceNotFoundExceptionWhenNotFound() {
-        // Arrange
-        when(adresseRepository.findById(adresseId)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
-                () -> adresseService.deleteAdresse(adresseId));
-
-        assertTrue(thrown.getMessage().contains("Adresse non trouvée avec l'ID : " + adresseId));
-        verify(adresseRepository, times(1)).findById(adresseId);
-        verify(adresseRepository, never()).isAdresseLieeAUnDiscipline(anyLong());
-        verify(adresseRepository, never()).delete(any(Adresse.class)); // Ne devrait pas supprimer
-    }
-
-    @Test
-    void deleteAdresse_shouldThrowAdresseLieeAUneDisciplineExceptionWhenLinkedToDiscipline() {
-        // Arrange
-        when(adresseRepository.findById(adresseId)).thenReturn(Optional.of(adresse));
-        when(adresseRepository.isAdresseLieeAUnDiscipline(adresseId)).thenReturn(true);
-
-        // Act & Assert
-        AdresseLieeAUneDisciplineException thrown = assertThrows(AdresseLieeAUneDisciplineException.class,
-                () -> adresseService.deleteAdresse(adresseId));
-
-        assertTrue(thrown.getMessage().contains("L'adresse avec l'ID " + adresseId + " est liée à un ou plusieurs événements et ne peut pas être supprimée."));
-        verify(adresseRepository, times(1)).findById(adresseId);
-        verify(adresseRepository, times(1)).isAdresseLieeAUnDiscipline(adresseId);
-        verify(adresseRepository, never()).delete(any(Adresse.class)); // Ne devrait pas supprimer
+            AdresseLieeAUneDisciplineException thrown = assertThrows(AdresseLieeAUneDisciplineException.class,
+                    () -> adresseService.deleteAdresse(adresseIdExistant));
+            assertTrue(thrown.getMessage().contains("L'adresse avec l'ID " + adresseIdExistant + " est liée"),
+                    "Le message d'erreur doit indiquer que l'adresse est liée.");
+            verify(adresseRepository, never()).delete(any(Adresse.class)); // Ne doit pas appeler delete
+        }
     }
 }

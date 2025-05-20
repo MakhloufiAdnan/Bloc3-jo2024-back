@@ -7,7 +7,6 @@ import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Offre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,76 +19,75 @@ public class ModelMapperConfig {
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
 
-        // Mapping pour Discipline vers DisciplineDto
-        modelMapper.addMappings(new PropertyMap<Discipline, DisciplineDto>() {
-            @Override
-            protected void configure() {
-                map().setIdDiscipline(source.getIdDiscipline());
-                map().setNomDiscipline(source.getNomDiscipline());
-            }
-        });
+        modelMapper.createTypeMap(Discipline.class, DisciplineDto.class).addMappings(mapper -> mapper.map(
+                src -> (src.getAdresse() != null) ? src.getAdresse().getIdAdresse() : null,
+                DisciplineDto::setIdAdresse)
+        );
 
-        // Mapping pour ContenuPanier vers ContenuPanierDto
-        modelMapper.addMappings(new PropertyMap<ContenuPanier, ContenuPanierDto>() {
-            @Override
-            protected void configure() {
-                // Mapper la quantité directement : ne peut pas être null
-                map().setQuantiteCommandee(source.getQuantiteCommandee());
+        modelMapper.createTypeMap(ContenuPanier.class, ContenuPanierDto.class)
+                .addMappings(mapper -> {
 
-                // Utiliser les méthodes helpers avec un cast explicite dans les lambdas
-                using(context -> getOffreId((ContenuPanier) context.getSource())).map().setIdOffre(source.getOffre().getIdOffre());
-                using(context -> getPrixUnitaire((ContenuPanier) context.getSource())).map().setPrixUnitaire(source.getOffre().getPrix());
-                using(context -> getTypeOffre((ContenuPanier) context.getSource())).map().setTypeOffre(source.getOffre().getTypeOffre());
-                using(context -> getPrixTotalOffre((ContenuPanier) context.getSource())).map(source).setPrixTotalOffre(null);
-            }
-        });
+                    mapper.map(ModelMapperConfig::helperGetOffreId, ContenuPanierDto::setIdOffre);
+                    mapper.map(ModelMapperConfig::helperGetTypeOffre, ContenuPanierDto::setTypeOffre);
+                    mapper.map(ModelMapperConfig::helperGetPrixUnitaire, ContenuPanierDto::setPrixUnitaire);
+                    mapper.map(ModelMapperConfig::helperGetPrixTotalOffre, ContenuPanierDto::setPrixTotalOffre);
+                });
 
         return modelMapper;
     }
 
-    // --- Méthodes Helpers pour les Convertisseurs ---
-
     /**
      * Helper pour extraire l'ID de l'Offre d'un ContenuPanier, gère les cas null.
+     * Supposant que ContenuPanier.getOffre() retourne une entité Offre avec getIdOffre().
      */
-    private static Long getOffreId(ContenuPanier source) {
-        // Complexité: 1 (ternaire) ou 2 (si ?:) + 1 (&&) = 2 ou 3
-        return (source != null && source.getOffre() != null) ? source.getOffre().getIdOffre() : null;
-    }
-
-    /**
-     * Helper pour extraire le prix unitaire de l'Offre d'un ContenuPanier, gère les cas null.
-     */
-    private static BigDecimal getPrixUnitaire(ContenuPanier source) {
-        // Complexité: 1 (ternaire) ou 2 (si ?:) + 1 (&&) = 2 ou 3
-        return (source != null && source.getOffre() != null) ? source.getOffre().getPrix() : null;
+    private static Long helperGetOffreId(ContenuPanier source) {
+        Offre offre = source.getOffre();
+        if (offre != null) {
+            return offre.getIdOffre();
+        }
+        return null;
     }
 
     /**
      * Helper pour extraire le type de l'Offre d'un ContenuPanier, gère les cas null.
      */
-    private static TypeOffre getTypeOffre(ContenuPanier source) {
-        // Complexité: 1 (ternaire) ou 2 (si ?:) + 1 (&&) = 2 ou 3
-        return (source != null && source.getOffre() != null) ? source.getOffre().getTypeOffre() : null;
+    private static TypeOffre helperGetTypeOffre(ContenuPanier source) {
+        Offre offre = source.getOffre();
+        if (offre != null) {
+            return offre.getTypeOffre();
+        }
+        return null;
     }
 
     /**
-     * Helper pour calculer le prix total de l'Offre dans un ContenuPanier, gère les cas null.
-     * Refactorisé pour potentiellement réduire la complexité perçue.
+     * Helper pour extraire le prix unitaire de l'Offre d'un ContenuPanier, gère les cas null.
      */
-    private static BigDecimal getPrixTotalOffre(ContenuPanier source) {
-        // Complexité: 1 + 1 + 1 = 3 (un point pour chaque if)
-        if (source == null) { // +1
+    private static BigDecimal helperGetPrixUnitaire(ContenuPanier source) {
+        Offre offre = source.getOffre();
+        if (offre != null) {
+            return offre.getPrix();
+        }
+        return null;
+    }
+
+    /**
+     * Helper pour calculer le prix total de l'Offre dans un ContenuPanier.
+     * Gère les cas où l'offre ou son prix sont nulls, ou si la quantité est non valide.
+     */
+    private static BigDecimal helperGetPrixTotalOffre(ContenuPanier source) {
+        if (source == null) {
             return BigDecimal.ZERO;
         }
         Offre offre = source.getOffre();
-        if (offre == null) { // +1
+        if (offre == null || offre.getPrix() == null) {
             return BigDecimal.ZERO;
         }
-        BigDecimal prix = offre.getPrix();
-        if (prix == null) { // +1
+
+        BigDecimal prixUnitaire = offre.getPrix();
+        int quantite = source.getQuantiteCommandee();
+        if (quantite <= 0) {
             return BigDecimal.ZERO;
         }
-        return prix.multiply(BigDecimal.valueOf(source.getQuantiteCommandee()));
+        return prixUnitaire.multiply(BigDecimal.valueOf(quantite));
     }
 }

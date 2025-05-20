@@ -33,8 +33,8 @@ spring:
 # Configuration JWT pour les tests
 # Utilisez un secret et une expiration spécifiques pour les tests.
 jwt:
-  secret: ceciEstUnSecretDeTestPourJwtQuiEstSuffisammentLongEtAleatoirePourEtreValide123456789!
-  expiration: 600000 # 10 minutes pour les tests
+  secret: dGhpc2lzYXJlYWxseWxvbmdhbmRzZWN1cmVqd3RzZWNyZXRrZXlmb3JqbzIwMjRjZXR0ZUNsZWRvaXRldHJlU3VwZXJlU2VTdXBlcnRjbG9uZ3VlSmUgbmUgc2FpcyBwbHVzIHF1b2lkaXJl
+  expiration: 100000
 
 # Configuration Actuator pour les tests
 management:

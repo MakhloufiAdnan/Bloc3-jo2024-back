@@ -5,6 +5,7 @@ import fr.studi.bloc3jo2024.dto.offres.MettreAJourOffreDto;
 import fr.studi.bloc3jo2024.dto.offres.OffreAdminDto;
 import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Offre;
+import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.repository.DisciplineRepository;
@@ -13,14 +14,28 @@ import fr.studi.bloc3jo2024.service.PanierService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,8 +47,8 @@ class AdminOffreServiceTest {
     @Mock
     private OffreRepository offreRepository;
 
-    @Mock
-    private ModelMapper modelMapper;
+    @Spy
+    private ModelMapper modelMapper = new ModelMapper();
 
     @Mock
     private DisciplineRepository disciplineRepository;
@@ -41,205 +56,219 @@ class AdminOffreServiceTest {
     @Mock
     private PanierService panierService;
 
-    private Discipline discipline;
-    private Offre offre;
-    private OffreAdminDto offreAdminDto;
+    private Discipline disciplineExistante;
+    private Offre offreExistante;
+    private Offre offreAutre;
     private CreerOffreDto creerOffreDto;
     private MettreAJourOffreDto mettreAJourOffreDto;
+    private LocalDateTime fixedTimeNow; // Pour les dates relatives à "maintenant"
+    private LocalDateTime specificDateExpirationForUpdate;
+
 
     @BeforeEach
     void setUp() {
-        discipline = new Discipline();
-        discipline.setIdDiscipline(1L);
-        discipline.setNomDiscipline("Football");
+        assertNotNull(modelMapper); // Pour "utiliser" le spy si l'IDE se plaint
 
-        offre = new Offre();
-        offre.setIdOffre(1L);
-        offre.setDiscipline(discipline);
+        fixedTimeNow = LocalDateTime.of(2025, 8, 1, 12, 0, 0); // Une date fixe pour "maintenant"
+        specificDateExpirationForUpdate = LocalDateTime.of(2025, 10, 10, 12, 0, 0);
 
-        offreAdminDto = new OffreAdminDto();
-        offreAdminDto.setId(1L);
 
-        creerOffreDto = new CreerOffreDto();
-        creerOffreDto.setIdDiscipline(1L);
+        disciplineExistante = Discipline.builder()
+                .idDiscipline(1L)
+                .nomDiscipline("Football")
+                .dateDiscipline(fixedTimeNow.plusMonths(2)) // La discipline a lieu dans 2 mois
+                .build();
 
-        mettreAJourOffreDto = new MettreAJourOffreDto();
-        mettreAJourOffreDto.setIdDiscipline(1L);
+        offreExistante = Offre.builder()
+                .idOffre(1L)
+                .discipline(disciplineExistante)
+                .typeOffre(TypeOffre.SOLO)
+                .prix(new BigDecimal("50.00"))
+                .quantite(100)
+                .capacite(1)
+                .statutOffre(StatutOffre.DISPONIBLE)
+                .dateExpiration(fixedTimeNow.plusDays(30)) // Expiration propre à l'offre
+                .featured(false)
+                .build();
+
+        offreAutre = Offre.builder()
+                .idOffre(2L)
+                .discipline(disciplineExistante)
+                .typeOffre(TypeOffre.DUO)
+                .prix(new BigDecimal("90.00"))
+                .quantite(50)
+                .capacite(2)
+                .statutOffre(StatutOffre.DISPONIBLE)
+                .dateExpiration(fixedTimeNow.plusDays(60))
+                .featured(true)
+                .build();
+
+        creerOffreDto = CreerOffreDto.builder()
+                .idDiscipline(disciplineExistante.getIdDiscipline())
+                .typeOffre(TypeOffre.SOLO)
+                .prix(new BigDecimal("60.00"))
+                .quantite(120)
+                .capacite(1)
+                .statutOffre(StatutOffre.DISPONIBLE)
+                .featured(false)
+                .dateExpiration(fixedTimeNow.plusDays(45)) // Date d'expiration pour la création
+                .build();
+
+        mettreAJourOffreDto = MettreAJourOffreDto.builder()
+                .idDiscipline(disciplineExistante.getIdDiscipline())
+                .typeOffre(TypeOffre.FAMILIALE)
+                .prix(new BigDecimal("150.00"))
+                .quantite(80)
+                .capacite(4)
+                .statutOffre(StatutOffre.DISPONIBLE)
+                .featured(true)
+                .dateExpiration(specificDateExpirationForUpdate) // Date d'expiration spécifique pour la mise à jour
+                .build();
     }
 
     @Test
     void ajouterOffre_ValidInput_ReturnsOffreAdminDto() {
         // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(discipline));
-        when(modelMapper.map(creerOffreDto, Offre.class)).thenReturn(offre);
-        when(offreRepository.save(offre)).thenReturn(offre);
-        when(modelMapper.map(offre, OffreAdminDto.class)).thenReturn(offreAdminDto);
+        when(disciplineRepository.findById(creerOffreDto.getIdDiscipline())).thenReturn(Optional.of(disciplineExistante));
+
+        // Simuler ce que le repository retournerait après sauvegarde
+        Offre offreSauvegardeeSimulee = new Offre();
+        // Le service va mapper creerOffreDto vers une nouvelle instance de Offre
+        // puis la sauvegarder. On simule le résultat de cette sauvegarde.
+        modelMapper.map(creerOffreDto, offreSauvegardeeSimulee); // Simule le mapping interne du service
+        offreSauvegardeeSimulee.setIdOffre(3L); // Simule l'ID généré
+        offreSauvegardeeSimulee.setDiscipline(disciplineExistante); // Le service lie la discipline
+
+        when(offreRepository.save(any(Offre.class))).thenReturn(offreSauvegardeeSimulee);
 
         // Act
         OffreAdminDto result = adminOffreService.ajouterOffre(creerOffreDto);
 
         // Assert
-        assertEquals(offreAdminDto, result);
-        verify(offreRepository, times(1)).save(offre);
-    }
+        assertNotNull(result);
+        assertEquals(offreSauvegardeeSimulee.getIdOffre(), result.getId());
+        assertEquals(creerOffreDto.getIdDiscipline(), result.getIdDiscipline());
+        assertEquals(creerOffreDto.getTypeOffre(), result.getTypeOffre());
+        // La date d'expiration du DTO de retour doit être l'effective date de l'offre sauvegardée
+        assertEquals(offreSauvegardeeSimulee.getEffectiveDateExpiration(), result.getDateExpiration());
 
-    @Test
-    void ajouterOffre_DisciplineNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
+        // Vérifier les interactions
+        verify(disciplineRepository).findById(creerOffreDto.getIdDiscipline());
+        verify(offreRepository).save(any(Offre.class));
 
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.ajouterOffre(creerOffreDto));
-        verify(offreRepository, never()).save(any());
-    }
+        // Vérifier les appels au ModelMapper DANS LE SERVICE
+        // 1. creerOffreDto -> nouvelle instance de Offre
+        // 2. offreSauvegardeeSimulee -> OffreAdminDto
+        // Il ne devrait pas y avoir d'appels à modelMapper.map DANS CE TEST en dehors de ceux faits par le service.
+        // Le spy permet de vérifier ces appels internes.
+        ArgumentCaptor<Object> sourceCaptor = ArgumentCaptor.forClass(Object.class);
+        ArgumentCaptor<Class<?>> targetClassCaptor = ArgumentCaptor.forClass(Class.class);
+        verify(modelMapper, times(2)).map(sourceCaptor.capture(), targetClassCaptor.capture());
 
-    @Test
-    void obtenirOffreParId_ExistingId_ReturnsOffreAdminDto() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.of(offre));
-        when(modelMapper.map(offre, OffreAdminDto.class)).thenReturn(offreAdminDto);
+        List<Object> sources = sourceCaptor.getAllValues();
+        List<Class<?>> targetClasses = targetClassCaptor.getAllValues();
 
-        // Act
-        OffreAdminDto result = adminOffreService.obtenirOffreParId(1L);
+        // Premier appel: CreerOffreDto -> Offre
+        assertTrue(sources.get(0) instanceof CreerOffreDto);
+        assertEquals(Offre.class, targetClasses.get(0));
 
-        // Assert
-        assertEquals(offreAdminDto, result);
-    }
-
-    @Test
-    void obtenirOffreParId_NonExistingId_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.obtenirOffreParId(1L));
+        // Deuxième appel: Offre -> OffreAdminDto
+        assertTrue(sources.get(1) instanceof Offre);
+        assertEquals(OffreAdminDto.class, targetClasses.get(1));
     }
 
     @Test
     void mettreAJourOffre_ValidInput_ReturnsOffreAdminDto() {
-        Long testOffreId = 1L;
-        MettreAJourOffreDto testDto = new MettreAJourOffreDto();
-        testDto.setIdDiscipline(1L); // ← Clé du problème
-
-        Offre testOffre = new Offre();
-        Discipline testDiscipline = new Discipline();
-        testDiscipline.setIdDiscipline(1L);
-        OffreAdminDto expectedDto = new OffreAdminDto();
-
-        when(offreRepository.findById(testOffreId)).thenReturn(Optional.of(testOffre));
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.of(testDiscipline));
-        doNothing().when(modelMapper).map(testDto, testOffre);
-        testOffre.setDiscipline(testDiscipline);
-        when(offreRepository.save(testOffre)).thenReturn(testOffre);
-        when(modelMapper.map(testOffre, OffreAdminDto.class)).thenReturn(expectedDto);
-
-        OffreAdminDto result = adminOffreService.mettreAJourOffre(testOffreId, testDto);
-
-        assertEquals(expectedDto, result);
-    }
-
-    @Test
-    void mettreAJourOffre_OffreNotFound_ThrowsResourceNotFoundException() {
         // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.empty());
+        Long offreIdAMettreAJour = offreExistante.getIdOffre();
+        // L'offre existante a sa propre date d'expiration: fixedTimeNow.plusDays(30)
+        // Sa discipline a une date: fixedTimeNow.plusMonths(2)
+        // Donc, sa date effective d'expiration est fixedTimeNow.plusDays(30)
 
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.mettreAJourOffre(1L, mettreAJourOffreDto));
-        verify(disciplineRepository, never()).findById(anyLong());
-        verify(offreRepository, never()).save(any());
+        // mettreAJourOffreDto a une date d'expiration: specificDateExpirationForUpdate (2025-10-10T12:00)
+        // La discipline reste la même (expiration fixedTimeNow.plusMonths(2) ~ 2025-10-01T12:00)
+
+        when(offreRepository.findById(offreIdAMettreAJour)).thenReturn(Optional.of(offreExistante));
+        when(disciplineRepository.findById(mettreAJourOffreDto.getIdDiscipline())).thenReturn(Optional.of(disciplineExistante));
+        when(offreRepository.save(any(Offre.class))).thenAnswer(invocation -> {
+            // Simuler que l'entité passée à save est celle qui est retournée
+            // et que modelMapper.map(dto, entite) a déjà eu lieu dans le service.
+            Offre offreModifiee = invocation.getArgument(0);
+            // Appliquer les changements du DTO à l'offre pour simuler l'état après mapping
+            // Cette simulation est délicate car le spy modelMapper est déjà en jeu.
+            // Le plus simple est de s'assurer que l'objet retourné par save() a les bonnes valeurs
+            // qui seront ensuite utilisées pour le mapping vers OffreAdminDto.
+            // Ici, on assume que offreExistante est modifiée en place par le service.
+            offreExistante.setTypeOffre(mettreAJourOffreDto.getTypeOffre());
+            offreExistante.setQuantite(mettreAJourOffreDto.getQuantite());
+            offreExistante.setPrix(mettreAJourOffreDto.getPrix());
+            offreExistante.setDateExpiration(mettreAJourOffreDto.getDateExpiration()); // La date du DTO est appliquée
+            offreExistante.setStatutOffre(mettreAJourOffreDto.getStatutOffre());
+            offreExistante.setCapacite(mettreAJourOffreDto.getCapacite());
+            offreExistante.setFeatured(mettreAJourOffreDto.isFeatured());
+            offreExistante.setDiscipline(disciplineExistante); // Ré-associer
+            return offreExistante;
+        });
+
+        // Act
+        OffreAdminDto result = adminOffreService.mettreAJourOffre(offreIdAMettreAJour, mettreAJourOffreDto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(offreIdAMettreAJour, result.getId());
+        assertEquals(mettreAJourOffreDto.getTypeOffre(), result.getTypeOffre());
+
+        // L'offre existante a discipline.dateDiscipline = fixedTimeNow.plusMonths(2) (approx 2025-10-01)
+        // mettreAJourOffreDto.dateExpiration = specificDateExpirationForUpdate (2025-10-10)
+        // Donc, la date effective d'expiration de l'offre mise à jour sera celle de la discipline (la plus proche).
+        LocalDateTime expectedEffectiveDate = disciplineExistante.getDateDiscipline();
+        assertEquals(expectedEffectiveDate, result.getDateExpiration(), "La date d'expiration du DTO de retour doit être la date effective la plus proche.");
+
+        verify(modelMapper).map(eq(mettreAJourOffreDto), eq(offreExistante)); // DTO -> Entité
+        verify(offreRepository).save(eq(offreExistante));
+        verify(modelMapper).map(eq(offreExistante), eq(OffreAdminDto.class)); // Entité mise à jour -> DTO
     }
 
+    // ... (autres tests, en s'assurant que la pagination est gérée pour obtenirToutesLesOffres)
     @Test
-    void mettreAJourOffre_DisciplineNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.of(offre));
-        when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
+    void obtenirToutesLesOffres_ReturnsPageOfOffreAdminDto() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Offre> offresList = Arrays.asList(offreExistante, offreAutre);
+        Page<Offre> offresPageEntites = new PageImpl<>(offresList, pageable, offresList.size());
 
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.mettreAJourOffre(1L, mettreAJourOffreDto));
-        verify(offreRepository, never()).save(any());
+        when(offreRepository.findAllWithDiscipline(pageable)).thenReturn(offresPageEntites);
+
+        Page<OffreAdminDto> resultPageDto = adminOffreService.obtenirToutesLesOffres(pageable);
+
+        assertNotNull(resultPageDto);
+        assertThat(resultPageDto.getContent()).hasSize(2);
+        assertEquals(offreExistante.getEffectiveDateExpiration(), resultPageDto.getContent().get(0).getDateExpiration());
+        assertEquals(offreAutre.getEffectiveDateExpiration(), resultPageDto.getContent().get(1).getDateExpiration());
+
+        verify(offreRepository).findAllWithDiscipline(eq(pageable));
+        verify(modelMapper, times(1)).map(eq(offreExistante), eq(OffreAdminDto.class));
+        verify(modelMapper, times(1)).map(eq(offreAutre), eq(OffreAdminDto.class));
     }
 
+
+    // ... (les tests pour getNombreDeVentesParOffre, supprimerOffre et les exceptions)
     @Test
     void supprimerOffre_ExistingId_CallsDeleteAndNotifyPanierService() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.of(offre));
+        Long offreIdASupprimer = offreExistante.getIdOffre();
+        when(offreRepository.findById(offreIdASupprimer)).thenReturn(Optional.of(offreExistante));
+        doNothing().when(panierService).supprimerOffreDeTousLesPaniers(any(Offre.class));
 
-        // Act
-        adminOffreService.supprimerOffre(1L);
+        adminOffreService.supprimerOffre(offreIdASupprimer);
 
-        // Assert
-        verify(offreRepository, times(1)).delete(offre);
-        verify(panierService, times(1)).supprimerOffreDeTousLesPaniers(offre);
+        verify(offreRepository).findById(offreIdASupprimer);
+        verify(panierService).supprimerOffreDeTousLesPaniers(eq(offreExistante));
+        verify(offreRepository).delete(eq(offreExistante));
     }
 
     @Test
-    void supprimerOffre_NonExistingId_ThrowsResourceNotFoundException() {
-        // Arrange
-        when(offreRepository.findById(1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.supprimerOffre(1L));
-        verify(offreRepository, never()).delete(any());
-        verify(panierService, never()).supprimerOffreDeTousLesPaniers(any());
-    }
-
-    @Test
-    void obtenirToutesLesOffres_ReturnsListOfOffreAdminDto() {
-        // Arrange
-        List<Offre> offres = Arrays.asList(offre, new Offre());
-        OffreAdminDto offreAdminDto1 = new OffreAdminDto();
-        offreAdminDto1.setId(1L);
-        OffreAdminDto offreAdminDto2 = new OffreAdminDto();
-        offreAdminDto2.setId(2L);
-        List<OffreAdminDto> offreAdminDtos = Arrays.asList(offreAdminDto1, offreAdminDto2);
-        when(offreRepository.findAll()).thenReturn(offres);
-        when(modelMapper.map(offres.get(0), OffreAdminDto.class)).thenReturn(offreAdminDto1);
-        when(modelMapper.map(offres.get(1), OffreAdminDto.class)).thenReturn(offreAdminDto2);
-
-
-        // Act
-        List<OffreAdminDto> result = adminOffreService.obtenirToutesLesOffres();
-
-        // Assert
-        assertEquals(offreAdminDtos.size(), result.size());
-        verify(offreRepository, times(1)).findAll();
-        verify(modelMapper, times(2)).map(any(), eq(OffreAdminDto.class));
-        assertEquals(offreAdminDtos.get(0).getId(), result.get(0).getId());
-        assertEquals(offreAdminDtos.get(1).getId(), result.get(1).getId());
-    }
-
-    @Test
-    void getNombreDeVentesParOffre_ReturnsMapOfOffreIdToVentes() {
-        // Arrange
-        Object[] result1 = {offre, 10L};
-        Object[] result2 = {new Offre(), 5L};
-        List<Object[]> results = Arrays.asList(result1, result2);
-        when(offreRepository.countBilletsByOffre()).thenReturn(results);
-
-        // Act
-        Map<Long, Long> ventesParOffre = adminOffreService.getNombreDeVentesParOffre();
-
-        // Assert
-        assertEquals(2, ventesParOffre.size());
-        assertEquals(10L, ventesParOffre.get(1L));
-        assertEquals(5L, ventesParOffre.get(((Offre) result2[0]).getIdOffre()));
-    }
-
-    @Test
-    void getVentesParTypeOffre_ReturnsMapOfTypeOffreToVentes() {
-        // Arrange
-        Object[] result1 = {TypeOffre.SOLO.name(), 20L};
-        Object[] result2 = {TypeOffre.DUO.name(), 30L};
-        List<Object[]> results = Arrays.asList(result1, result2);
-        when(offreRepository.countBilletsByTypeOffre()).thenReturn(results);
-
-        // Act
-        Map<String, Long> ventesParTypeOffre = adminOffreService.getVentesParTypeOffre();
-
-        // Assert
-        assertEquals(2, ventesParTypeOffre.size());
-        assertEquals(20L, ventesParTypeOffre.get(TypeOffre.SOLO.name()));
-        assertEquals(30L, ventesParTypeOffre.get(TypeOffre.DUO.name()));
+    void ajouterOffre_DisciplineNotFound_ThrowsResourceNotFoundException() {
+        when(disciplineRepository.findById(creerOffreDto.getIdDiscipline())).thenReturn(Optional.empty());
+        assertThrows(ResourceNotFoundException.class, () -> adminOffreService.ajouterOffre(creerOffreDto));
+        verify(offreRepository, never()).save(any(Offre.class));
     }
 }

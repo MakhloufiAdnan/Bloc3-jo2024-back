@@ -7,10 +7,16 @@ import fr.studi.bloc3jo2024.exception.AdresseLieeAUneDisciplineException;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.service.AdresseService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,199 +25,207 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdresseController {
 
+    private static final Logger log = LoggerFactory.getLogger(AdresseController.class);
     private final AdresseService adresseService;
 
     /**
-     * Endpoint pour créer une nouvelle adresse.
-     * Vérifie au préalable si une adresse identique existe déjà.
-     * Si une adresse identique est trouvée, retourne l'ID de l'adresse existante avec le statut HTTP OK.
-     * Si aucune adresse identique n'est trouvée, crée une nouvelle adresse et retourne l'objet créé avec le statut HTTP CREATED.
-     *
-     * @param adresse L'objet {@link Adresse} à créer, passé dans le corps de la requête au format JSON.
-     * @return {@link ResponseEntity} contenant soit l'objet {@link Adresse} créé (ou existant), soit l'ID de l'adresse existante,
-     * et le statut HTTP approprié:
-     * - {@link HttpStatus#OK} si l'adresse existait déjà (retourne l'ID de l'adresse existante).
-     * - {@link HttpStatus#CREATED} si une nouvelle adresse a été créée avec succès (retourne l'objet {@link Adresse} créé).
+     * Crée une nouvelle adresse si elle n'existe pas déjà.
+     * Si elle existe, retourne l'ID de l'adresse existante.
+     * @param adresse L'objet Adresse à créer.
+     * @return ResponseEntity avec l'ID existant (200 OK) ou la nouvelle Adresse (201 CREATED).
+     * @throws ResponseStatusException avec statut 400 si les données d'entrée sont invalides (ex: pays manquant).
      */
     @PostMapping
     public ResponseEntity<Object> creerAdresseSiNonExistante(@RequestBody Adresse adresse) {
-        Long existingAdresseId = adresseService.getIdAdresseSiExistante(adresse);
-        if (existingAdresseId != null) {
-            return new ResponseEntity<>(existingAdresseId, HttpStatus.OK); // L'adresse existait déjà, retourne l'ID.
-        } else {
-            Adresse nouvelleAdresse = adresseService.creerAdresseSiNonExistante(adresse); // Utilisation de la méthode renommée dans le service.
-            return new ResponseEntity<>(nouvelleAdresse, HttpStatus.CREATED);// Nouvelle adresse créée avec succès, retourne l'objet.
+        try {
+            Long existingAdresseId = adresseService.getIdAdresseSiExistante(adresse);
+            if (existingAdresseId != null) {
+                log.info("Tentative de création d'une adresse existante, ID retourné : {}", existingAdresseId);
+                return ResponseEntity.ok().body(Collections.singletonMap("idAdresseExistante", existingAdresseId));
+            } else {
+                Adresse nouvelleAdresse = adresseService.creerAdresseSiNonExistante(adresse);
+                log.info("Nouvelle adresse créée avec ID : {}", nouvelleAdresse.getIdAdresse());
+                return new ResponseEntity<>(nouvelleAdresse, HttpStatus.CREATED);
+            }
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
     }
 
     /**
-     * Endpoint pour récupérer une adresse spécifique par son ID.
-     *
-     * @param id L'identifiant unique de l'adresse à récupérer, passé dans le chemin de l'URI.
-     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} trouvé et le statut HTTP:
-     * - {@link HttpStatus#OK} si l'adresse est trouvée.
-     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée avec cet ID.
+     * Récupère une adresse par son ID.
+     * @param id L'ID de l'adresse.
+     * @return ResponseEntity avec l'Adresse.
+     * @throws ResponseStatusException avec statut 404 si non trouvée.
      */
     @GetMapping("/{id}")
     public ResponseEntity<Adresse> getAdresseById(@PathVariable Long id) {
         try {
             Adresse adresse = adresseService.getAdresseById(id);
-            return new ResponseEntity<>(adresse, HttpStatus.OK);
+            return ResponseEntity.ok(adresse);
         } catch (ResourceNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         }
     }
 
     /**
-     * Endpoint pour récupérer toutes les adresses associées à un utilisateur spécifique.
-     *
-     * @param idUtilisateur L'identifiant unique de l'utilisateur dont on souhaite récupérer les adresses.
-     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} associés à l'utilisateur et le statut HTTP {@link HttpStatus#OK}.
-     * Si aucune adresse n'est associée à cet utilisateur, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
+     * Récupère toutes les adresses avec pagination.
+     * @param pageable Objet de pagination.
+     * @return Une page d'adresses.
+     */
+    @GetMapping
+    public ResponseEntity<Page<Adresse>> getAllAdresses(Pageable pageable) {
+        Page<Adresse> adresses = adresseService.getAllAdresses(pageable);
+        return ResponseEntity.ok(adresses);
+    }
+
+
+    /**
+     * Récupère les adresses associées à un utilisateur.
+     * @param idUtilisateur L'ID de l'utilisateur.
+     * @return ResponseEntity avec une liste d'Adresses.
      */
     @GetMapping("/utilisateur/{idUtilisateur}")
-    public ResponseEntity<List<Adresse>> getAdressesByUtilisateurId(@PathVariable UUID idUtilisateur) {
+    public ResponseEntity<List<Adresse>> getAdressesByUserId(@PathVariable UUID idUtilisateur) {
         List<Adresse> adresses = adresseService.getAdressesByUtilisateurId(idUtilisateur);
-        return new ResponseEntity<>(adresses, HttpStatus.OK);
+        return ResponseEntity.ok(adresses);
     }
 
     /**
-     * Endpoint pour récupérer l'adresse associée à une discipline spécifique.
-     *
-     * @param idDiscipline L'identifiant unique de la discipline dont on souhaite récupérer l'adresse.
-     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} associé à la discipline et le statut HTTP:
-     * - {@link HttpStatus#OK} si une adresse est trouvée pour cette discipline.
-     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée pour cette discipline.
+     * Récupère l'adresse associée à une discipline.
+     * @param idDiscipline L'ID de la discipline.
+     * @return ResponseEntity avec l'Adresse.
+     * @throws ResponseStatusException avec statut 404 si non trouvée, ou 400 si l'ID de discipline est invalide.
      */
     @GetMapping("/discipline/{idDiscipline}")
     public ResponseEntity<Adresse> getAdresseByDiscipline(@PathVariable Long idDiscipline) {
-        Discipline discipline = new Discipline();
-        discipline.setIdDiscipline(idDiscipline);
+        Discipline disciplineRef = new Discipline();
+        disciplineRef.setIdDiscipline(idDiscipline);
         try {
-            Adresse adresse = adresseService.getAdresseByDiscipline(discipline);
-            return new ResponseEntity<>(adresse, HttpStatus.OK);
+            Adresse adresse = adresseService.getAdresseByDiscipline(disciplineRef);
+            return ResponseEntity.ok(adresse);
         } catch (ResourceNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
     }
 
     /**
      * Endpoint pour récupérer toutes les adresses liées à une discipline spécifique.
-     *
-     * @param idDiscipline L'identifiant unique de la discipline dont on souhaite récupérer les adresses liées.
-     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} liés à la discipline et le statut HTTP {@link HttpStatus#OK}.
-     * Si aucune adresse n'est liée à cette discipline, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
+     * @param idDiscipline L'identifiant unique de la discipline.
+     * @return ResponseEntity contenant une liste des objets Adresse.
+     * @throws ResponseStatusException avec statut 400 si l'ID de discipline est invalide.
      */
     @GetMapping("/discipline/{idDiscipline}/all")
     public ResponseEntity<List<Adresse>> getAdressesByDiscipline(@PathVariable Long idDiscipline) {
-        Discipline discipline = new Discipline();
-        discipline.setIdDiscipline(idDiscipline);
-        List<Adresse> adresses = adresseService.getAdressesByDiscipline(discipline);
-        return new ResponseEntity<>(adresses, HttpStatus.OK);
-    }
-
-    /**
-     * Endpoint pour rechercher une adresse complète en fonction de plusieurs critères.
-     * Les paramètres de recherche sont passés via des paramètres de requête.
-     *
-     * @param numeroRue  Le numéro de la rue.
-     * @param nomRue     Le nom de la rue.
-     * @param ville      La ville.
-     * @param codePostal Le code postal.
-     * @param idPays     L'identifiant unique du pays.
-     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} trouvé et le statut HTTP:
-     * - {@link HttpStatus#OK} si une adresse correspondante est trouvée.
-     * - {@link HttpStatus#NOT_FOUND} si aucune adresse correspondante n'est trouvée.
-     */
-    @GetMapping("/recherche")
-    public ResponseEntity<Adresse> rechercherAdresseComplete(
-            @RequestParam int numeroRue,
-            @RequestParam String nomRue,
-            @RequestParam String ville,
-            @RequestParam String codePostal,
-            @RequestParam Long idPays
-    ) {
-        Pays pays = new Pays();
-        pays.setIdPays(idPays);
-        Adresse adresse = adresseService.rechercherAdresseComplete(numeroRue, nomRue, ville, codePostal, pays);
-        if (adresse != null) {
-            return new ResponseEntity<>(adresse, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        Discipline disciplineRef = new Discipline();
+        disciplineRef.setIdDiscipline(idDiscipline);
+        try {
+            List<Adresse> adresses = adresseService.getAdressesByDiscipline(disciplineRef);
+            return ResponseEntity.ok(adresses);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
     }
 
     /**
-     * Endpoint pour rechercher les adresses par ville pour les disciplines.
-     *
-     * @param ville Le nom de la ville pour laquelle rechercher les adresses.
-     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} situés dans la ville spécifiée et le statut HTTP {@link HttpStatus#OK}.
-     * Si aucune adresse n'est trouvée dans cette ville, une liste vide sera retournée avec le statut {@link HttpStatus#OK}.
+     * Recherche une adresse par ses attributs complets.
+     * @param numeroRue Numéro de rue (Integer).
+     * @param nomRue Nom de rue.
+     * @param ville Ville.
+     * @param codePostal Code postal.
+     * @param idPays ID du pays.
+     * @return ResponseEntity avec l'Adresse.
+     * @throws ResponseStatusException avec statut 404 si non trouvée, ou 400 si les paramètres sont invalides.
+     */
+    @GetMapping("/recherche")
+    public ResponseEntity<Adresse> rechercherAdresseComplete(
+            @RequestParam Integer numeroRue,
+            @RequestParam String nomRue,
+            @RequestParam String ville,
+            @RequestParam String codePostal,
+            @RequestParam Long idPays) {
+
+        Pays paysRef = new Pays();
+        paysRef.setIdPays(idPays);
+
+        try {
+            Adresse adresse = adresseService.rechercherAdresseComplete(numeroRue, nomRue, ville, codePostal, paysRef);
+            if (adresse != null) {
+                return ResponseEntity.ok(adresse);
+            } else {
+                log.info("Aucune adresse complète trouvée pour les critères : num={}, rue={}, ville={}, cp={}, paysId={}",
+                        numeroRue, nomRue, ville, codePostal, idPays);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Recherche les adresses par ville (pour les disciplines).
+     * @param ville La ville.
+     * @return ResponseEntity avec une liste d'Adresses.
      */
     @GetMapping("/ville/{ville}")
     public ResponseEntity<List<Adresse>> rechercherAdressesParVillePourDisciplines(@PathVariable String ville) {
         List<Adresse> adresses = adresseService.rechercherAdressesParVillePourDisciplines(ville);
-        return new ResponseEntity<>(adresses, HttpStatus.OK);
+        return ResponseEntity.ok(adresses);
     }
 
+
     /**
-     * Endpoint pour rechercher les adresses pour une discipline spécifique et filtrées par l'ID du pays.
-     *
-     * @param idDiscipline L'identifiant unique de la discipline.
-     * @param idPays      L'identifiant unique du pays des adresses à rechercher.
-     * @return {@link ResponseEntity} contenant une liste des objets {@link Adresse} liés à la discipline et appartenant au pays spécifié,
-     * et le statut HTTP {@link HttpStatus#OK}. Si aucune adresse correspondante n'est trouvée, une liste vide sera retournée
-     * avec le statut {@link HttpStatus#OK}.
-     * Note : La création d'un objet {@link Discipline}
+     * Recherche les adresses par discipline et ID de pays.
+     * @param idDiscipline L'ID de la discipline.
+     * @param idPays L'ID du pays.
+     * @return ResponseEntity avec une liste d'Adresses.
      */
     @GetMapping("/discipline/{idDiscipline}/pays/{idPays}")
     public ResponseEntity<List<Adresse>> rechercherAdressesParDisciplineEtPays(
             @PathVariable Long idDiscipline,
-            @PathVariable Long idPays
-    ) {
-        Discipline discipline = new Discipline();
-        discipline.setIdDiscipline(idDiscipline); // Création d'un objet Discipline avec l'ID passé en paramètre
-        List<Adresse> adresses = adresseService.rechercherAdressesParDisciplineEtPays(discipline, idPays);
-        return new ResponseEntity<>(adresses, HttpStatus.OK);
+            @PathVariable Long idPays) {
+        Discipline disciplineRef = new Discipline();
+        disciplineRef.setIdDiscipline(idDiscipline);
+        List<Adresse> adresses = adresseService.rechercherAdressesParDisciplineEtPays(disciplineRef, idPays);
+        return ResponseEntity.ok(adresses);
     }
 
     /**
-     * Endpoint pour mettre à jour une adresse existante.
-     *
-     * @param id              L'identifiant unique de l'adresse à mettre à jour, passé dans le chemin de l'URI.
-     * @param nouvelleAdresse L'objet {@link Adresse} contenant les nouvelles informations, passé dans le corps de la requête au format JSON.
-     * @return {@link ResponseEntity} contenant l'objet {@link Adresse} mis à jour et le statut HTTP:
-     * - {@link HttpStatus#OK} si la mise à jour a réussi.
-     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée avec cet ID.
+     * Met à jour une adresse existante.
+     * @param id L'ID de l'adresse.
+     * @param nouvelleAdresse Les nouvelles informations de l'adresse.
+     * @return ResponseEntity avec l'Adresse mise à jour.
+     * @throws ResponseStatusException avec statut 404 si non trouvée, ou 400 si les données sont invalides.
      */
     @PutMapping("/{id}")
     public ResponseEntity<Adresse> updateAdresse(@PathVariable Long id, @RequestBody Adresse nouvelleAdresse) {
         try {
             Adresse adresseMiseAJour = adresseService.updateAdresse(id, nouvelleAdresse);
-            return new ResponseEntity<>(adresseMiseAJour, HttpStatus.OK);
+            return ResponseEntity.ok(adresseMiseAJour);
         } catch (ResourceNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
     }
 
     /**
-     * Endpoint pour supprimer une adresse par son ID.
-     *
-     * @param id L'identifiant unique de l'adresse à supprimer, passé dans le chemin de l'URI.
-     * @return {@link ResponseEntity} avec le statut HTTP:
-     * - {@link HttpStatus#NO_CONTENT} si la suppression a réussi (pas de contenu à retourner).
-     * - {@link HttpStatus#NOT_FOUND} si aucune adresse n'est trouvée avec cet ID.
-     * - {@link HttpStatus#CONFLICT} si l'adresse est liée à un événement et ne peut pas être supprimée.
+     * Supprime une adresse par son ID.
+     * @param id L'ID de l'adresse.
+     * @return ResponseEntity avec statut 204 (NO_CONTENT).
+     * @throws ResponseStatusException avec statut 404 si non trouvée, ou 409 si l'adresse est liée.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAdresse(@PathVariable Long id) {
         try {
             adresseService.deleteAdresse(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Suppression réussie, pas de contenu à retourner.
+            return ResponseEntity.noContent().build();
         } catch (ResourceNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (AdresseLieeAUneDisciplineException e) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT); // L'adresse est liée à un événement.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
     }
 }

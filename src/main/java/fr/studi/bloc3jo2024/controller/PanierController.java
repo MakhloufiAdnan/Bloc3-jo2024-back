@@ -31,7 +31,7 @@ public class PanierController {
     @GetMapping("/{userId}")
     public ResponseEntity<PanierDto> getPanier(@PathVariable UUID userId) {
         try {
-            PanierDto dto = panierService.getPanierUtilisateur(userId.toString()); // Utilisez getPanierUtilisateur
+            PanierDto dto = panierService.getPanierUtilisateur(userId.toString());
             return ResponseEntity.ok(dto);
         } catch (ResourceNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());

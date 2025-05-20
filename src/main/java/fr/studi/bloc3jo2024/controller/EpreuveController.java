@@ -44,10 +44,10 @@ public class EpreuveController {
     public ResponseEntity<Epreuve> mettreAJourStatutVedette(
             @Valid @RequestBody MettreAJourEpreuveVedetteDto mettreAJourEpreuveVedetteDto
     ) {
-        try { // Assurez-vous que ce try est présent
+        try {
             Epreuve updatedEpreuve = epreuveService.mettreAJourStatutVedette(mettreAJourEpreuveVedetteDto);
             return ResponseEntity.ok(updatedEpreuve);
-        } catch (EntityNotFoundException e) { // Assurez-vous que ce catch est présent et intercepte EntityNotFoundException
+        } catch (EntityNotFoundException e) {
             // Gérer le cas où l'épreuve n'est pas trouvée et retourner un 404 NOT FOUND
             return ResponseEntity.notFound().build();
         }

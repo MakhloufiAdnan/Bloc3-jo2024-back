@@ -1,461 +1,464 @@
 package fr.studi.bloc3jo2024.controller;
 
 import fr.studi.bloc3jo2024.entity.Adresse;
-import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Pays;
 import fr.studi.bloc3jo2024.exception.AdresseLieeAUneDisciplineException;
 import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
 import fr.studi.bloc3jo2024.service.AdresseService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Tests unitaires pour {@link AdresseController}.
+ * Ces tests vérifient le comportement du contrôleur en isolation,
+ * en moquant le service {@link AdresseService}.
+ */
 @ExtendWith(MockitoExtension.class)
 class AdresseControllerTest {
 
     @Mock
-    private AdresseService adresseService;
+    private AdresseService adresseService; // Mock du service
 
     @InjectMocks
-    private AdresseController adresseController;
+    private AdresseController adresseController; // Instance du contrôleur avec les mocks injectés
 
+    // Données de test communes
     private Adresse adresseExemple;
+    private Pays paysExemple;
     private UUID utilisateurIdExemple;
+    private final Long disciplineIdExemple = 200L;
+    private final Long adresseIdExemple = 1L;
 
     @BeforeEach
     void setUp() {
-        // Arrange
-        Pays paysExemple;
-        paysExemple = new Pays();
-        paysExemple.setIdPays(1L);
-        paysExemple.setNomPays("France");
-
-        adresseExemple = new Adresse();
-        adresseExemple.setIdAdresse(1L);
-        adresseExemple.setNumeroRue(10);
-        adresseExemple.setNomRue("Rue de la Paix");
-        adresseExemple.setVille("Paris");
-        adresseExemple.setCodePostal("75001");
-        adresseExemple.setPays(paysExemple);
-
-        Discipline disciplineExemple;
-        disciplineExemple = new Discipline();
-        disciplineExemple.setIdDiscipline(200L);
-
+        // Initialisation des données de test avant chaque test
+        paysExemple = Pays.builder().idPays(1L).nomPays("France").build();
+        adresseExemple = Adresse.builder()
+                .idAdresse(adresseIdExemple)
+                .numeroRue(10)
+                .nomRue("Rue de la Paix")
+                .ville("Paris")
+                .codePostal("75001")
+                .pays(paysExemple)
+                .build();
         utilisateurIdExemple = UUID.randomUUID();
     }
 
-    @Test
-    void creerAdresseSiNonExistante_AdresseExistante() {
-        // Arrange
-        Long existingId = 5L;
-        when(adresseService.getIdAdresseSiExistante(any(Adresse.class))).thenReturn(existingId);
+    @Nested
+    @DisplayName("Tests pour la création d'adresses (POST /api/adresses)")
+    class CreerAdresseTests {
 
-        // Act
-        ResponseEntity<Object> response = adresseController.creerAdresseSiNonExistante(adresseExemple);
+        @Test
+        @DisplayName("Doit retourner 200 OK avec l'ID existant si l'adresse existe déjà")
+        void creerAdresseSiNonExistante_AdresseExistante_ShouldReturnOkWithExistingId() {
+            // Arrange
+            Long existingId = 5L;
+            when(adresseService.getIdAdresseSiExistante(any(Adresse.class))).thenReturn(existingId);
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(existingId, response.getBody());
-        verify(adresseService, times(1)).getIdAdresseSiExistante(any(Adresse.class));
-        verify(adresseService, never()).creerAdresseSiNonExistante(any(Adresse.class));
+            // Act
+            ResponseEntity<Object> response = adresseController.creerAdresseSiNonExistante(adresseExemple);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode(), "Le statut HTTP doit être 200 OK");
+            assertNotNull(response.getBody(), "Le corps de la réponse ne doit pas être null");
+            assertInstanceOf(Map.class, response.getBody(), "Le corps doit être une Map");
+            Map<?, ?> responseBodyMap = (Map<?, ?>) response.getBody();
+            assertEquals(existingId, responseBodyMap.get("idAdresseExistante"), "L'ID de l'adresse existante doit correspondre");
+
+            verify(adresseService).getIdAdresseSiExistante(any(Adresse.class)); // Vérifie l'appel au service
+            verify(adresseService, never()).creerAdresseSiNonExistante(any(Adresse.class)); // Vérifie que la création n'est pas appelée
+        }
+
+        @Test
+        @DisplayName("Doit retourner 201 Created avec la nouvelle adresse si elle n'existe pas")
+        void creerAdresseSiNonExistante_NouvelleAdresse_ShouldReturnCreatedWithNewAdresse() {
+            // Arrange
+            Adresse nouvelleAdresseCreee = Adresse.builder().idAdresse(2L).numeroRue(20).ville("Lyon").pays(paysExemple).build();
+            when(adresseService.getIdAdresseSiExistante(any(Adresse.class))).thenReturn(null); // Adresse non existante
+            when(adresseService.creerAdresseSiNonExistante(any(Adresse.class))).thenReturn(nouvelleAdresseCreee);
+
+            // Act
+            ResponseEntity<Object> response = adresseController.creerAdresseSiNonExistante(adresseExemple);
+
+            // Assert
+            assertEquals(HttpStatus.CREATED, response.getStatusCode(), "Le statut HTTP doit être 201 Created");
+            assertNotNull(response.getBody(), "Le corps de la réponse ne doit pas être null");
+            assertInstanceOf(Adresse.class, response.getBody(), "Le corps doit être une instance d'Adresse");
+            Adresse returnedAdresse = (Adresse) response.getBody();
+            assertEquals(nouvelleAdresseCreee.getIdAdresse(), returnedAdresse.getIdAdresse(), "L'ID de l'adresse retournée doit correspondre");
+            assertEquals("Lyon", returnedAdresse.getVille(), "La ville de l'adresse retournée doit correspondre");
+
+            verify(adresseService).getIdAdresseSiExistante(any(Adresse.class));
+            verify(adresseService).creerAdresseSiNonExistante(any(Adresse.class));
+        }
+
+        @Test
+        @DisplayName("Doit retourner 400 Bad Request si le service lève IllegalArgumentException")
+        void creerAdresseSiNonExistante_IllegalArgumentExceptionFromService_ShouldReturnBadRequest() {
+            // Arrange
+            String errorMessage = "Données d'adresse invalides";
+            when(adresseService.getIdAdresseSiExistante(any(Adresse.class))).thenReturn(null);
+            when(adresseService.creerAdresseSiNonExistante(any(Adresse.class))).thenThrow(new IllegalArgumentException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.creerAdresseSiNonExistante(adresseExemple),
+                    "ResponseStatusException attendue");
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode(), "Le statut HTTP doit être 400 Bad Request");
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage), "Le message d'erreur doit correspondre");
+        }
     }
 
-    @Test
-    void creerAdresseSiNonExistante_NouvelleAdresse() {
-        // Arrange
-        Adresse nouvelleAdresseCreee = new Adresse();
-        nouvelleAdresseCreee.setIdAdresse(2L);
-        nouvelleAdresseCreee.setNumeroRue(20);
-        when(adresseService.getIdAdresseSiExistante(any(Adresse.class))).thenReturn(null);
-        when(adresseService.creerAdresseSiNonExistante(any(Adresse.class))).thenReturn(nouvelleAdresseCreee);
+    @Nested
+    @DisplayName("Tests pour la récupération d'adresses (GET)")
+    class GetAdresseTests {
 
-        // Act
-        ResponseEntity<Object> response = adresseController.creerAdresseSiNonExistante(adresseExemple);
+        @Test
+        @DisplayName("Doit retourner 200 OK avec l'adresse si trouvée par ID")
+        void getAdresseById_Found_ShouldReturnOkWithAdresse() {
+            // Arrange
+            when(adresseService.getAdresseById(adresseIdExemple)).thenReturn(adresseExemple);
 
-        // Assert
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertInstanceOf(Adresse.class, response.getBody());
-        Adresse returnedAdresse = (Adresse) response.getBody();
-        assertEquals(nouvelleAdresseCreee.getIdAdresse(), returnedAdresse.getIdAdresse());
-        verify(adresseService, times(1)).getIdAdresseSiExistante(any(Adresse.class));
-        verify(adresseService, times(1)).creerAdresseSiNonExistante(any(Adresse.class));
+            // Act
+            ResponseEntity<Adresse> response = adresseController.getAdresseById(adresseIdExemple);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adresseExemple, response.getBody());
+            verify(adresseService).getAdresseById(adresseIdExemple);
+        }
+
+        @Test
+        @DisplayName("Doit retourner 404 Not Found si l'adresse n'est pas trouvée par ID")
+        void getAdresseById_NotFound_ShouldReturnNotFound() {
+            // Arrange
+            Long idInexistant = 99L;
+            String errorMessage = "Adresse non trouvée";
+            when(adresseService.getAdresseById(idInexistant)).thenThrow(new ResourceNotFoundException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.getAdresseById(idInexistant));
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+            verify(adresseService).getAdresseById(idInexistant);
+        }
+
+        @Test
+        @DisplayName("Doit retourner 200 OK avec une page d'adresses")
+        void getAllAdresses_ShouldReturnOkWithPageOfAdresses() {
+            // Arrange
+            Pageable pageable = PageRequest.of(0, 10);
+            List<Adresse> adressesList = Collections.singletonList(adresseExemple);
+            Page<Adresse> adressesPage = new PageImpl<>(adressesList, pageable, adressesList.size());
+            // Assumes AdresseService.getAllAdresses returns Page<Adresse>
+            when(adresseService.getAllAdresses(pageable)).thenReturn(adressesPage);
+
+            // Act
+            ResponseEntity<Page<Adresse>> response = adresseController.getAllAdresses(pageable);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertNotNull(response.getBody());
+            assertEquals(1, response.getBody().getTotalElements());
+            assertEquals(adresseExemple.getVille(), response.getBody().getContent().getFirst().getVille());
+            verify(adresseService).getAllAdresses(pageable);
+        }
+
+        @Test
+        @DisplayName("Doit retourner 200 OK avec la liste des adresses pour un utilisateur")
+        void getAdressesByUserId_ShouldReturnOkWithListOfAdresses() {
+            // Arrange
+            List<Adresse> adressesUtilisateur = Collections.singletonList(adresseExemple);
+            when(adresseService.getAdressesByUtilisateurId(utilisateurIdExemple)).thenReturn(adressesUtilisateur);
+
+            // Act
+            ResponseEntity<List<Adresse>> response = adresseController.getAdressesByUserId(utilisateurIdExemple);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adressesUtilisateur, response.getBody());
+            verify(adresseService).getAdressesByUtilisateurId(utilisateurIdExemple);
+        }
+
+        @Test
+        @DisplayName("Doit retourner 200 OK avec l'adresse pour une discipline")
+        void getAdresseByDiscipline_Found_ShouldReturnOkWithAdresse() {
+            // Arrange
+            when(adresseService.getAdresseByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple)))).thenReturn(adresseExemple);
+
+            // Act
+            ResponseEntity<Adresse> response = adresseController.getAdresseByDiscipline(disciplineIdExemple);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adresseExemple, response.getBody());
+            verify(adresseService).getAdresseByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple)));
+        }
+
+        @Test
+        @DisplayName("Doit retourner 404 Not Found si aucune adresse n'est trouvée pour une discipline")
+        void getAdresseByDiscipline_NotFound_ShouldReturnNotFound() {
+            // Arrange
+            String errorMessage = "Adresse non trouvée pour cette discipline";
+            when(adresseService.getAdresseByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple))))
+                    .thenThrow(new ResourceNotFoundException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.getAdresseByDiscipline(disciplineIdExemple));
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
+
+        @Test
+        @DisplayName("Doit retourner 400 Bad Request pour getAdresseByDiscipline si IllegalArgumentException")
+        void getAdresseByDiscipline_IllegalArgument_ShouldReturnBadRequest() {
+            // Arrange
+            String errorMessage = "ID Discipline invalide";
+            when(adresseService.getAdresseByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple))))
+                    .thenThrow(new IllegalArgumentException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.getAdresseByDiscipline(disciplineIdExemple));
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
+
+
+        @Test
+        @DisplayName("Doit retourner 200 OK avec la liste des adresses pour une discipline (/all)")
+        void getAdressesByDiscipline_All_ShouldReturnOkWithList() {
+            // Arrange
+            List<Adresse> adressesPourDiscipline = Collections.singletonList(adresseExemple);
+            when(adresseService.getAdressesByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple))))
+                    .thenReturn(adressesPourDiscipline);
+
+            // Act
+            ResponseEntity<List<Adresse>> response = adresseController.getAdressesByDiscipline(disciplineIdExemple); // This calls the /all variant implicitly due to distinct method signature in controller based on path
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adressesPourDiscipline, response.getBody());
+            verify(adresseService).getAdressesByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple)));
+        }
+
+        @Test
+        @DisplayName("Doit retourner 400 Bad Request pour getAdressesByDiscipline (/all) si IllegalArgumentException")
+        void getAdressesByDiscipline_All_IllegalArgument_ShouldReturnBadRequest() {
+            // Arrange
+            String errorMessage = "ID Discipline invalide pour /all";
+            when(adresseService.getAdressesByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple))))
+                    .thenThrow(new IllegalArgumentException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.getAdressesByDiscipline(disciplineIdExemple)); // Calls the /all variant
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
+
+
+        @Test
+        @DisplayName("Doit retourner 200 OK avec l'adresse trouvée par recherche complète")
+        void rechercherAdresseComplete_Found_ShouldReturnOk() {
+            // Arrange
+            Integer numeroRue = 10; String nomRue = "Rue Test"; String ville = "Testville"; String cp = "12345"; Long idPays = 1L;
+            when(adresseService.rechercherAdresseComplete(eq(numeroRue), eq(nomRue), eq(ville), eq(cp), argThat(p -> p.getIdPays().equals(idPays))))
+                    .thenReturn(adresseExemple);
+
+            // Act
+            ResponseEntity<Adresse> response = adresseController.rechercherAdresseComplete(numeroRue, nomRue, ville, cp, idPays);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adresseExemple, response.getBody());
+        }
+
+        @Test
+        @DisplayName("Doit retourner 404 Not Found si la recherche complète ne trouve rien")
+        void rechercherAdresseComplete_NotFound_ShouldReturnNotFound() {
+            // Arrange
+            Integer numeroRue = 10; String nomRue = "Rue Test"; String ville = "Testville"; String cp = "12345"; Long idPays = 1L;
+            when(adresseService.rechercherAdresseComplete(eq(numeroRue), eq(nomRue), eq(ville), eq(cp), argThat(p -> p.getIdPays().equals(idPays))))
+                    .thenReturn(null); // Service retourne null si non trouvé
+
+            // Act
+            ResponseEntity<Adresse> response = adresseController.rechercherAdresseComplete(numeroRue, nomRue, ville, cp, idPays);
+
+            // Assert
+            assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        }
+
+        @Test
+        @DisplayName("Doit retourner 400 Bad Request pour recherche complète si IllegalArgumentException")
+        void rechercherAdresseComplete_IllegalArgument_ShouldReturnBadRequest() {
+            // Arrange
+            Integer numeroRue = 10; String nomRue = "Rue Test"; String ville = "Testville"; String cp = "12345"; Long idPays = 1L;
+            String errorMessage = "Paramètres de recherche invalides";
+            when(adresseService.rechercherAdresseComplete(eq(numeroRue), eq(nomRue), eq(ville), eq(cp), argThat(p -> p.getIdPays().equals(idPays))))
+                    .thenThrow(new IllegalArgumentException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.rechercherAdresseComplete(numeroRue, nomRue, ville, cp, idPays));
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
+
+
+        @Test
+        @DisplayName("Doit retourner 200 OK avec la liste des adresses par ville")
+        void rechercherAdressesParVillePourDisciplines_ShouldReturnOkWithList() {
+            // Arrange
+            String ville = "Paris";
+            List<Adresse> adressesTrouvees = Collections.singletonList(adresseExemple);
+            when(adresseService.rechercherAdressesParVillePourDisciplines(ville)).thenReturn(adressesTrouvees);
+
+            // Act
+            ResponseEntity<List<Adresse>> response = adresseController.rechercherAdressesParVillePourDisciplines(ville);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adressesTrouvees, response.getBody());
+        }
+
+        @Test
+        @DisplayName("Doit retourner 200 OK avec la liste des adresses par discipline et pays")
+        void rechercherAdressesParDisciplineEtPays_ShouldReturnOkWithList() {
+            // Arrange
+            Long paysId = 1L;
+            List<Adresse> adressesTrouvees = Collections.singletonList(adresseExemple);
+            when(adresseService.rechercherAdressesParDisciplineEtPays(argThat(d -> d.getIdDiscipline().equals(disciplineIdExemple)), eq(paysId)))
+                    .thenReturn(adressesTrouvees);
+
+            // Act
+            ResponseEntity<List<Adresse>> response = adresseController.rechercherAdressesParDisciplineEtPays(disciplineIdExemple, paysId);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adressesTrouvees, response.getBody());
+        }
     }
 
-    // --- Tests Endpoint GET /api/adresses/{id} (getAdresseById) ---
+    @Nested
+    @DisplayName("Tests pour la mise à jour d'adresses (PUT /api/adresses/{id})")
+    class UpdateAdresseTests {
 
-    @Test
-    void getAdresseById_Success() {
-        // Arrange
-        Long adresseId = 1L;
-        when(adresseService.getAdresseById(adresseId)).thenReturn(adresseExemple);
+        @Test
+        @DisplayName("Doit retourner 200 OK avec l'adresse mise à jour")
+        void updateAdresse_Success_ShouldReturnOkWithUpdatedAdresse() {
+            // Arrange
+            Adresse adresseMiseAJour = Adresse.builder().idAdresse(adresseIdExemple).ville("Lyon").pays(paysExemple).build();
+            when(adresseService.updateAdresse(eq(adresseIdExemple), any(Adresse.class))).thenReturn(adresseMiseAJour);
 
-        // Act
-        ResponseEntity<Adresse> response = adresseController.getAdresseById(adresseId);
+            // Act
+            ResponseEntity<Adresse> response = adresseController.updateAdresse(adresseIdExemple, adresseMiseAJour);
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(adresseId, response.getBody().getIdAdresse());
-        verify(adresseService, times(1)).getAdresseById(adresseId);
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(adresseMiseAJour, response.getBody());
+        }
+
+        @Test
+        @DisplayName("Doit retourner 404 Not Found si l'adresse à mettre à jour n'existe pas")
+        void updateAdresse_NotFound_ShouldReturnNotFound() {
+            // Arrange
+            Long idInexistant = 99L;
+            String errorMessage = "Adresse non trouvée pour la mise à jour";
+            when(adresseService.updateAdresse(eq(idInexistant), any(Adresse.class))).thenThrow(new ResourceNotFoundException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.updateAdresse(idInexistant, adresseExemple));
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
+
+        @Test
+        @DisplayName("Doit retourner 400 Bad Request si les données de mise à jour sont invalides")
+        void updateAdresse_IllegalArgument_ShouldReturnBadRequest() {
+            // Arrange
+            String errorMessage = "Données de mise à jour invalides";
+            when(adresseService.updateAdresse(eq(adresseIdExemple), any(Adresse.class))).thenThrow(new IllegalArgumentException(errorMessage));
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.updateAdresse(adresseIdExemple, adresseExemple));
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
     }
 
-    @Test
-    void getAdresseById_NotFound() {
-        // Arrange
-        Long adresseId = 99L;
-        when(adresseService.getAdresseById(adresseId)).thenThrow(ResourceNotFoundException.class);
-
-        // Act
-        ResponseEntity<Adresse> response = adresseController.getAdresseById(adresseId);
-
-        // Assert
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(adresseService, times(1)).getAdresseById(adresseId);
-    }
-
-    // --- Tests Endpoint GET /api/adresses/utilisateur/{idUtilisateur} (getAdressesByUtilisateurId) ---
-
-    @Test
-    void getAdressesByUtilisateurId_Success() {
-        // Arrange
-        List<Adresse> adresses = Arrays.asList(adresseExemple, new Adresse()); // Liste avec une ou plusieurs adresses
-        when(adresseService.getAdressesByUtilisateurId(utilisateurIdExemple)).thenReturn(adresses);
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.getAdressesByUtilisateurId(utilisateurIdExemple);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().size());
-        verify(adresseService, times(1)).getAdressesByUtilisateurId(utilisateurIdExemple);
-    }
-
-    @Test
-    void getAdressesByUtilisateurId_EmptyList() {
-        // Arrange
-        List<Adresse> adresses = Collections.emptyList(); // Liste vide
-        when(adresseService.getAdressesByUtilisateurId(utilisateurIdExemple)).thenReturn(adresses);
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.getAdressesByUtilisateurId(utilisateurIdExemple);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().isEmpty());
-        verify(adresseService, times(1)).getAdressesByUtilisateurId(utilisateurIdExemple);
-    }
-
-    // --- Tests Endpoint GET /api/adresses/discipline/{idDiscipline} (getAdresseByDiscipline) ---
-
-    @Test
-    void getAdresseByDiscipline_Success() {
-        // Arrange
-        Long disciplineId = 200L;
-        // Créer une instance de Discipline avec le bon ID pour le match de Mockito
-        Discipline disciplineArgument = new Discipline();
-        disciplineArgument.setIdDiscipline(disciplineId);
-        when(adresseService.getAdresseByDiscipline(any(Discipline.class))).thenReturn(adresseExemple); // Matcher sur n'importe quelle instance de Discipline
-
-        // Act
-        ResponseEntity<Adresse> response = adresseController.getAdresseByDiscipline(disciplineId);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(adresseExemple.getIdAdresse(), response.getBody().getIdAdresse());
-        // Vérifier que le service a été appelé avec une instance de Discipline ayant le bon ID
-        verify(adresseService, times(1)).getAdresseByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineId)));
-    }
-
-    @Test
-    void getAdresseByDiscipline_NotFound() {
-        // Arrange
-        Long disciplineId = 999L;
-        Discipline disciplineArgument = new Discipline();
-        disciplineArgument.setIdDiscipline(disciplineId);
-        when(adresseService.getAdresseByDiscipline(any(Discipline.class))).thenThrow(ResourceNotFoundException.class); // Matcher sur n'importe quelle instance de Discipline
-
-        // Act
-        ResponseEntity<Adresse> response = adresseController.getAdresseByDiscipline(disciplineId);
-
-        // Assert
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(adresseService, times(1)).getAdresseByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineId)));
-    }
-
-    // --- Tests Endpoint GET /api/adresses/discipline/{idDiscipline}/all (getAdressesByDiscipline) ---
-
-    @Test
-    void getAdressesByDiscipline_All_Success() {
-        // Arrange
-        Long disciplineId = 200L;
-        // Créer une instance de Discipline avec le bon ID pour le match de Mockito
-        Discipline disciplineArgument = new Discipline();
-        disciplineArgument.setIdDiscipline(disciplineId);
-        List<Adresse> adresses = Arrays.asList(adresseExemple, new Adresse()); // Liste avec une ou plusieurs adresses
-        when(adresseService.getAdressesByDiscipline(any(Discipline.class))).thenReturn(adresses); // Matcher sur n'importe quelle instance de Discipline
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.getAdressesByDiscipline(disciplineId);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().size());
-        // Vérifier que le service a été appelé avec une instance de Discipline ayant le bon ID
-        verify(adresseService, times(1)).getAdressesByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineId)));
-    }
-
-    @Test
-    void getAdressesByDiscipline_All_EmptyList() {
-        // Arrange
-        Long disciplineId = 999L;
-        Discipline disciplineArgument = new Discipline();
-        disciplineArgument.setIdDiscipline(disciplineId);
-        List<Adresse> adresses = Collections.emptyList(); // Liste vide
-        when(adresseService.getAdressesByDiscipline(any(Discipline.class))).thenReturn(adresses); // Matcher sur n'importe quelle instance de Discipline
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.getAdressesByDiscipline(disciplineId);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().isEmpty());
-        verify(adresseService, times(1)).getAdressesByDiscipline(argThat(d -> d.getIdDiscipline().equals(disciplineId)));
-    }
-
-    // --- Tests Endpoint GET /api/adresses/recherche (rechercherAdresseComplete) ---
-
-    @Test
-    void rechercherAdresseComplete_Found() {
-        // Arrange
-        int numeroRue = 10;
-        String nomRue = "Rue de la Paix";
-        String ville = "Paris";
-        String codePostal = "75001";
-        Long idPays = 1L;
-
-        // Créer une instance de Pays avec le bon ID pour le match de Mockito
-        Pays paysArgument = new Pays();
-        paysArgument.setIdPays(idPays);
-
-        when(adresseService.rechercherAdresseComplete(eq(numeroRue), eq(nomRue), eq(ville), eq(codePostal), any(Pays.class)))
-                .thenReturn(adresseExemple); // Matcher avec eq() pour les primitives/String et any() pour l'objet
-
-        // Act
-        ResponseEntity<Adresse> response = adresseController.rechercherAdresseComplete(numeroRue, nomRue, ville, codePostal, idPays);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(adresseExemple.getIdAdresse(), response.getBody().getIdAdresse());
-        verify(adresseService, times(1)).rechercherAdresseComplete(eq(numeroRue), eq(nomRue), eq(ville), eq(codePostal), argThat(p -> p.getIdPays().equals(idPays)));
-    }
-
-    @Test
-    void rechercherAdresseComplete_NotFound() {
-        // Arrange
-        int numeroRue = 99;
-        String nomRue = "Rue Inconnue";
-        String ville = "Lyon";
-        String codePostal = "69000";
-        Long idPays = 2L;
-
-        // Créer une instance de Pays avec le bon ID pour le match de Mockito
-        Pays paysArgument = new Pays();
-        paysArgument.setIdPays(idPays);
-
-        when(adresseService.rechercherAdresseComplete(eq(numeroRue), eq(nomRue), eq(ville), eq(codePostal), any(Pays.class)))
-                .thenReturn(null); // Service retourne null si non trouvé
-
-        // Act
-        ResponseEntity<Adresse> response = adresseController.rechercherAdresseComplete(numeroRue, nomRue, ville, codePostal, idPays);
-
-        // Assert
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(adresseService, times(1)).rechercherAdresseComplete(eq(numeroRue), eq(nomRue), eq(ville), eq(codePostal), argThat(p -> p.getIdPays().equals(idPays)));
-    }
-
-    // --- Tests Endpoint GET /api/adresses/ville/{ville} (rechercherAdressesParVillePourDisciplines) ---
-
-    @Test
-    void rechercherAdressesParVillePourDisciplines_Success() {
-        // Arrange
-        String ville = "Paris";
-        List<Adresse> adresses = Arrays.asList(adresseExemple, new Adresse()); // Liste avec une ou plusieurs adresses
-        when(adresseService.rechercherAdressesParVillePourDisciplines(ville)).thenReturn(adresses);
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.rechercherAdressesParVillePourDisciplines(ville);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().size());
-        verify(adresseService, times(1)).rechercherAdressesParVillePourDisciplines(ville);
-    }
-
-    @Test
-    void rechercherAdressesParVillePourDisciplines_EmptyList() {
-        // Arrange
-        String ville = "Marseille";
-        List<Adresse> adresses = Collections.emptyList(); // Liste vide
-        when(adresseService.rechercherAdressesParVillePourDisciplines(ville)).thenReturn(adresses);
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.rechercherAdressesParVillePourDisciplines(ville);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().isEmpty());
-        verify(adresseService, times(1)).rechercherAdressesParVillePourDisciplines(ville);
-    }
-
-    // --- Tests Endpoint GET /api/adresses/discipline/{idDiscipline}/pays/{idPays} (rechercherAdressesParDisciplineEtPays) ---
-
-    @Test
-    void rechercherAdressesParDisciplineEtPays_Success() {
-        // Arrange
-        Long disciplineId = 200L;
-        Long paysId = 1L;
-        // Créer une instance de Discipline avec le bon ID pour le match de Mockito
-        Discipline disciplineArgument = new Discipline();
-        disciplineArgument.setIdDiscipline(disciplineId);
-        List<Adresse> adresses = Arrays.asList(adresseExemple, new Adresse()); // Liste avec une ou plusieurs adresses
-        when(adresseService.rechercherAdressesParDisciplineEtPays(any(Discipline.class), eq(paysId))).thenReturn(adresses); // Matcher avec eq() pour l'ID du pays
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.rechercherAdressesParDisciplineEtPays(disciplineId, paysId);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().size());
-        verify(adresseService, times(1)).rechercherAdressesParDisciplineEtPays(argThat(d -> d.getIdDiscipline().equals(disciplineId)), eq(paysId));
-    }
-
-    @Test
-    void rechercherAdressesParDisciplineEtPays_EmptyList() {
-        // Arrange
-        Long disciplineId = 999L;
-        Long paysId = 2L;
-        // Créer une instance de Discipline avec le bon ID pour le match de Mockito
-        Discipline disciplineArgument = new Discipline();
-        disciplineArgument.setIdDiscipline(disciplineId);
-        List<Adresse> adresses = Collections.emptyList(); // Liste vide
-        when(adresseService.rechercherAdressesParDisciplineEtPays(any(Discipline.class), eq(paysId))).thenReturn(adresses); // Matcher avec eq() pour l'ID du pays
-
-        // Act
-        ResponseEntity<List<Adresse>> response = adresseController.rechercherAdressesParDisciplineEtPays(disciplineId, paysId);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().isEmpty());
-        verify(adresseService, times(1)).rechercherAdressesParDisciplineEtPays(argThat(d -> d.getIdDiscipline().equals(disciplineId)), eq(paysId));
-    }
-
-    // --- Tests Endpoint PUT /api/adresses/{id} (updateAdresse) ---
-
-    @Test
-    void updateAdresse_Success() {
-        // Arrange
-        Long adresseId = 1L;
-        Adresse adresseMaj = new Adresse();
-        adresseMaj.setVille("Lyon"); // Mettre à jour un champ
-        adresseMaj.setIdAdresse(adresseId); // L'ID dans le body pourrait être ignoré par le service mais le test le configure
-
-        when(adresseService.updateAdresse(eq(adresseId), any(Adresse.class))).thenReturn(adresseMaj);
-
-        // Act
-        ResponseEntity<Adresse> response = adresseController.updateAdresse(adresseId, adresseMaj);
-
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(adresseMaj.getIdAdresse(), response.getBody().getIdAdresse());
-        assertEquals(adresseMaj.getVille(), response.getBody().getVille());
-        verify(adresseService, times(1)).updateAdresse(eq(adresseId), any(Adresse.class));
-    }
-
-    @Test
-    void updateAdresse_NotFound() {
-        // Arrange
-        Long adresseId = 99L;
-        Adresse adresseMaj = new Adresse();
-        adresseMaj.setVille("Inconnue");
-
-        when(adresseService.updateAdresse(eq(adresseId), any(Adresse.class))).thenThrow(ResourceNotFoundException.class);
-
-        // Act
-        ResponseEntity<Adresse> response = adresseController.updateAdresse(adresseId, adresseMaj);
-
-        // Assert
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(adresseService, times(1)).updateAdresse(eq(adresseId), any(Adresse.class));
-    }
-
-    // --- Tests Endpoint DELETE /api/adresses/{id} (deleteAdresse) ---
-
-    @Test
-    void deleteAdresse_Success() {
-        // Arrange
-        Long adresseId = 1L;
-        doNothing().when(adresseService).deleteAdresse(adresseId);
-
-        // Act
-        ResponseEntity<Void> response = adresseController.deleteAdresse(adresseId);
-
-        // Assert
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(adresseService, times(1)).deleteAdresse(adresseId);
-    }
-
-    @Test
-    void deleteAdresse_NotFound() {
-        // Arrange
-        Long adresseId = 99L;
-        doThrow(ResourceNotFoundException.class).when(adresseService).deleteAdresse(adresseId);
-
-        // Act
-        ResponseEntity<Void> response = adresseController.deleteAdresse(adresseId);
-
-        // Assert
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(adresseService, times(1)).deleteAdresse(adresseId);
-    }
-
-    @Test
-    void deleteAdresse_AdresseLieeAUneDisciplineException() {
-        // Arrange
-        Long adresseId = 1L;
-        doThrow(AdresseLieeAUneDisciplineException.class).when(adresseService).deleteAdresse(adresseId);
-
-        // Act
-        ResponseEntity<Void> response = adresseController.deleteAdresse(adresseId);
-
-        // Assert
-        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        verify(adresseService, times(1)).deleteAdresse(adresseId);
+    @Nested
+    @DisplayName("Tests pour la suppression d'adresses (DELETE /api/adresses/{id})")
+    class DeleteAdresseTests {
+
+        @Test
+        @DisplayName("Doit retourner 204 No Content si la suppression réussit")
+        void deleteAdresse_Success_ShouldReturnNoContent() {
+            // Arrange
+            doNothing().when(adresseService).deleteAdresse(adresseIdExemple);
+
+            // Act
+            ResponseEntity<Void> response = adresseController.deleteAdresse(adresseIdExemple);
+
+            // Assert
+            assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+            verify(adresseService).deleteAdresse(adresseIdExemple);
+        }
+
+        @Test
+        @DisplayName("Doit retourner 404 Not Found si l'adresse à supprimer n'existe pas")
+        void deleteAdresse_NotFound_ShouldReturnNotFound() {
+            // Arrange
+            Long idInexistant = 99L;
+            String errorMessage = "Adresse non trouvée pour suppression";
+            doThrow(new ResourceNotFoundException(errorMessage)).when(adresseService).deleteAdresse(idInexistant);
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.deleteAdresse(idInexistant));
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
+
+        @Test
+        @DisplayName("Doit retourner 409 Conflict si l'adresse est liée à une discipline")
+        void deleteAdresse_LinkedToDiscipline_ShouldReturnConflict() {
+            // Arrange
+            String errorMessage = "Adresse liée, ne peut être supprimée";
+            doThrow(new AdresseLieeAUneDisciplineException(errorMessage)).when(adresseService).deleteAdresse(adresseIdExemple);
+
+            // Act & Assert
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> adresseController.deleteAdresse(adresseIdExemple));
+            assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+            assertTrue(exception.getReason() != null && exception.getReason().contains(errorMessage));
+        }
     }
 }

@@ -1,122 +1,124 @@
 package fr.studi.bloc3jo2024.controller.offres;
 
 import fr.studi.bloc3jo2024.dto.offres.CreerOffreDto;
-import fr.studi.bloc3jo2024.dto.offres.OffreAdminDto;
 import fr.studi.bloc3jo2024.dto.offres.MettreAJourOffreDto;
-import fr.studi.bloc3jo2024.exception.ResourceNotFoundException;
+import fr.studi.bloc3jo2024.dto.offres.OffreAdminDto;
 import fr.studi.bloc3jo2024.service.offres.AdminOffreService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
 import java.util.Map;
 
 @RestController
 @RequestMapping("/admin/offres")
+@RequiredArgsConstructor
 public class AdminOffreController {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminOffreController.class);
     private final AdminOffreService adminOffreService;
 
-    public AdminOffreController(AdminOffreService adminOffreService) {
-        this.adminOffreService = adminOffreService;
-    }
-
     /**
-     * Ajoute une nouvelle offre.
+     * Ajoute une nouvelle offre. Les données de l'offre sont validées.
+     * En cas de succès, retourne l'offre créée avec un statut HTTP 201 (Created).
+     *
      * @param creerOffreDto DTO contenant les informations de la nouvelle offre.
-     * @return ResponseEntity contenant l'OffreAdminDto de l'offre créée et le statut HTTP 201 CREATED,
-     * ou le statut HTTP 400 BAD_REQUEST en cas d'erreur de validation ou de données.
+     * @return ResponseEntity contenant l'{@link OffreAdminDto} de l'offre créée.
      */
     @PostMapping
     public ResponseEntity<OffreAdminDto> ajouterOffre(@Valid @RequestBody CreerOffreDto creerOffreDto) {
-        try {
-            OffreAdminDto nouvelleOffre = adminOffreService.ajouterOffre(creerOffreDto);
-            return new ResponseEntity<>(nouvelleOffre, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+        log.info("Tentative d'ajout d'une nouvelle offre : {}", creerOffreDto.getTypeOffre());
+        OffreAdminDto nouvelleOffre = adminOffreService.ajouterOffre(creerOffreDto);
+        log.info("Nouvelle offre ajoutée avec ID : {}", nouvelleOffre.getId());
+        return new ResponseEntity<>(nouvelleOffre, HttpStatus.CREATED);
     }
 
     /**
-     * Récupère une offre par son ID.
+     * Récupère une offre spécifique par son ID pour l'administration.
+     *
      * @param id L'ID de l'offre à récupérer.
-     * @return ResponseEntity contenant l'OffreAdminDto de l'offre trouvée et le statut HTTP 200 OK,
-     * ou le statut HTTP 404 NOT_FOUND si l'offre n'existe pas.
+     * @return ResponseEntity contenant l'{@link OffreAdminDto} de l'offre.
      */
     @GetMapping("/{id}")
     public ResponseEntity<OffreAdminDto> obtenirOffreParId(@PathVariable Long id) {
-        try {
-            OffreAdminDto offre = adminOffreService.obtenirOffreParId(id);
-            return ResponseEntity.ok(offre);
-        } catch (ResourceNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        log.info("Tentative de récupération de l'offre avec ID : {}", id);
+        OffreAdminDto offre = adminOffreService.obtenirOffreParId(id);
+        return ResponseEntity.ok(offre);
     }
 
     /**
-     * Met à jour une offre existante.
+     * Met à jour une offre existante. Les données de mise à jour sont validées.
+     *
      * @param id L'ID de l'offre à mettre à jour.
      * @param mettreAJourOffreDto DTO contenant les nouvelles informations de l'offre.
-     * @return ResponseEntity contenant l'OffreAdminDto de l'offre mise à jour et le statut HTTP 200 OK,
-     * ou le statut HTTP 404 NOT_FOUND si l'offre n'existe pas,
-     * ou le statut HTTP 400 BAD_REQUEST en cas d'erreur de validation ou de données.
+     * @return ResponseEntity contenant l'{@link OffreAdminDto} de l'offre mise à jour.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<OffreAdminDto> mettreAJourOffre(@PathVariable Long id, @Valid @RequestBody MettreAJourOffreDto mettreAJourOffreDto) {
-        try {
-            OffreAdminDto offreMiseAJour = adminOffreService.mettreAJourOffre(id, mettreAJourOffreDto);
-            return ResponseEntity.ok(offreMiseAJour);
-        } catch (ResourceNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+    public ResponseEntity<OffreAdminDto> mettreAJourOffre(
+            @PathVariable Long id,
+            @Valid @RequestBody MettreAJourOffreDto mettreAJourOffreDto) {
+        log.info("Tentative de mise à jour de l'offre avec ID : {}", id);
+        OffreAdminDto offreMiseAJour = adminOffreService.mettreAJourOffre(id, mettreAJourOffreDto);
+        log.info("Offre ID : {} mise à jour avec succès.", id);
+        return ResponseEntity.ok(offreMiseAJour);
     }
 
     /**
-     * Supprime une offre.
+     * Supprime une offre par son ID.
+     *
      * @param id L'ID de l'offre à supprimer.
-     * @return ResponseEntity avec le statut HTTP 204 NO_CONTENT en cas de succès,
-     * ou le statut HTTP 404 NOT_FOUND si l'offre n'existe pas.
+     * @return ResponseEntity avec un statut HTTP 204 (No Content) si la suppression réussit.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimerOffre(@PathVariable Long id) {
-        try {
-            adminOffreService.supprimerOffre(id);
-            return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        log.info("Tentative de suppression de l'offre avec ID : {}", id);
+        adminOffreService.supprimerOffre(id);
+        log.info("Offre ID : {} supprimée avec succès.", id);
+        return ResponseEntity.noContent().build();
     }
 
     /**
-     * Récupère toutes les offres existantes.
-     * @return ResponseEntity contenant une liste d'OffreAdminDto et le statut HTTP 200 OK.
+     * Récupère toutes les offres (pour l'administration) avec pagination.
+     * Les paramètres de pagination (page, size, sort) peuvent être passés dans l'URL.
+     * Exemple: /admin/offres?page=0&size=5&sort=prix,desc
+     *
+     * @param pageable Objet de pagination injecté par Spring.
+     * @return ResponseEntity contenant une {@link Page} d'{@link OffreAdminDto}.
      */
     @GetMapping
-    public ResponseEntity<List<OffreAdminDto>> obtenirToutesLesOffres() {
-        List<OffreAdminDto> toutesLesOffres = adminOffreService.obtenirToutesLesOffres();
+    public ResponseEntity<Page<OffreAdminDto>> obtenirToutesLesOffres(Pageable pageable) {
+        log.info("Récupération de toutes les offres (admin) avec pagination : {}", pageable);
+        Page<OffreAdminDto> toutesLesOffres = adminOffreService.obtenirToutesLesOffres(pageable);
         return ResponseEntity.ok(toutesLesOffres);
     }
 
     /**
-     * Récupère le nombre de ventes par offre.
-     * @return ResponseEntity contenant une map avec l'ID de l'offre comme clé et le nombre de ventes comme valeur,
-     * et le statut HTTP 200 OK.
+     * Récupère des statistiques sur le nombre de ventes par offre.
+     *
+     * @return ResponseEntity contenant une Map avec l'ID de l'offre en clé et le nombre de ventes en valeur.
      */
-    @GetMapping("/ventes")
+    @GetMapping("/ventes/par-offre")
     public ResponseEntity<Map<Long, Long>> getVentesParOffre() {
-        return ResponseEntity.ok(adminOffreService.getNombreDeVentesParOffre());
+        log.info("Récupération des statistiques de ventes par offre.");
+        Map<Long, Long> ventes = adminOffreService.getNombreDeVentesParOffre();
+        return ResponseEntity.ok(ventes);
     }
 
     /**
-     * Récupère le nombre de ventes par type d'offre.
-     * @return ResponseEntity contenant une map avec le type d'offre comme clé et le nombre de ventes comme valeur,
-     * et le statut HTTP 200 OK.
+     * Récupère des statistiques sur le nombre de ventes groupées par type d'offre.
+     *
+     * @return ResponseEntity contenant une Map avec le type d'offre (String) en clé et le nombre de ventes en valeur.
      */
     @GetMapping("/ventes/par-type")
     public ResponseEntity<Map<String, Long>> getVentesParType() {
-        return ResponseEntity.ok(adminOffreService.getVentesParTypeOffre());
+        log.info("Récupération des statistiques de ventes par type d'offre.");
+        Map<String, Long> ventesParType = adminOffreService.getVentesParTypeOffre();
+        return ResponseEntity.ok(ventesParType);
     }
 }

@@ -56,7 +56,6 @@ public class PaiementController {
     }
 
     @PostMapping("/{idPaiement}/simuler")
-    // *** MODIFICATION : Changer le type de retour de l'endpoint ***
     public ResponseEntity<PaiementSimulationResultDto> simulerResultatPaiement(
             @PathVariable Long idPaiement,
             @RequestParam boolean reussi,
@@ -64,7 +63,6 @@ public class PaiementController {
         try {
             // Le service retourne maintenant le nouveau DTO
             PaiementSimulationResultDto resultDto = paiementService.simulerResultatPaiement(idPaiement, reussi, details != null ? details : "");
-            // *** MODIFICATION : Retourner le nouveau DTO ***
             return ResponseEntity.ok(resultDto);
         } catch (ResourceNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());

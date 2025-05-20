@@ -198,5 +198,5 @@ $RECYCLE.BIN/
 # point sécurité données
 .env
 
-# point sécurité données
-application-dev.yml
+# logs
+.gz

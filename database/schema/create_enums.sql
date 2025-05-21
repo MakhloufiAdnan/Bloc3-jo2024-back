@@ -55,3 +55,10 @@ DO $$
             CREATE TYPE methode_payement_enum AS ENUM ('CARTE_BANCAIRE', 'PAYPAL', 'STRIPE');
         END IF;
     END$$;
+
+DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'statut_paiement_type') THEN
+            CREATE TYPE statut_paiement_type AS ENUM ('EN_ATTENTE', 'ACCEPTE', 'REFUSE');
+        END IF;
+    END$$;

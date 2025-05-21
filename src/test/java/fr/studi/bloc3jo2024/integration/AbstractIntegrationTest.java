@@ -3,6 +3,7 @@ package fr.studi.bloc3jo2024.integration;
 import org.junit.jupiter.api.AfterAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -21,6 +22,7 @@ import java.time.Duration;
 import java.util.Properties;
 
 @Testcontainers
+@Profile("dev")
 public abstract class AbstractIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractIntegrationTest.class);

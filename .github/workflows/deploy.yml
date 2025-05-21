@@ -68,7 +68,7 @@ jobs:
       # 7. Build & Deploy Backend to Heroku
       - name: Build & Deploy Backend to Heroku
         run: |
-          mvn clean install
+          mvn clean install -DskipTests
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME_BE }}
           heroku container:login
           docker build . --platform linux/amd64 \

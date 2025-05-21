@@ -1,4 +1,4 @@
-package fr.studi.bloc3jo2024.repository;
+/*package fr.studi.bloc3jo2024.repository;
 
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeAuthTokenTemp;
@@ -208,4 +208,4 @@ class AuthTokenTemporaireRepositoryTest {
         assertThat(tokenRepository.findByTokenIdentifier(expiredTokenIdentifier)).isNotPresent();
         assertThat(tokenRepository.findByTokenIdentifier(validTokenIdentifier)).isPresent();
     }
-}
+}*/

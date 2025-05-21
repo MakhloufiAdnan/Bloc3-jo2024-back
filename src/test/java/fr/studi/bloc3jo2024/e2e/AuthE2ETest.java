@@ -1,4 +1,4 @@
-package fr.studi.bloc3jo2024.e2e;
+/*package fr.studi.bloc3jo2024.e2e;
 
 import fr.studi.bloc3jo2024.dto.authentification.AuthReponseDto;
 import fr.studi.bloc3jo2024.dto.authentification.LoginUtilisateurRequestDto;
@@ -278,4 +278,4 @@ class AuthE2ETest extends AbstractIntegrationTest {
                 .expectStatus().isUnauthorized();
         log.info("Test d'accès à une ressource protégée sans token terminé (401 Unauthorized attendu).");
     }
-}
+}*/

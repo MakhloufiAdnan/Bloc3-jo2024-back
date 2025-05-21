@@ -37,12 +37,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
-/**
- * Tests d'intégration MVC pour {@link fr.studi.bloc3jo2024.controller.AdresseController}.
- * Ces tests utilisent {@link MockMvc} pour simuler les requêtes HTTP et vérifier les réponses
- * sans démarrer un serveur complet. Le service {@link AdresseService} est moqué.
- * Le {@link GlobalExceptionHandler} est importé pour tester la gestion des exceptions.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser // Simule un utilisateur authentifié pour les tests de sécurité

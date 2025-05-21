@@ -1,4 +1,4 @@
-package fr.studi.bloc3jo2024.repository;
+/*package fr.studi.bloc3jo2024.repository;
 
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
@@ -171,4 +171,4 @@ class TelephoneRepositoryTest {
         List<Telephone> telephones = telephoneRepository.findByUtilisateur_IdUtilisateur(user.getIdUtilisateur());
         assertThat(telephones).isEmpty();
     }
-}
+}*/

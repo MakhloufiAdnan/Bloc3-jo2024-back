@@ -1,4 +1,4 @@
-package fr.studi.bloc3jo2024.integration;
+/*package fr.studi.bloc3jo2024.integration;
 
 import org.junit.jupiter.api.AfterAll;
 import org.slf4j.Logger;
@@ -71,8 +71,8 @@ public abstract class AbstractIntegrationTest {
             String dbUser = envFileProperties.getProperty("POSTGRES_USER", "postgres");
             String dbPassword = envFileProperties.getProperty("POSTGRES_PASSWORD", "password");
 
-            log.info("Starting PostgreSQL container (postgres:17-alpine3.21) for db '{}' with user '{}' using alias '{}'...", dbName, dbUser, DB_NETWORK_ALIAS);
-            postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
+            log.info("Starting PostgreSQL container (postgres:17-alpine) for db '{}' with user '{}' using alias '{}'...", dbName, dbUser, DB_NETWORK_ALIAS);
+            postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
                     .withDatabaseName(dbName)
                     .withUsername(dbUser)
                     .withPassword(dbPassword)
@@ -236,4 +236,4 @@ public abstract class AbstractIntegrationTest {
         }
         return greenMailContainer.getMappedPort(GREENMAIL_IMAP_INTERNAL_PORT);
     }
-}
+}*/

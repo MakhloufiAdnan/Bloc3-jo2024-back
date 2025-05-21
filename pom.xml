@@ -200,7 +200,10 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
-
+			<plugin>
+				<groupId>org.graalvm.buildtools</groupId>
+				<artifactId>native-maven-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -213,7 +216,6 @@
 					</excludes>
 				</configuration>
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
@@ -242,7 +244,9 @@
 					</execution>
 				</executions>
 				<configuration>
-					<argLine>${failsafeArgLine}</argLine>
+					<argLine>
+						${failsafeArgLine}
+					</argLine>
 					<includes>
 						<include>**/*IT.java</include>
 						<include>**/*E2ETest.java</include>

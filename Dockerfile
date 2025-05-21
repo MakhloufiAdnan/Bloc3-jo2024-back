@@ -1,6 +1,10 @@
 # Étape 1 : Build de l'application avec Maven
 FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
 
+# Variable d’environnement pour définir le fuseau horaire sur UTC.
+ENV TZ=Etc/UTC \
+    JAVA_OPTS="-Duser.timezone=UTC"
+
 # Définition du répertoire de travail dans le conteneur de build
 WORKDIR /app
 
@@ -24,9 +28,6 @@ COPY --from=build /app/target/*.war app.war
 
 # Exposition du port sur lequel l'application Spring Boot écoute à l'intérieur du conteneur.
 EXPOSE 8080
-
-# Options de la JVM pour l'exécution
-ENV JAVA_OPTS="-Xmx350m -Xss512k -Duser.timezone=UTC"
 
 # Commande pour démarrer l'application lorsque le conteneur est lancé.
 ENTRYPOINT ["java", "-jar", "/app/app.war"]

@@ -140,6 +140,9 @@ public class WebSecurityConfig {
                         // Toutes les routes sous /api/admin/ (non couvertes par la règle permitAll précédente)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+                        // Autorise les requêtes vers le favicon sans authentification
+                        .requestMatchers("/static/favicon.ico").permitAll()
+
                         // Toutes les autres requêtes (celles non matchées précédemment) nécessitent une authentification.
                         .anyRequest().authenticated()
                 )

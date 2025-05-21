@@ -6,44 +6,20 @@ import fr.studi.bloc3jo2024.entity.enums.TypeTel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class TelephoneRepositoryTest {
-
-    @SuppressWarnings("resource")
-    @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
-            .withDatabaseName("test_tel_db_" + UUID.randomUUID().toString().substring(0,8))
-            .withUsername("test_user_tel")
-            .withPassword("test_pass_tel");
-
-    @DynamicPropertySource
-    static void databaseProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
-        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
-        registry.add("spring.sql.init.mode", () -> "always");
-    }
 
     @Autowired
     private TelephoneRepository telephoneRepository;

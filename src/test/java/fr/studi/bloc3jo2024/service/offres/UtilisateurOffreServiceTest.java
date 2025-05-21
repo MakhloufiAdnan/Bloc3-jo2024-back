@@ -31,8 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never; // Importation pour Mockito.never()
-import static org.mockito.Mockito.times; // Importation pour Mockito.times()
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,7 +45,7 @@ class UtilisateurOffreServiceTest {
     @Mock
     private OffreRepository offreRepository;
 
-    @Spy // ModelMapper est espionné pour utiliser sa vraie logique de mapping
+    @Spy
     private ModelMapper modelMapper = new ModelMapper();
 
     @InjectMocks
@@ -54,14 +54,14 @@ class UtilisateurOffreServiceTest {
     private Offre offreDisponible1;
     private Offre offreDisponible2;
     private Offre offreNonDisponible;
-    private Offre offreExpireeAvecStatutDisponible; // Pour tester la logique d'expiration effective
+    private Offre offreExpireeAvecStatutDisponible;
     private Discipline disciplineTest;
     private LocalDateTime now;
 
     @BeforeEach
     void setUp() {
         now = LocalDateTime.now();
-        // assertNotNull(modelMapper); // Optionnel, pour "utiliser" le spy si l'IDE se plaint
+        // assert
 
         disciplineTest = Discipline.builder()
                 .idDiscipline(1L)
@@ -89,7 +89,6 @@ class UtilisateurOffreServiceTest {
                 .capacite(2)
                 .statutOffre(StatutOffre.DISPONIBLE)
                 .discipline(disciplineTest)
-                // Pas de dateExpiration propre, devrait utiliser celle de la discipline
                 .featured(true)
                 .build();
 
@@ -136,7 +135,7 @@ class UtilisateurOffreServiceTest {
         assertThat(resultPageDto.getContent()).hasSize(2);
         assertEquals(offresList.size(), resultPageDto.getTotalElements());
 
-        OffreDto dto1 = resultPageDto.getContent().get(0);
+        OffreDto dto1 = resultPageDto.getContent().getFirst();
         assertEquals(offreDisponible1.getIdOffre(), dto1.getId());
         assertEquals(offreDisponible1.getDiscipline().getIdDiscipline(), dto1.getIdDiscipline());
         assertEquals(offreDisponible1.getEffectiveDateExpiration(), dto1.getDateExpiration());

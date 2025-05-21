@@ -14,7 +14,7 @@ spring:
   jpa:
     hibernate:
       # TEST_SPRING_JPA_HIBERNATE_DDL_AUTO est fourni par AbstractIntegrationTest.java
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update} # 'update' ou 'validate' pour dev local
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update} # 'update'
     show-sql: true
     open-in-view: false # La valeur par défaut est true
     properties:

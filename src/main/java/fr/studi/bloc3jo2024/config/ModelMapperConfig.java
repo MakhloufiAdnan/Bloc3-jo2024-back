@@ -36,6 +36,8 @@ public class ModelMapperConfig {
         return modelMapper;
     }
 
+
+
     /**
      * Helper pour extraire l'ID de l'Offre d'un ContenuPanier, gère les cas null.
      * Supposant que ContenuPanier.getOffre() retourne une entité Offre avec getIdOffre().

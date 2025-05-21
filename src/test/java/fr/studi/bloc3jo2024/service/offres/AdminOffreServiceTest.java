@@ -61,13 +61,13 @@ class AdminOffreServiceTest {
     private Offre offreAutre;
     private CreerOffreDto creerOffreDto;
     private MettreAJourOffreDto mettreAJourOffreDto;
-    private LocalDateTime fixedTimeNow; // Pour les dates relatives à "maintenant"
+    private LocalDateTime fixedTimeNow;
     private LocalDateTime specificDateExpirationForUpdate;
 
 
     @BeforeEach
     void setUp() {
-        assertNotNull(modelMapper); // Pour "utiliser" le spy si l'IDE se plaint
+        assertNotNull(modelMapper);
 
         fixedTimeNow = LocalDateTime.of(2025, 8, 1, 12, 0, 0); // Une date fixe pour "maintenant"
         specificDateExpirationForUpdate = LocalDateTime.of(2025, 10, 10, 12, 0, 0);
@@ -181,24 +181,11 @@ class AdminOffreServiceTest {
     void mettreAJourOffre_ValidInput_ReturnsOffreAdminDto() {
         // Arrange
         Long offreIdAMettreAJour = offreExistante.getIdOffre();
-        // L'offre existante a sa propre date d'expiration: fixedTimeNow.plusDays(30)
-        // Sa discipline a une date: fixedTimeNow.plusMonths(2)
-        // Donc, sa date effective d'expiration est fixedTimeNow.plusDays(30)
-
-        // mettreAJourOffreDto a une date d'expiration: specificDateExpirationForUpdate (2025-10-10T12:00)
-        // La discipline reste la même (expiration fixedTimeNow.plusMonths(2) ~ 2025-10-01T12:00)
 
         when(offreRepository.findById(offreIdAMettreAJour)).thenReturn(Optional.of(offreExistante));
         when(disciplineRepository.findById(mettreAJourOffreDto.getIdDiscipline())).thenReturn(Optional.of(disciplineExistante));
         when(offreRepository.save(any(Offre.class))).thenAnswer(invocation -> {
-            // Simuler que l'entité passée à save est celle qui est retournée
-            // et que modelMapper.map(dto, entite) a déjà eu lieu dans le service.
             Offre offreModifiee = invocation.getArgument(0);
-            // Appliquer les changements du DTO à l'offre pour simuler l'état après mapping
-            // Cette simulation est délicate car le spy modelMapper est déjà en jeu.
-            // Le plus simple est de s'assurer que l'objet retourné par save() a les bonnes valeurs
-            // qui seront ensuite utilisées pour le mapping vers OffreAdminDto.
-            // Ici, on assume que offreExistante est modifiée en place par le service.
             offreExistante.setTypeOffre(mettreAJourOffreDto.getTypeOffre());
             offreExistante.setQuantite(mettreAJourOffreDto.getQuantite());
             offreExistante.setPrix(mettreAJourOffreDto.getPrix());

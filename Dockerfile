@@ -29,6 +29,9 @@ COPY --from=build /app/target/*.war app.war
 # Exposition du port sur lequel l'application Spring Boot écoute à l'intérieur du conteneur.
 EXPOSE 8080
 
+# Options de la JVM pour l'exécution
+ENV JAVA_OPTS="-Xmx350m -Xss512k -Duser.timezone=UTC"
+
 # Commande pour démarrer l'application lorsque le conteneur est lancé.
 ENTRYPOINT ["java", "-jar", "/app/app.war"]
 

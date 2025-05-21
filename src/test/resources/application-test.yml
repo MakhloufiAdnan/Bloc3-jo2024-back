@@ -10,7 +10,7 @@ spring:
   # Configuration de la base de données H2 en mémoire pour les tests
   # H2 est plus rapide et ne nécessite pas de serveur externe pour la plupart des tests.
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     driverClassName: org.h2.Driver
     username: sa # Utilisateur par défaut pour H2
     password: # Mot de passe vide par défaut pour H2
@@ -22,7 +22,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop # 'create-drop' crée le schéma au début de chaque contexte de test et le supprime à la fin.
-
+    defer-datasource-initialization: true
     show-sql: true # Utile pour voir les requêtes SQL générées pendant les tests.
     open-in-view: false
     properties:

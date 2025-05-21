@@ -33,7 +33,10 @@ public abstract class AbstractIntegrationTest {
     private static final String BACKEND_NETWORK_ALIAS = "backend-e2e-service";
     private static final int BACKEND_INTERNAL_PORT = 8080;
     private static final String BACKEND_SPRING_PROFILE = "dev";
-    private static final String ACTUATOR_HEALTH_ENDPOINT_PATH = "/management/health";
+    /**
+     * Chemin de l'endpoint utilisé pour vérifier que l'application backend est prête.
+     */
+    private static final String APP_READY_ENDPOINT_PATH = "/app-status"; // Modifié
 
     private static final String DB_NETWORK_ALIAS = "db-e2e-service";
 
@@ -111,7 +114,7 @@ public abstract class AbstractIntegrationTest {
                     .withEnv("SPRING_DATASOURCE_PASSWORD", postgresDBContainer.getPassword())
                     .withEnv("SPRING_JPA_HIBERNATE_DDL_AUTO", "create-drop")
                     .withEnv("SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION", "true")
-                    .withEnv("SPRING_SQL_INIT_MODE", "always") // Assure l'exécution de data.sql
+                    .withEnv("SPRING_SQL_INIT_MODE", "always")
                     .withEnv("SPRING_MAIL_HOST", "host.docker.internal")
                     .withEnv("SPRING_MAIL_PORT", String.valueOf(greenMailContainer.getMappedPort(GREENMAIL_SMTP_INTERNAL_PORT)))
                     .withEnv("SPRING_MAIL_USERNAME", envFileProperties.getProperty("EMAIL_USERNAME", ""))
@@ -128,7 +131,7 @@ public abstract class AbstractIntegrationTest {
                     .withEnv("ID_GOOGLE", envFileProperties.getProperty("ID_GOOGLE", ""))
                     .withEnv("MDP_GOOGLE", envFileProperties.getProperty("MDP_GOOGLE", ""))
                     .withEnv("PORT", String.valueOf(BACKEND_INTERNAL_PORT))
-                    .waitingFor(Wait.forHttp(ACTUATOR_HEALTH_ENDPOINT_PATH)
+                    .waitingFor(Wait.forHttp(APP_READY_ENDPOINT_PATH) // Modifié ici
                             .forPort(BACKEND_INTERNAL_PORT)
                             .forStatusCode(200)
                             .withStartupTimeout(Duration.ofMinutes(5)))
@@ -201,7 +204,7 @@ public abstract class AbstractIntegrationTest {
             envFileProperties.setProperty("POSTGRES_USER", "user_e2e_default");
             envFileProperties.setProperty("POSTGRES_PASSWORD", "pass_e2e_default");
             envFileProperties.setProperty("JWT_EXPIRATION", "3600000");
-            // Ajoutez d'autres valeurs par défaut nécessaires ici
+
             return;
         }
         log.info("Loading E2E environment properties from .env file: {}", envFile.getAbsolutePath());

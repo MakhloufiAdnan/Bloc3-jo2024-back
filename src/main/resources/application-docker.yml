@@ -76,20 +76,3 @@ logging:
     fr.studi: INFO            # Logs de l'application en INFO, sauf si un module spécifique nécessite DEBUG temporairement.
     org.springframework: WARN
     org.hibernate: WARN
-
-# Configuration Actuator pour la production
-management:
-  health:
-    mail:
-      enabled: true # Activer le health check pour le mail
-  endpoints:
-    web:
-      exposure:
-        include: "health,info,prometheus" # Exposer uniquement les endpoints Actuator nécessaires et sécurisés.
-      base-path: /management              # Changer le chemin de base pour Actuator (sécurité par obscurcissement partiel)
-  endpoint:
-    health:
-      show-details: when_authorized # Afficher les détails uniquement aux utilisateurs autorisés.
-      # Probes de vivacité et de disponibilité pour Kubernetes/Cloud
-      probes:
-        enabled: true

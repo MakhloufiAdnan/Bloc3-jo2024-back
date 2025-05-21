@@ -14,7 +14,7 @@ COPY pom.xml .
 # Copie du reste du code source de l'application
 COPY src ./src
 
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -Pdocker
 
 # Étape 2 : Création de l'image finale d'exécution
 # Utilisation d'une image JRE Alpine légère pour réduire la taille de l'image finale.

@@ -1,4 +1,4 @@
-/*package fr.studi.bloc3jo2024.integration;
+package fr.studi.bloc3jo2024.integration;
 
 import org.junit.jupiter.api.AfterAll;
 import org.slf4j.Logger;
@@ -236,4 +236,4 @@ public abstract class AbstractIntegrationTest {
         }
         return greenMailContainer.getMappedPort(GREENMAIL_IMAP_INTERNAL_PORT);
     }
-}*/
+}

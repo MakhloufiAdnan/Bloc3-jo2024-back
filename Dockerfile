@@ -30,5 +30,5 @@ COPY --from=build /app/target/*.war app.war
 EXPOSE 8080
 
 # Commande pour démarrer l'application lorsque le conteneur est lancé.
-ENTRYPOINT ["java", "-jar", "/app/app.war", "--spring.profiles.active=docker"]
+ENTRYPOINT ["java", "-Xms256m", "-Xmx350m", "-XX:MaxMetaspaceSize=100m", "-Xss512k", "-jar", "/app/app.war"]
 

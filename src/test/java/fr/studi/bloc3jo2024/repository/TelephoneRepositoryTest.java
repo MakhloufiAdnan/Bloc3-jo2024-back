@@ -1,5 +1,6 @@
-/*package fr.studi.bloc3jo2024.repository;
+package fr.studi.bloc3jo2024.repository;
 
+import fr.studi.bloc3jo2024.integration.AbstractPostgresIntegrationTest;
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
 import fr.studi.bloc3jo2024.entity.enums.TypeTel;
@@ -9,11 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,27 +19,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class TelephoneRepositoryTest {
-
-    @SuppressWarnings("resource")
-    @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
-            .withDatabaseName("test_tel_db_" + UUID.randomUUID().toString().substring(0,8))
-            .withUsername("test_user_tel")
-            .withPassword("test_pass_tel");
-
-    @DynamicPropertySource
-    static void databaseProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
-        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
-        registry.add("spring.sql.init.mode", () -> "always");
-    }
+class TelephoneRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private TelephoneRepository telephoneRepository;
@@ -53,17 +31,29 @@ class TelephoneRepositoryTest {
 
     private Role userRoleEntity;
     private Adresse userAdresse;
+    private Pays paysFrance;
 
+    /**
+     * Nettoie les données et prépare les entités de base pour les tests.
+     */
     @BeforeEach
     void setUp() {
+        // --- Nettoyage des données ---
+        entityManager.getEntityManager().createQuery("DELETE FROM Telephone").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Utilisateur").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Adresse").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Pays").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Role").executeUpdate();
+        entityManager.flush();
+
+        // --- Préparation des données de base ---
         userRoleEntity = entityManager.getEntityManager()
                 .createQuery("SELECT r FROM Role r WHERE r.typeRole = :type", Role.class)
                 .setParameter("type", TypeRole.USER)
                 .getResultStream().findFirst()
                 .orElseGet(() -> entityManager.persist(Role.builder().typeRole(TypeRole.USER).build()));
 
-        Pays francePays;
-        francePays = entityManager.getEntityManager()
+        paysFrance = entityManager.getEntityManager()
                 .createQuery("SELECT p FROM Pays p WHERE p.nomPays = :nom", Pays.class)
                 .setParameter("nom", "France")
                 .getResultStream().findFirst().orElseGet(() -> {
@@ -77,15 +67,20 @@ class TelephoneRepositoryTest {
                 .numeroRue(33)
                 .ville("Lyon")
                 .codePostal("69000")
-                .pays(francePays)
+                .pays(paysFrance)
                 .build();
         entityManager.persist(userAdresse);
         entityManager.flush();
     }
 
+    /**
+     * Méthode d'aide pour créer et persister un Utilisateur de test.
+     * @param emailSuffix Un suffixe pour rendre l'email unique.
+     * @return L'entité Utilisateur persistée.
+     */
     private Utilisateur createUser(String emailSuffix) {
         Utilisateur user = Utilisateur.builder()
-                .email("teluser_" + emailSuffix + "@jo.fr")
+                .email("teluser_" + emailSuffix + "_" + UUID.randomUUID().toString().substring(0,4) + "@jo.fr") // Rendre l'email encore plus unique
                 .nom("TelNom")
                 .prenom("TelPrenom")
                 .dateNaissance(LocalDate.of(1985, 3, 10))
@@ -171,4 +166,4 @@ class TelephoneRepositoryTest {
         List<Telephone> telephones = telephoneRepository.findByUtilisateur_IdUtilisateur(user.getIdUtilisateur());
         assertThat(telephones).isEmpty();
     }
-}*/
+}

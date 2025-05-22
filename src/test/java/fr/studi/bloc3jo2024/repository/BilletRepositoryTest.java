@@ -1,5 +1,6 @@
-/*package fr.studi.bloc3jo2024.repository;
+package fr.studi.bloc3jo2024.repository;
 
+import fr.studi.bloc3jo2024.integration.AbstractPostgresIntegrationTest;
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
@@ -10,11 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,30 +19,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class BilletRepositoryTest {
-
-    // L'annotation @Container avec un champ static assure que Testcontainers gère
-    // le cycle de vie (start/stop) du conteneur pour toutes les méthodes de test de cette classe.
-    // L'avertissement IDE sur "try-with-resources" peut être ignoré ici.
-    @SuppressWarnings("resource") // Optionnel, pour supprimer l'avertissement IDE si persistant
-    @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine3.21")
-            .withDatabaseName("test_billet_db_" + UUID.randomUUID().toString().substring(0,8))
-            .withUsername("test_user_billet")
-            .withPassword("test_pass_billet");
-
-    @DynamicPropertySource
-    static void databaseProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
-        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
-        registry.add("spring.sql.init.mode", () -> "always");
-    }
+class BilletRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private BilletRepository billetRepository;
@@ -56,10 +31,18 @@ class BilletRepositoryTest {
 
     private Utilisateur testUser;
     private Offre testOffre;
-
-
     @BeforeEach
     void setUpTestData() {
+        // --- Nettoyage des données pour garantir l'isolation des tests ---
+        entityManager.getEntityManager().createNativeQuery("DELETE FROM billet_offre").executeUpdate(); // FIX: Utilisation d'une requête SQL native
+        entityManager.getEntityManager().createQuery("DELETE FROM Billet").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Offre").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Discipline").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Utilisateur").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Adresse").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Pays").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Role").executeUpdate();
+        entityManager.flush(); // Assure que les suppressions sont commitées
 
         Role userRoleEntity;
         userRoleEntity = entityManager.getEntityManager()
@@ -119,8 +102,8 @@ class BilletRepositoryTest {
                 .build();
         entityManager.persist(disciplineEntity);
 
-        // Créer Offre - Supposant que votre entité Offre a un constructeur ou des setters
-        testOffre = new Offre(); // Si @Builder n'est pas disponible
+        // Créer Offre
+        testOffre = new Offre();
         testOffre.setTypeOffre(TypeOffre.SOLO);
         testOffre.setPrix(java.math.BigDecimal.valueOf(60.00));
         testOffre.setQuantite(10);
@@ -133,8 +116,7 @@ class BilletRepositoryTest {
 
     @Test
     void testBilletCreationAvecQRCode() {
-        // Créer Billet - Supposant que votre entité Billet a un constructeur ou des setters
-        Billet billet = new Billet(); // Si @Builder n'est pas disponible
+        Billet billet = new Billet();
         billet.setCleFinaleBillet("BILLET-UNIQUE-" + UUID.randomUUID());
         billet.setQrCodeImage("fake-qrcode-image-billet-test".getBytes());
         billet.setUtilisateur(testUser);
@@ -154,4 +136,4 @@ class BilletRepositoryTest {
                     assertThat(retrievedBillet.getQrCodeImage()).isEqualTo("fake-qrcode-image-billet-test".getBytes());
                 });
     }
-}*/
+}

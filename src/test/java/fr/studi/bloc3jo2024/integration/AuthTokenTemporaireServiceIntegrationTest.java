@@ -1,5 +1,6 @@
 /*package fr.studi.bloc3jo2024.integration;
 
+import fr.studi.bloc3jo2024.integration.AbstractPostgresIntegrationTest;
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeAuthTokenTemp;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
@@ -16,15 +17,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -34,36 +26,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Testcontainers
 @SpringBootTest
-@ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Transactional
-class AuthTokenTemporaireServiceIntegrationTest {
+@jakarta.transaction.Transactional
+class AuthTokenTemporaireServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(AuthTokenTemporaireServiceIntegrationTest.class);
-
-    @SuppressWarnings("resource")
-    @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
-            .withDatabaseName("test_service_db_" + UUID.randomUUID().toString().substring(0, 8))
-            .withUsername("test_user_service")
-            .withPassword("test_pass_service")
-            .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("postgres-service-test")).withPrefix("DB-SERVICE-TEST"));
-
-    @DynamicPropertySource
-    static void databaseProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
-        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
-        registry.add("spring.sql.init.mode", () -> "always");
-
-        log.info("PostgreSQL Testcontainer is running: {}", postgresDBContainer.isRunning());
-        log.info("Dynamic properties registered for Testcontainer: URL={}, User={}",
-                postgresDBContainer.getJdbcUrl(), postgresDBContainer.getUsername());
-    }
 
     @Autowired
     private AuthTokenTemporaireService tokenService;
@@ -87,14 +55,21 @@ class AuthTokenTemporaireServiceIntegrationTest {
     private Environment env;
 
     private Utilisateur testUtilisateur;
-
     @BeforeEach
     void setUp() {
 
+        tokenRepository.deleteAllInBatch(); // Supprime tous les tokens temporaires
+        utilisateurRepository.deleteAllInBatch(); // Supprime tous les utilisateurs
+        adresseRepository.deleteAllInBatch(); // Supprime toutes les adresses
+        paysRepository.deleteAllInBatch(); // Supprime tous les pays
+        roleRepository.deleteAllInBatch(); // Supprime tous les rôles
+
         log.info("Spring Environment - Datasource URL from @BeforeEach: {}", env.getProperty("spring.datasource.url"));
         log.info("Spring Environment - Datasource Username from @BeforeEach: {}", env.getProperty("spring.datasource.username"));
-        assertTrue(postgresDBContainer.isRunning(), "PostgreSQL container should be running before setup.");
-        assertEquals(postgresDBContainer.getJdbcUrl(), env.getProperty("spring.datasource.url"), "Spring datasource URL should match Testcontainer URL.");
+        // Vérifie que le conteneur PostgreSQL est bien démarré et que Spring y est connecté.
+        // Accès au conteneur via le nom de la classe de base.
+        assertTrue(AbstractPostgresIntegrationTest.postgresDBContainer.isRunning(), "PostgreSQL container should be running before setup.");
+        assertEquals(AbstractPostgresIntegrationTest.postgresDBContainer.getJdbcUrl(), env.getProperty("spring.datasource.url"), "Spring datasource URL should match Testcontainer URL.");
 
         Role userRole = roleRepository.findByTypeRole(TypeRole.USER)
                 .orElseGet(() -> roleRepository.saveAndFlush(Role.builder().typeRole(TypeRole.USER).build()));
@@ -126,7 +101,6 @@ class AuthTokenTemporaireServiceIntegrationTest {
 
     @Test
     void contextLoads() {
-
         assertNotNull(applicationContext, "ApplicationContext should not be null.");
         log.info("ApplicationContext loaded successfully!");
     }

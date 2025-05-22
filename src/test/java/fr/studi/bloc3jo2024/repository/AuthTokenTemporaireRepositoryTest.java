@@ -1,5 +1,6 @@
-/*package fr.studi.bloc3jo2024.repository;
+package fr.studi.bloc3jo2024.repository;
 
+import fr.studi.bloc3jo2024.integration.AbstractPostgresIntegrationTest;
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeAuthTokenTemp;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
@@ -9,11 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,39 +18,34 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class AuthTokenTemporaireRepositoryTest {
-
-    @SuppressWarnings("resource")
-    @Container
-    static PostgreSQLContainer<?> postgresDBContainer = new PostgreSQLContainer<>("postgres:17-alpine")
-            .withDatabaseName("test_repo_db_" + UUID.randomUUID().toString().substring(0,8))
-            .withUsername("test_user_repo")
-            .withPassword("test_pass_repo");
-
-    @DynamicPropertySource
-    static void databaseProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresDBContainer::getUsername);
-        registry.add("spring.datasource.password", postgresDBContainer::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
-        registry.add("spring.sql.init.mode", () -> "always");
-    }
+class AuthTokenTemporaireRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private AuthTokenTemporaireRepository tokenRepository;
 
     @Autowired
-    private TestEntityManager entityManager;
+    private TestEntityManager entityManager; // Pour préparer les données de test
 
     private Utilisateur testUser;
 
+    /**
+     * Nettoie les données et prépare l'utilisateur de test avant chaque méthode de test.
+     * Assure l'isolation des tests avec le conteneur partagé.
+     */
     @BeforeEach
     void setUpTestData() {
-        // Assurer que le rôle USER existe ou le créer
+        // --- Nettoyage des données ---
+        // L'ordre est important en raison des clés étrangères.
+        entityManager.getEntityManager().createQuery("DELETE FROM AuthTokenTemporaire").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Utilisateur").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Adresse").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Pays").executeUpdate();
+        entityManager.getEntityManager().createQuery("DELETE FROM Role").executeUpdate();
+        entityManager.flush(); // S'assurer que les suppressions sont commitées
+
+        // --- Préparation des données de test de base ---
         Role userRoleEntity = entityManager.getEntityManager()
                 .createQuery("SELECT r FROM Role r WHERE r.typeRole = :type", Role.class)
                 .setParameter("type", TypeRole.USER)
@@ -83,7 +74,7 @@ class AuthTokenTemporaireRepositoryTest {
                 .role(userRoleEntity)
                 .adresse(userAdresse)
                 .dateCreation(LocalDateTime.now())
-                .isVerified(true) // Ou false selon les besoins des tests de token
+                .isVerified(true)
                 .build();
         entityManager.persist(testUser);
         entityManager.flush();
@@ -208,4 +199,4 @@ class AuthTokenTemporaireRepositoryTest {
         assertThat(tokenRepository.findByTokenIdentifier(expiredTokenIdentifier)).isNotPresent();
         assertThat(tokenRepository.findByTokenIdentifier(validTokenIdentifier)).isPresent();
     }
-}*/
+}

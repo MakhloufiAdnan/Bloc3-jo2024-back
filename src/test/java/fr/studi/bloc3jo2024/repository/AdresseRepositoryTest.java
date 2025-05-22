@@ -1,4 +1,4 @@
-/*package fr.studi.bloc3jo2024.repository;
+package fr.studi.bloc3jo2024.repository;
 
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
@@ -37,10 +37,10 @@ class AdresseRepositoryTest {
             .withUsername("testuser_addr")
             .withPassword("testpass_addr");
 
-    /**
-     * Configure dynamiquement les propriétés de la datasource pour pointer vers le conteneur Testcontainers.
-     */
-    /*@DynamicPropertySource
+
+     // Configure dynamiquement les propriétés de la datasource pour pointer vers le conteneur Testcontainers.
+
+    @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgresDBContainer::getJdbcUrl);
         registry.add("spring.datasource.username", postgresDBContainer::getUsername);
@@ -281,4 +281,4 @@ class AdresseRepositoryTest {
         assertEquals(1, adressesTrouvees.size(), "Doit trouver une seule adresse pour cette discipline.");
         assertEquals(adressePersisted1.getIdAdresse(), adressesTrouvees.getFirst().getIdAdresse());
     }
-}*/
+}

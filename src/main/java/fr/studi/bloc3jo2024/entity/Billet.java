@@ -31,7 +31,7 @@ public class Billet {
     // Relation Many-to-One vers l'entité Utilisateur.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
-    @EqualsAndHashCode.Exclude // Exclu de l'utilisateur dans equals/hashCode de Billet
+    @EqualsAndHashCode.Exclude
     private Utilisateur utilisateur;
 
     // Relation Many-to-Many vers l'entité Offre.

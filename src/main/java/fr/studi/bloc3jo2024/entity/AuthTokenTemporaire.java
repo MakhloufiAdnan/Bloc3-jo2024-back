@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -39,6 +41,7 @@ public class AuthTokenTemporaire {
     // Type de token temporaire (CONNECTION, RESET_PASSWORD, VALIDATION_EMAIL).
     @Enumerated(EnumType.STRING)
     @Column(name = "type_token", nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private TypeAuthTokenTemp typeToken;
 
     // Date et heure d'expiration du token temporaire.

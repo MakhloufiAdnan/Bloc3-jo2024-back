@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,7 +23,7 @@ import java.util.Set;
 @Entity
 @Table(name = "offres", indexes = {
         @Index(name = "idx_offre_statut", columnList = "statut_offre"),
-        @Index(name = "idx_offre_date_expiration", columnList = "date_expiration"), // L'index redevient pertinent
+        @Index(name = "idx_offre_date_expiration", columnList = "date_expiration"),
         @Index(name = "idx_offre_discipline", columnList = "id_discipline")
 })
 @Getter
@@ -36,8 +38,10 @@ public class Offre {
     @Column(name = "id_offre")
     private Long idOffre;
 
+    // Type d'offre (SOLO, DUO, FAMILLIALE).
     @Enumerated(EnumType.STRING)
     @Column(name = "type_offre", nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private TypeOffre typeOffre;
 
     @Column(name = "quantite", nullable = false)
@@ -54,8 +58,10 @@ public class Offre {
     @Column(name = "date_expiration")
     private LocalDateTime dateExpiration;
 
+    // Statut de l'offre (DISPONIBLE, EPUISE, EXPIRE, ANNULE).
     @Enumerated(EnumType.STRING)
     @Column(name = "statut_offre", nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private StatutOffre statutOffre;
 
     @Column(name = "capacite", nullable = false)
@@ -89,7 +95,7 @@ public class Offre {
      *
      * @return La date d'expiration effective, ou null si la discipline ou sa date ne sont pas définies.
      */
-    @Transient // Ce n'est pas un champ persisté, mais une logique métier
+    @Transient
     public LocalDateTime getEffectiveDateExpiration() {
         if (this.discipline == null || this.discipline.getDateDiscipline() == null) {
             // Cas anormal, la discipline est @JoinColumn(nullable = false)
@@ -133,15 +139,36 @@ public class Offre {
         }
     }
 
+    /**
+     * Compare cet objet Offre à un autre objet pour l'égalité.
+     * Deux offres sont considérées comme égales si elles sont la même instance
+     * ou si elles sont de la même classe et ont le même idOffre non nul.
+     * Les entités avec un idOffre nul (transitoires) ne sont égales que par référence.
+     *
+     * @param o L'objet à comparer avec cette Offre.
+     * @return true si les objets sont égaux, false sinon.
+     */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Offre offre = (Offre) o;
-        if (idOffre == null || offre.idOffre == null) return this == o;
-        return Objects.equals(idOffre, offre.idOffre);
+        if (this == o) return true; // Même instance en mémoire
+        if (o == null || getClass() != o.getClass()) return false; // Null ou classe différente
+
+        Offre autreOffre = (Offre) o;
+        if (this.idOffre == null) {
+            return false;
+        }
+
+        // Si les deux idOffre ne sont pas null, comparez leurs valeurs.
+        return Objects.equals(this.idOffre, autreOffre.idOffre);
     }
 
+    /**
+     * Calcule le code de hachage pour cette Offre.
+     * Basé sur idOffre pour être cohérent avec la méthode equals.
+     * Si idOffre est nul, utilise le code de hachage de la classe pour les objets transitoires.
+     *
+     * @return Le code de hachage.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(idOffre);

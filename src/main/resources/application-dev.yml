@@ -68,16 +68,3 @@ logging:
     org.hibernate.type.descriptor.sql: INFO # Paramètres SQL (moins verbeux que TRACE)
     org.testcontainers: INFO                # Logs de Testcontainers
     com.icegreen.greenmail: INFO            # Logs de GreenMail
-
-management:
-  health:
-    mail:
-      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false} # Contrôlé par variable de test
-  endpoints:
-    web:
-      exposure:
-        include: "*" # Expose tous les endpoints Actuator (health, env, metrics, etc.)
-      base-path: /management # Chemin de base pour les endpoints Actuator
-  endpoint:
-    health:
-      show-details: always # Montre les détails complets dans /management/health

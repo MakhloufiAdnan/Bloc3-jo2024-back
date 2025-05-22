@@ -19,13 +19,13 @@ public class ContenuPanier {
     private int quantiteCommandee;
 
     // Clé étrangère composite référençant l'ID du panier.
-    @Id // Champ faisant partie de la clé primaire composite
+    @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_panier", nullable = false, foreignKey = @ForeignKey(name = "fk_contenu_panier_panier"))
     private Panier panier;
 
     // Clé étrangère composite référençant l'ID de l'offre.
-    @Id // Champ faisant partie de la clé primaire composite
+    @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_offre", nullable = false, foreignKey = @ForeignKey(name = "fk_contenu_panier_offre"))
     private Offre offre; // La méthode getOffre() retournera l'entité Offre liée

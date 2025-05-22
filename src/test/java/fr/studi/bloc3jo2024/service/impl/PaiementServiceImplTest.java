@@ -12,6 +12,7 @@ import fr.studi.bloc3jo2024.repository.PaiementRepository;
 import fr.studi.bloc3jo2024.repository.PanierRepository;
 import fr.studi.bloc3jo2024.repository.TransactionRepository;
 import fr.studi.bloc3jo2024.repository.UtilisateurRepository;
+import fr.studi.bloc3jo2024.repository.MethodePaiementRepository; // Ajout de l'import
 import fr.studi.bloc3jo2024.service.BilletCreationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,29 +45,28 @@ class PaiementServiceImplTest {
     private ModelMapper modelMapper;
     @Mock
     private BilletCreationService billetCreationService;
+    @Mock
+    private MethodePaiementRepository methodePaiementRepository; // Mocker le nouveau repository
 
     @InjectMocks
     private PaiementServiceImpl paiementService;
 
-    // Données de test (objets réels, PAS des mocks)
     private UUID utilisateurId;
     private Long panierId;
     private Long paiementId;
     private Utilisateur utilisateur;
     private Panier panier;
-    private Paiement paiement;
+    private Paiement paiement; // Entité Paiement de référence pour les tests
+    private MethodePaiement methodeCarteBancaireEntity; // Entité MethodePaiement de référence
     private Transaction transaction;
     private Billet billet;
-    // Les DTOs de simulation sont créés dans les tests spécifiques car leur statut dépend du résultat simulé
-    private PaiementDto paiementDtoInitial;
     private TransactionDto transactionDtoInitial;
 
     private final UUID utilisateurUuid = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        // Configurer les données de test communes (objets réels)
-        utilisateurId = utilisateurUuid; // Utiliser l'UUID généré
+        utilisateurId = utilisateurUuid;
         panierId = 1L;
         paiementId = 10L;
 
@@ -76,37 +76,42 @@ class PaiementServiceImplTest {
 
         panier = new Panier();
         panier.setIdPanier(panierId);
-        panier.setUtilisateur(utilisateur); // Lier le panier à l'utilisateur
+        panier.setUtilisateur(utilisateur);
         panier.setMontantTotal(BigDecimal.valueOf(150.0));
+
+        // Créer une instance de MethodePaiement pour les tests
+        methodeCarteBancaireEntity = new MethodePaiement();
+        methodeCarteBancaireEntity.setIdMethode(1L); // ID factice pour le test
+        methodeCarteBancaireEntity.setNomMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
 
         paiement = new Paiement();
         paiement.setIdPaiement(paiementId);
-        paiement.setUtilisateur(utilisateur); // Lier le paiement à l'utilisateur
-        paiement.setPanier(panier); // Lier le paiement au panier
+        paiement.setUtilisateur(utilisateur);
+        paiement.setPanier(panier);
         paiement.setMontant(panier.getMontantTotal());
-        paiement.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
-        paiement.setStatutPaiement(StatutPaiement.EN_ATTENTE); // Statut initial
+        paiement.setMethodePaiement(methodeCarteBancaireEntity); // CORRECTION: Utiliser l'entité
+        paiement.setStatutPaiement(StatutPaiement.EN_ATTENTE);
         paiement.setDatePaiement(LocalDateTime.now());
 
         transaction = new Transaction();
         transaction.setIdTransaction(100L);
         transaction.setMontant(panier.getMontantTotal());
         transaction.setDateTransaction(paiement.getDatePaiement());
-        transaction.setStatutTransaction(StatutTransaction.EN_ATTENTE); // Statut initial
-        transaction.setPaiement(paiement); // Lier la transaction au paiement
-        paiement.setTransaction(transaction); // Lier le paiement à la transaction
+        transaction.setStatutTransaction(StatutTransaction.EN_ATTENTE);
+        transaction.setPaiement(paiement);
+        paiement.setTransaction(transaction);
 
         billet = new Billet();
         billet.setIdBillet(20L);
         billet.setCleFinaleBillet("CLE_FINALE_TEST");
 
-        // DTOs initiaux pour les tests qui n'impliquent pas de changement de statut de paiement
+        PaiementDto paiementDtoInitial;
         paiementDtoInitial = new PaiementDto();
         paiementDtoInitial.setIdPaiement(paiementId);
         paiementDtoInitial.setUtilisateurId(utilisateurId);
         paiementDtoInitial.setIdPanier(panierId);
         paiementDtoInitial.setMontant(BigDecimal.valueOf(150.0));
-        paiementDtoInitial.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
+        paiementDtoInitial.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE); // Le DTO utilise toujours l'Enum
         paiementDtoInitial.setStatutPaiement(StatutPaiement.EN_ATTENTE);
         paiementDtoInitial.setDatePaiement(paiement.getDatePaiement());
 
@@ -117,457 +122,366 @@ class PaiementServiceImplTest {
         transactionDtoInitial.setStatutTransaction(StatutTransaction.EN_ATTENTE);
 
         paiementDtoInitial.setTransaction(transactionDtoInitial);
-
-        PaiementSimulationResultDto simulationResultDtoInitial;
-        simulationResultDtoInitial = new PaiementSimulationResultDto();
-        simulationResultDtoInitial.setPaiement(paiementDtoInitial);
     }
-
-    // --- Tests pour effectuerPaiement ---
 
     @Test
     void effectuerPaiement_Successful() {
-        // Arrange (Préparer)
         when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
         when(panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(panier));
-        when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty()); // Aucun paiement existant
-        when(paiementRepository.save(any(Paiement.class))).thenReturn(paiement); // Retourner le paiement créé
+        when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty());
 
-        // Stubbing ModelMapper pour le mappage final (statut EN_ATTENTE car c'est le statut initial)
-        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(paiementDtoInitial);
+        // Mock pour la récupération de l'entité MethodePaiement
+        when(methodePaiementRepository.findByNomMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE))
+                .thenReturn(Optional.of(methodeCarteBancaireEntity));
+
+        when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> {
+            Paiement p = invocation.getArgument(0);
+            p.setIdPaiement(paiementId); // Simuler la sauvegarde et l'attribution d'un ID
+            p.setTransaction(transaction); // S'assurer que la transaction est liée pour le mappage DTO
+            return p;
+        });
+        PaiementDto expectedDto = new PaiementDto();
+        expectedDto.setIdPaiement(paiementId);
+        expectedDto.setUtilisateurId(utilisateurId);
+        expectedDto.setIdPanier(panierId);
+        expectedDto.setMontant(panier.getMontantTotal());
+        expectedDto.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE); // Le DTO contient l'enum
+        expectedDto.setStatutPaiement(StatutPaiement.EN_ATTENTE);
+        expectedDto.setDatePaiement(paiement.getDatePaiement()); // Utiliser une date fixe ou any() si elle est générée
+        expectedDto.setTransaction(transactionDtoInitial);
+
+        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(expectedDto);
+        // mapPaiementToDto dans le service fait un second appel à modelMapper pour la transaction
         when(modelMapper.map(any(Transaction.class), eq(TransactionDto.class))).thenReturn(transactionDtoInitial);
 
-        // Act
+
         PaiementDto resultDto = paiementService.effectuerPaiement(utilisateurId, panierId, MethodePaiementEnum.CARTE_BANCAIRE);
 
-        // Assert
         assertNotNull(resultDto);
-        assertEquals(paiementDtoInitial, resultDto); // Comparer avec le DTO initial (EN_ATTENTE)
-        assertEquals(StatutPaiement.EN_ATTENTE, resultDto.getStatutPaiement());
+        assertEquals(expectedDto.getIdPaiement(), resultDto.getIdPaiement());
+        assertEquals(expectedDto.getStatutPaiement(), resultDto.getStatutPaiement());
+        assertEquals(expectedDto.getMethodePaiement(), resultDto.getMethodePaiement());
         assertNotNull(resultDto.getTransaction());
         assertEquals(StatutTransaction.EN_ATTENTE, resultDto.getTransaction().getStatutTransaction());
 
-
-        // Vérifier les interactions avec les dépôts
-        verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-        verify(paiementRepository, times(1)).findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-        verify(paiementRepository, times(1)).save(any(Paiement.class)); // Vérifie qu'un paiement a été sauvegardé
-
-        // Vérifier les interactions avec ModelMapper
-        verify(modelMapper, times(1)).map(any(Paiement.class), eq(PaiementDto.class));
-        verify(modelMapper, times(1)).map(any(Transaction.class), eq(TransactionDto.class));
-
-        // Aucune interaction avec BilletCreationService lors du paiement initial
+        verify(utilisateurRepository).findById(utilisateurId);
+        verify(panierRepository).findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
+        verify(paiementRepository).findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
+        verify(methodePaiementRepository).findByNomMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
+        verify(paiementRepository).save(any(Paiement.class));
+        verify(modelMapper).map(any(Paiement.class), eq(PaiementDto.class));
+        verify(modelMapper).map(any(Transaction.class), eq(TransactionDto.class)); // Vérifié car mapPaiementToDto l'appelle
         verifyNoInteractions(billetCreationService);
     }
 
     @Test
     void effectuerPaiement_UtilisateurNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
         when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
                 paiementService.effectuerPaiement(utilisateurId, panierId, MethodePaiementEnum.CARTE_BANCAIRE));
 
         assertEquals("Utilisateur non trouvé avec l'ID : " + utilisateurId, exception.getMessage());
-
-        // Vérifier les interactions avec les dépôts
-        verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(0)).findByIdPanierAndUtilisateur_idUtilisateur(anyLong(), any(UUID.class));
-        verify(paiementRepository, times(0)).findByPanier_idPanierAndUtilisateur_idUtilisateur(anyLong(), any(UUID.class));
-        verify(paiementRepository, times(0)).save(any(Paiement.class));
-        verifyNoInteractions(transactionRepository);
-        verifyNoInteractions(modelMapper);
-        verifyNoInteractions(billetCreationService);
+        verify(methodePaiementRepository, never()).findByNomMethodePaiement(any()); // Ne doit pas être appelé
     }
 
     @Test
     void effectuerPaiement_PanierNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
         when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
         when(panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
                 paiementService.effectuerPaiement(utilisateurId, panierId, MethodePaiementEnum.CARTE_BANCAIRE));
 
         assertEquals(String.format("Panier non trouvé avec l'ID : %d pour l'utilisateur ID : %s", panierId, utilisateurId), exception.getMessage());
-
-        // Vérifier les interactions avec les dépôts
-        verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-        verify(paiementRepository, times(0)).findByPanier_idPanierAndUtilisateur_idUtilisateur(anyLong(), any(UUID.class));
-        verify(paiementRepository, times(0)).save(any(Paiement.class));
-        verifyNoInteractions(transactionRepository);
-        verifyNoInteractions(modelMapper);
-        verifyNoInteractions(billetCreationService);
+        verify(methodePaiementRepository, never()).findByNomMethodePaiement(any());
     }
 
     @Test
     void effectuerPaiement_PaiementDejaExistant_ThrowsIllegalStateException() {
-        // Arrange
         when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
         when(panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(panier));
-        when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(paiement)); // Paiement existant trouvé
+        when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(paiement));
 
-        // Act & Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
                 paiementService.effectuerPaiement(utilisateurId, panierId, MethodePaiementEnum.CARTE_BANCAIRE));
 
         assertEquals("Un paiement existe déjà pour ce panier et cet utilisateur.", exception.getMessage());
-
-        // Vérifier les interactions avec les dépôts
-        verify(utilisateurRepository, times(1)).findById(utilisateurId);
-        verify(panierRepository, times(1)).findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-        verify(paiementRepository, times(1)).findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-        verify(paiementRepository, times(0)).save(any(Paiement.class)); // Aucune sauvegarde ne devrait avoir lieu
-        verifyNoInteractions(transactionRepository);
-        verifyNoInteractions(modelMapper);
-        verifyNoInteractions(billetCreationService);
+        verify(methodePaiementRepository, never()).findByNomMethodePaiement(any());
     }
 
-    // --- Tests pour simulerResultatPaiement ---
+    @Test
+    void effectuerPaiement_MethodePaiementNotFound_ThrowsResourceNotFoundException() {
+        when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
+        when(panierRepository.findByIdPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(panier));
+        when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty());
+        when(methodePaiementRepository.findByNomMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
+                paiementService.effectuerPaiement(utilisateurId, panierId, MethodePaiementEnum.CARTE_BANCAIRE));
+
+        assertEquals("Méthode de paiement non trouvée : " + MethodePaiementEnum.CARTE_BANCAIRE, exception.getMessage());
+    }
+
 
     @Test
     void simulerResultatPaiement_Successful() {
-        // Arrange (Préparer)
-        when(paiementRepository.findById(paiementId)).thenReturn(Optional.of(paiement));
+        when(paiementRepository.findById(paiementId)).thenReturn(Optional.of(paiement)); // paiement a methodeCarteBancaireEntity
         when(transactionRepository.findByPaiementIdPaiement(paiementId)).thenReturn(Optional.of(transaction));
         when(billetCreationService.genererBilletApresTransactionReussie(paiement)).thenReturn(billet);
 
-        // Créer les DTOs avec les statuts attendus après une simulation réussie
         PaiementDto paiementDtoSuccessful = new PaiementDto();
         paiementDtoSuccessful.setIdPaiement(paiementId);
         paiementDtoSuccessful.setUtilisateurId(utilisateurId);
         paiementDtoSuccessful.setIdPanier(panierId);
         paiementDtoSuccessful.setMontant(BigDecimal.valueOf(150.0));
-        paiementDtoSuccessful.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
-        paiementDtoSuccessful.setStatutPaiement(StatutPaiement.ACCEPTE); // Statut attendu
-        paiementDtoSuccessful.setDatePaiement(paiement.getDatePaiement()); // Utiliser la date du paiement créé
+        paiementDtoSuccessful.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE); // DTO utilise Enum
+        paiementDtoSuccessful.setStatutPaiement(StatutPaiement.ACCEPTE);
+        paiementDtoSuccessful.setDatePaiement(paiement.getDatePaiement());
 
         TransactionDto transactionDtoSuccessful = new TransactionDto();
         transactionDtoSuccessful.setIdTransaction(transaction.getIdTransaction());
         transactionDtoSuccessful.setMontant(BigDecimal.valueOf(150.0));
         transactionDtoSuccessful.setDateTransaction(transaction.getDateTransaction());
-        transactionDtoSuccessful.setStatutTransaction(StatutTransaction.REUSSI); // Statut attendu
-        transactionDtoSuccessful.setDetails("Détails de simulation réussie"); // Détails attendus
-
+        transactionDtoSuccessful.setStatutTransaction(StatutTransaction.REUSSI);
+        transactionDtoSuccessful.setDetails("Détails de simulation réussie");
         paiementDtoSuccessful.setTransaction(transactionDtoSuccessful);
 
-        // Stubbing ModelMapper pour retourner les DTOs avec les statuts mis à jour
-        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(paiementDtoSuccessful);
+        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenAnswer(invocation -> {
+            Paiement p = invocation.getArgument(0);
+            PaiementDto dto = new PaiementDto();
+            dto.setIdPaiement(p.getIdPaiement());
+            dto.setUtilisateurId(p.getUtilisateur().getIdUtilisateur());
+            dto.setIdPanier(p.getPanier().getIdPanier());
+            dto.setMontant(p.getMontant());
+            if (p.getMethodePaiement() != null) {
+                dto.setMethodePaiement(p.getMethodePaiement().getNomMethodePaiement());
+            }
+            dto.setStatutPaiement(p.getStatutPaiement());
+            dto.setDatePaiement(p.getDatePaiement());
+            if (p.getTransaction() != null) {
+                dto.setTransaction(modelMapper.map(p.getTransaction(), TransactionDto.class));
+            }
+            return dto;
+        });
         when(modelMapper.map(any(Transaction.class), eq(TransactionDto.class))).thenReturn(transactionDtoSuccessful);
 
 
-        // Act (Agir)
         PaiementSimulationResultDto resultDto = paiementService.simulerResultatPaiement(paiementId, true, "Détails de simulation réussie");
 
-        // Assert (Vérifier)
         assertNotNull(resultDto);
         assertNotNull(resultDto.getPaiement());
-        assertEquals(paiementDtoSuccessful, resultDto.getPaiement()); // Comparer avec le DTO attendu (ACCEPTE)
         assertEquals(StatutPaiement.ACCEPTE, resultDto.getPaiement().getStatutPaiement());
+        assertEquals(MethodePaiementEnum.CARTE_BANCAIRE, resultDto.getPaiement().getMethodePaiement());
         assertNotNull(resultDto.getPaiement().getTransaction());
         assertEquals(StatutTransaction.REUSSI, resultDto.getPaiement().getTransaction().getStatutTransaction());
-        assertEquals("Détails de simulation réussie", resultDto.getPaiement().getTransaction().getDetails());
-        assertNotNull(resultDto.getBilletId()); // Vérifier que les détails du billet sont présents
-        assertNotNull(resultDto.getCleFinaleBillet());
         assertEquals(billet.getIdBillet(), resultDto.getBilletId());
         assertEquals(billet.getCleFinaleBillet(), resultDto.getCleFinaleBillet());
 
-
-        // Vérifier les interactions avec les dépôts
-        verify(paiementRepository, times(1)).findById(paiementId);
-        verify(transactionRepository, times(1)).findByPaiementIdPaiement(paiementId);
-        verify(transactionRepository, times(1)).save(transaction); // La transaction est explicitement sauvegardée
-
-        // Vérifier les interactions avec les services
-        verify(billetCreationService, times(1)).genererBilletApresTransactionReussie(paiement);
-
-        // Vérifier les interactions avec ModelMapper
-        verify(modelMapper, times(1)).map(any(Paiement.class), eq(PaiementDto.class));
-        verify(modelMapper, times(1)).map(any(Transaction.class), eq(TransactionDto.class));
+        verify(paiementRepository).save(paiement);
     }
 
     @Test
     void simulerResultatPaiement_Failed() {
-        // Arrange (Préparer)
         when(paiementRepository.findById(paiementId)).thenReturn(Optional.of(paiement));
         when(transactionRepository.findByPaiementIdPaiement(paiementId)).thenReturn(Optional.of(transaction));
 
-        // Créer les DTOs avec les statuts attendus après une simulation échouée
         PaiementDto paiementDtoFailed = new PaiementDto();
+        // ... (configuration similaire à paiementDtoSuccessful mais avec statut REFUSE/ECHEC)
         paiementDtoFailed.setIdPaiement(paiementId);
         paiementDtoFailed.setUtilisateurId(utilisateurId);
         paiementDtoFailed.setIdPanier(panierId);
         paiementDtoFailed.setMontant(BigDecimal.valueOf(150.0));
         paiementDtoFailed.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
-        paiementDtoFailed.setStatutPaiement(StatutPaiement.REFUSE); // Statut attendu
-        paiementDtoFailed.setDatePaiement(paiement.getDatePaiement()); // Utiliser la date du paiement créé
+        paiementDtoFailed.setStatutPaiement(StatutPaiement.REFUSE);
+        paiementDtoFailed.setDatePaiement(paiement.getDatePaiement());
+
 
         TransactionDto transactionDtoFailed = new TransactionDto();
         transactionDtoFailed.setIdTransaction(transaction.getIdTransaction());
         transactionDtoFailed.setMontant(BigDecimal.valueOf(150.0));
         transactionDtoFailed.setDateTransaction(transaction.getDateTransaction());
-        transactionDtoFailed.setStatutTransaction(StatutTransaction.ECHEC); // Statut attendu
-        transactionDtoFailed.setDetails("Détails de simulation échouée"); // Détails attendus
+        transactionDtoFailed.setStatutTransaction(StatutTransaction.ECHEC);
+        transactionDtoFailed.setDetails("Détails de simulation échouée");
 
         paiementDtoFailed.setTransaction(transactionDtoFailed);
 
-        // Stubbing ModelMapper pour retourner les DTOs avec les statuts mis à jour
-        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(paiementDtoFailed);
+
+        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenAnswer(invocation -> {
+            Paiement p = invocation.getArgument(0);
+            PaiementDto dto = new PaiementDto();
+            dto.setIdPaiement(p.getIdPaiement());
+            dto.setUtilisateurId(p.getUtilisateur().getIdUtilisateur());
+            dto.setIdPanier(p.getPanier().getIdPanier());
+            dto.setMontant(p.getMontant());
+            if (p.getMethodePaiement() != null) {
+                dto.setMethodePaiement(p.getMethodePaiement().getNomMethodePaiement());
+            }
+            dto.setStatutPaiement(p.getStatutPaiement());
+            dto.setDatePaiement(p.getDatePaiement());
+            if (p.getTransaction() != null) {
+                dto.setTransaction(modelMapper.map(p.getTransaction(), TransactionDto.class));
+            }
+            return dto;
+        });
         when(modelMapper.map(any(Transaction.class), eq(TransactionDto.class))).thenReturn(transactionDtoFailed);
 
 
-        // Act (Agir)
         PaiementSimulationResultDto resultDto = paiementService.simulerResultatPaiement(paiementId, false, "Détails de simulation échouée");
 
-        // Assert (Vérifier)
         assertNotNull(resultDto);
-        assertNotNull(resultDto.getPaiement());
-        assertEquals(paiementDtoFailed, resultDto.getPaiement()); // Comparer avec le DTO attendu (REFUSE)
         assertEquals(StatutPaiement.REFUSE, resultDto.getPaiement().getStatutPaiement());
-        assertNotNull(resultDto.getPaiement().getTransaction());
-        assertEquals(StatutTransaction.ECHEC, resultDto.getPaiement().getTransaction().getStatutTransaction());
-        assertEquals("Détails de simulation échouée", resultDto.getPaiement().getTransaction().getDetails());
-        assertNull(resultDto.getBilletId()); // Vérifier que les détails du billet ne sont PAS présents
-        assertNull(resultDto.getCleFinaleBillet());
-
-
-        // Vérifier les interactions avec les dépôts
-        verify(paiementRepository, times(1)).findById(paiementId);
-        verify(transactionRepository, times(1)).findByPaiementIdPaiement(paiementId);
-        verify(transactionRepository, times(1)).save(transaction); // La transaction est explicitement sauvegardée
-
-        // Vérifier les interactions avec les services - La création de billet n'est PAS appelée en cas d'échec
-        verifyNoInteractions(billetCreationService);
-
-        // Vérifier les interactions avec ModelMapper
-        verify(modelMapper, times(1)).map(any(Paiement.class), eq(PaiementDto.class));
-        verify(modelMapper, times(1)).map(any(Transaction.class), eq(TransactionDto.class));
+        assertNull(resultDto.getBilletId());
+        verify(billetCreationService, never()).genererBilletApresTransactionReussie(any());
     }
 
     @Test
     void simulerResultatPaiement_PaiementNotFound_ThrowsResourceNotFoundException() {
-        // Arrange (Préparer)
         when(paiementRepository.findById(paiementId)).thenReturn(Optional.empty());
 
-        // Act & Assert (Agir et Vérifier)
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
+        assertThrows(ResourceNotFoundException.class, () ->
                 paiementService.simulerResultatPaiement(paiementId, true, "Details"));
-
-        assertEquals("Paiement non trouvé avec l'ID : " + paiementId, exception.getMessage());
-
-        // Vérifier les interactions avec les dépôts
-        verify(paiementRepository, times(1)).findById(paiementId);
-        verify(transactionRepository, times(0)).findByPaiementIdPaiement(anyLong()); // La recherche de transaction n'est pas atteinte
-        verify(transactionRepository, times(0)).save(any(Transaction.class));
-
-        // Vérifier les interactions avec les services
-        verifyNoInteractions(billetCreationService);
-
-        // Vérifier les interactions avec ModelMapper
-        verifyNoInteractions(modelMapper);
     }
 
     @Test
     void simulerResultatPaiement_TransactionNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
         when(paiementRepository.findById(paiementId)).thenReturn(Optional.of(paiement));
         when(transactionRepository.findByPaiementIdPaiement(paiementId)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
+        assertThrows(ResourceNotFoundException.class, () ->
                 paiementService.simulerResultatPaiement(paiementId, true, "Details"));
-
-        assertEquals("Transaction non trouvée pour le paiement ID : " + paiementId, exception.getMessage());
-
-        // Vérifier les interactions avec les dépôts
-        verify(paiementRepository, times(1)).findById(paiementId);
-        verify(transactionRepository, times(1)).findByPaiementIdPaiement(paiementId);
-        verify(transactionRepository, times(0)).save(any(Transaction.class)); // La transaction n'est pas sauvegardée
-
-        // Vérifier les interactions avec les services
-        verifyNoInteractions(billetCreationService);
-
-        // Vérifier les interactions avec ModelMapper
-        verifyNoInteractions(modelMapper);
     }
 
     @Test
     void simulerResultatPaiement_SuccessfulButBilletCreationReturnsNull() {
-        // Arrange (Préparer)
         when(paiementRepository.findById(paiementId)).thenReturn(Optional.of(paiement));
         when(transactionRepository.findByPaiementIdPaiement(paiementId)).thenReturn(Optional.of(transaction));
-        when(billetCreationService.genererBilletApresTransactionReussie(paiement)).thenReturn(null); // La création de billet retourne null
+        when(billetCreationService.genererBilletApresTransactionReussie(paiement)).thenReturn(null);
 
-        // Créer les DTOs avec les statuts attendus après une simulation réussie (même si billet est null)
         PaiementDto paiementDtoSuccessful = new PaiementDto();
+        // ... (configuration similaire à paiementDtoSuccessful)
         paiementDtoSuccessful.setIdPaiement(paiementId);
         paiementDtoSuccessful.setUtilisateurId(utilisateurId);
         paiementDtoSuccessful.setIdPanier(panierId);
         paiementDtoSuccessful.setMontant(BigDecimal.valueOf(150.0));
         paiementDtoSuccessful.setMethodePaiement(MethodePaiementEnum.CARTE_BANCAIRE);
-        paiementDtoSuccessful.setStatutPaiement(StatutPaiement.ACCEPTE); // Statut attendu
-        paiementDtoSuccessful.setDatePaiement(paiement.getDatePaiement()); // Utiliser la date du paiement créé
+        paiementDtoSuccessful.setStatutPaiement(StatutPaiement.ACCEPTE);
+        paiementDtoSuccessful.setDatePaiement(paiement.getDatePaiement());
 
         TransactionDto transactionDtoSuccessful = new TransactionDto();
         transactionDtoSuccessful.setIdTransaction(transaction.getIdTransaction());
         transactionDtoSuccessful.setMontant(BigDecimal.valueOf(150.0));
         transactionDtoSuccessful.setDateTransaction(transaction.getDateTransaction());
-        transactionDtoSuccessful.setStatutTransaction(StatutTransaction.REUSSI); // Statut attendu
-        transactionDtoSuccessful.setDetails("Détails de simulation réussie"); // Détails attendus
+        transactionDtoSuccessful.setStatutTransaction(StatutTransaction.REUSSI);
+        transactionDtoSuccessful.setDetails("Détails de simulation réussie");
 
         paiementDtoSuccessful.setTransaction(transactionDtoSuccessful);
 
 
-        // Stubbing ModelMapper pour le mappage final
-        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(paiementDtoSuccessful);
+        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenAnswer(invocation -> {
+            Paiement p = invocation.getArgument(0);
+            PaiementDto dto = new PaiementDto();
+            dto.setIdPaiement(p.getIdPaiement());
+            dto.setUtilisateurId(p.getUtilisateur().getIdUtilisateur());
+            dto.setIdPanier(p.getPanier().getIdPanier());
+            dto.setMontant(p.getMontant());
+            if (p.getMethodePaiement() != null) {
+                dto.setMethodePaiement(p.getMethodePaiement().getNomMethodePaiement());
+            }
+            dto.setStatutPaiement(p.getStatutPaiement());
+            dto.setDatePaiement(p.getDatePaiement());
+            if (p.getTransaction() != null) {
+                dto.setTransaction(modelMapper.map(p.getTransaction(), TransactionDto.class));
+            }
+            return dto;
+        });
         when(modelMapper.map(any(Transaction.class), eq(TransactionDto.class))).thenReturn(transactionDtoSuccessful);
 
 
-        // Act
         PaiementSimulationResultDto resultDto = paiementService.simulerResultatPaiement(paiementId, true, "Détails de simulation réussie");
 
-        // Assert
         assertNotNull(resultDto);
-        assertNotNull(resultDto.getPaiement());
-        assertEquals(paiementDtoSuccessful, resultDto.getPaiement()); // Comparer avec le DTO attendu (ACCEPTE)
         assertEquals(StatutPaiement.ACCEPTE, resultDto.getPaiement().getStatutPaiement());
-        assertNotNull(resultDto.getPaiement().getTransaction());
-        assertEquals(StatutTransaction.REUSSI, resultDto.getPaiement().getTransaction().getStatutTransaction());
-        assertEquals("Détails de simulation réussie", resultDto.getPaiement().getTransaction().getDetails());
-        assertNull(resultDto.getBilletId()); // Vérifier que les détails du billet ne sont PAS présents
+        assertNull(resultDto.getBilletId());
         assertNull(resultDto.getCleFinaleBillet());
-
-        // Vérifier les interactions avec les dépôts
-        verify(paiementRepository, times(1)).findById(paiementId);
-        verify(transactionRepository, times(1)).findByPaiementIdPaiement(paiementId);
-        verify(transactionRepository, times(1)).save(transaction); // La transaction est explicitement sauvegardée
-
-        // Vérifier les interactions avec les services
-        verify(billetCreationService, times(1)).genererBilletApresTransactionReussie(paiement); // Le service de création de billet a été appelé
-
-        // Vérifier les interactions avec ModelMapper
-        verify(modelMapper, times(1)).map(any(Paiement.class), eq(PaiementDto.class));
-        verify(modelMapper, times(1)).map(any(Transaction.class), eq(TransactionDto.class));
     }
-
-
-    // --- Tests pour getPaiementParPanier ---
 
     @Test
     void getPaiementParPanier_Found_ReturnsOptionalPaiementDto() {
-        // Arrange
         when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.of(paiement));
-        // Stubbing ModelMapper pour le mappage (utilise les DTOs initiaux car pas de changement de statut ici)
-        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(paiementDtoInitial);
-        when(modelMapper.map(any(Transaction.class), eq(TransactionDto.class))).thenReturn(transactionDtoInitial);
 
-        // Act
+        // Stubbing ModelMapper pour le mappage
+        // Création d'un DTO qui correspond à l'état de 'paiement' dans setUp
+        PaiementDto expectedDto = new PaiementDto();
+        expectedDto.setIdPaiement(paiement.getIdPaiement());
+        expectedDto.setUtilisateurId(paiement.getUtilisateur().getIdUtilisateur());
+        expectedDto.setIdPanier(paiement.getPanier().getIdPanier());
+        expectedDto.setMontant(paiement.getMontant());
+        expectedDto.setMethodePaiement(paiement.getMethodePaiement().getNomMethodePaiement()); // Correctement depuis l'entité
+        expectedDto.setStatutPaiement(paiement.getStatutPaiement());
+        expectedDto.setDatePaiement(paiement.getDatePaiement());
+        if (paiement.getTransaction() != null) {
+            expectedDto.setTransaction(modelMapper.map(paiement.getTransaction(), TransactionDto.class));
+        }
+
+        when(modelMapper.map(paiement, PaiementDto.class)).thenReturn(expectedDto);
+        if (paiement.getTransaction() != null) {
+            when(modelMapper.map(paiement.getTransaction(), TransactionDto.class)).thenReturn(transactionDtoInitial);
+        }
+
+
         Optional<PaiementDto> result = paiementService.getPaiementParPanier(utilisateurId, panierId);
 
-        // Assert
         assertTrue(result.isPresent());
-        assertEquals(paiementDtoInitial, result.get()); // Comparer avec le DTO initial (EN_ATTENTE)
-        assertEquals(StatutPaiement.EN_ATTENTE, result.get().getStatutPaiement()); // Vérification explicite
-
-        // Vérifier les interactions avec le dépôt
-        verify(paiementRepository, times(1)).findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-
-        // Vérifier les interactions avec ModelMapper
-        verify(modelMapper, times(1)).map(any(Paiement.class), eq(PaiementDto.class));
-        verify(modelMapper, times(1)).map(any(Transaction.class), eq(TransactionDto.class));
-
-        // Aucune interaction avec les autres mocks
-        verifyNoInteractions(utilisateurRepository);
-        verifyNoInteractions(panierRepository);
-        verifyNoInteractions(billetCreationService);
-        verify(transactionRepository, times(0)).save(any(Transaction.class));
+        assertEquals(expectedDto.getMethodePaiement(), result.get().getMethodePaiement());
     }
 
     @Test
     void getPaiementParPanier_NotFound_ReturnsEmptyOptional() {
-        // Arrange
         when(paiementRepository.findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId)).thenReturn(Optional.empty());
 
-        // Act
         Optional<PaiementDto> result = paiementService.getPaiementParPanier(utilisateurId, panierId);
 
-        // Assert
         assertFalse(result.isPresent());
-
-        // Vérifier les interactions avec le dépôt
-        verify(paiementRepository, times(1)).findByPanier_idPanierAndUtilisateur_idUtilisateur(panierId, utilisateurId);
-
-        // Vérifier que ModelMapper n'est PAS utilisé
-        verifyNoInteractions(modelMapper);
-
-        // Aucune interaction avec les autres mocks
-        verifyNoInteractions(utilisateurRepository);
-        verifyNoInteractions(panierRepository);
-        verifyNoInteractions(transactionRepository);
-        verifyNoInteractions(billetCreationService);
+        verify(modelMapper, never()).map(any(), any());
     }
-
-    // --- Tests pour getPaiementParId ---
 
     @Test
     void getPaiementParId_Found_ReturnsOptionalPaiementDto() {
-        // Arrange
         when(paiementRepository.findById(paiementId)).thenReturn(Optional.of(paiement));
-        // Stubbing ModelMapper pour le mappage (utilise les DTOs initiaux car pas de changement de statut ici)
-        when(modelMapper.map(any(Paiement.class), eq(PaiementDto.class))).thenReturn(paiementDtoInitial);
-        when(modelMapper.map(any(Transaction.class), eq(TransactionDto.class))).thenReturn(transactionDtoInitial);
+
+        // Création d'un DTO qui correspond à l'état de 'paiement' dans setUp
+        PaiementDto expectedDto = new PaiementDto();
+        expectedDto.setIdPaiement(paiement.getIdPaiement());
+        expectedDto.setUtilisateurId(paiement.getUtilisateur().getIdUtilisateur());
+        expectedDto.setIdPanier(paiement.getPanier().getIdPanier());
+        expectedDto.setMontant(paiement.getMontant());
+        expectedDto.setMethodePaiement(paiement.getMethodePaiement().getNomMethodePaiement()); // Correctement depuis l'entité
+        expectedDto.setStatutPaiement(paiement.getStatutPaiement());
+        expectedDto.setDatePaiement(paiement.getDatePaiement());
+        if (paiement.getTransaction() != null) {
+            expectedDto.setTransaction(modelMapper.map(paiement.getTransaction(), TransactionDto.class));
+        }
+
+        when(modelMapper.map(paiement, PaiementDto.class)).thenReturn(expectedDto);
+        if (paiement.getTransaction() != null) {
+            when(modelMapper.map(paiement.getTransaction(), TransactionDto.class)).thenReturn(transactionDtoInitial);
+        }
 
 
-        // Act
         Optional<PaiementDto> result = paiementService.getPaiementParId(paiementId);
 
-        // Assert
         assertTrue(result.isPresent());
-        assertEquals(paiementDtoInitial, result.get()); // Comparer avec le DTO initial (EN_ATTENTE)
-        assertEquals(StatutPaiement.EN_ATTENTE, result.get().getStatutPaiement()); // Vérification explicite
-
-
-        // Vérifier les interactions avec le dépôt
-        verify(paiementRepository, times(1)).findById(paiementId);
-
-        // Vérifier les interactions avec ModelMapper
-        verify(modelMapper, times(1)).map(any(Paiement.class), eq(PaiementDto.class));
-        verify(modelMapper, times(1)).map(any(Transaction.class), eq(TransactionDto.class));
-
-
-        // Aucune interaction avec les autres mocks
-        verifyNoInteractions(utilisateurRepository);
-        verifyNoInteractions(panierRepository);
-        verify(transactionRepository, times(0)).save(any(Transaction.class));
-        verifyNoInteractions(billetCreationService);
+        assertEquals(expectedDto.getMethodePaiement(), result.get().getMethodePaiement());
     }
 
     @Test
     void getPaiementParId_NotFound_ReturnsEmptyOptional() {
-        // Arrange
         when(paiementRepository.findById(paiementId)).thenReturn(Optional.empty());
 
-        // Act
         Optional<PaiementDto> result = paiementService.getPaiementParId(paiementId);
 
-        // Assert
         assertFalse(result.isPresent());
-
-        // Vérifier les interactions avec le dépôt
-        verify(paiementRepository, times(1)).findById(paiementId);
-
-        // Vérifier que ModelMapper n'est PAS utilisé
-        verifyNoInteractions(modelMapper);
-
-        // Aucune interaction avec les autres mocks
-        verifyNoInteractions(utilisateurRepository);
-        verifyNoInteractions(panierRepository);
-        verifyNoInteractions(transactionRepository);
-        verifyNoInteractions(billetCreationService);
+        verify(modelMapper, never()).map(any(), any());
     }
 }

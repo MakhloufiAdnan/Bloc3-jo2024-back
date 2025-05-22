@@ -136,7 +136,7 @@ class UtilisateurOffreServiceTest {
         assertThat(resultPageDto.getContent()).hasSize(2);
         assertEquals(offresList.size(), resultPageDto.getTotalElements());
 
-        OffreDto dto1 = resultPageDto.getContent().get(0);
+        OffreDto dto1 = resultPageDto.getContent().getFirst();
         assertEquals(offreDisponible1.getIdOffre(), dto1.getId());
         assertEquals(offreDisponible1.getDiscipline().getIdDiscipline(), dto1.getIdDiscipline());
         assertEquals(offreDisponible1.getEffectiveDateExpiration(), dto1.getDateExpiration());

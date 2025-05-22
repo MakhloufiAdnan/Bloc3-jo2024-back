@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +37,7 @@ public class Panier {
     // Statut du panier (EN_ATTENTE, PAYE, SAUVEGARDE).
     @Enumerated(EnumType.STRING)
     @Column(name = "statut_panier", nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private StatutPanier statut;
 
     @Column(name = "date_ajout", nullable = false)
@@ -44,7 +47,7 @@ public class Panier {
     // Relation Many-to-One vers l'entité Utilisateur. Chaque panier appartient à un utilisateur.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
-    @EqualsAndHashCode.Exclude // Excluez la relation ManyToOne
+    @EqualsAndHashCode.Exclude
     private Utilisateur utilisateur;
 
     // Relation One-to-Many vers l'entité ContenuPanier (table d'association avec Offre).

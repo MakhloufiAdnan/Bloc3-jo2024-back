@@ -1,0 +1,8 @@
+-- Insérer les rôles de base
+INSERT INTO roles (id_role, type_role) VALUES (1, 'USER');
+INSERT INTO roles (id_role, type_role) VALUES (2, 'ADMIN');
+
+-- Insérer les méthodes de paiement de base
+INSERT INTO methodes_paiement (id_methode, nom_methode_paiement) VALUES (1, 'CARTE_BANCAIRE');
+INSERT INTO methodes_paiement (id_methode, nom_methode_paiement) VALUES (2, 'PAYPAL');
+INSERT INTO methodes_paiement (id_methode, nom_methode_paiement) VALUES (3, 'STRIPE');

@@ -93,7 +93,7 @@ public class Utilisateur {
     public String toString() {
         return "Utilisateur{" +
                 "idUtilisateur=" + idUtilisateur +
-                ", email='" + email + '\'' + // Soyez prudent avec le logging des PII en production
+                ", email='" + email + '\'' +
                 ", nom='" + nom + '\'' +
                 ", prenom='" + prenom + '\'' +
                 ", dateNaissance=" + dateNaissance +

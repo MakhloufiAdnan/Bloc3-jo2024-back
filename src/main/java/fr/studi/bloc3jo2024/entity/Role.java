@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.util.Set;
 
@@ -26,20 +28,18 @@ public class Role {
     // Type de rôle (ADMIN, USER)
     @Enumerated(EnumType.STRING)
     @Column(name = "type_role",nullable = false, unique = true)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private TypeRole typeRole;
 
     // Relation One-to-Many vers l'entité Utilisateur. Un rôle peut être attribué à plusieurs utilisateurs.
     @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST)
     private Set<Utilisateur> utilisateurs;
 
-
-    // Dans fr.studi.bloc3jo2024.entity.Role.java
     @Override
     public String toString() {
         return "Role{" +
                 "idRole=" + idRole +
                 ", typeRole=" + typeRole +
-                // Évitez d'accéder à la collection 'utilisateurs' ici pour prévenir LazyInitializationException
                 '}';
     }
 }

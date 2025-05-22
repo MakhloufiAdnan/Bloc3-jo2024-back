@@ -49,7 +49,7 @@ public class Discipline {
     // Chaque discipline pocède une adresse. Une adresse peut accueillir plusieurs épreuves.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_adresse", nullable = false, foreignKey = @ForeignKey(name = "fk_discipline_adresse"))
-    @EqualsAndHashCode.Exclude // Exclu de la relation ManyToOne l'adresse dans equals/hashCode de Discipline
+    @EqualsAndHashCode.Exclude
     private Adresse adresse;
 
     /// Relation One-to-Many vers l'entité Offre. La discipline peut avoir plusieurs offres associées.

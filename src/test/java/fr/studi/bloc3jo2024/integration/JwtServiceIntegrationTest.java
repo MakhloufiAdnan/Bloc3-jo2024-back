@@ -1,4 +1,4 @@
-/*package fr.studi.bloc3jo2024.integration;
+package fr.studi.bloc3jo2024.integration;
 
 import fr.studi.bloc3jo2024.service.JwtService;
 import io.jsonwebtoken.Claims;
@@ -126,4 +126,4 @@ class JwtServiceIntegrationTest {
         assertThrows(MalformedJwtException.class,
                 () -> jwtService.extractClaim(malformedToken, Claims::getSubject));
     }
-}*/
+}

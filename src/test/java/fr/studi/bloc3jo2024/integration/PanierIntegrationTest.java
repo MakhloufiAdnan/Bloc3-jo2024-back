@@ -65,8 +65,11 @@ class PanierIntegrationTest {
                 .build();
         adresseRepository.save(adresse);
 
-        Role role = Role.builder().typeRole(TypeRole.USER).build();
-        roleRepository.save(role);
+        Role role = roleRepository.findByTypeRole(TypeRole.USER)
+                .orElseGet(() -> {
+                    Role newUserRole = Role.builder().typeRole(TypeRole.USER).build();
+                    return roleRepository.save(newUserRole);
+                });
 
         Utilisateur user = Utilisateur.builder()
                 .email("client@jo.fr")

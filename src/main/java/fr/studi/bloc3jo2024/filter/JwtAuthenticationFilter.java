@@ -64,7 +64,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (jwtService.isTokenValid(token, email)) {
                     UserDetails userDetails = detailUtilisateurService.loadUserByUsername(email);
 
-                    // Log de débogage ajouté ici
                     if (userDetails instanceof DetailUtilisateurServiceImpl) {
                         // Cast pour accéder à l'entité Utilisateur sous-jacente si votre UserDetails l'encapsule
                         fr.studi.bloc3jo2024.entity.Utilisateur underlyingUser = ((DetailUtilisateurServiceImpl) userDetails).utilisateur();

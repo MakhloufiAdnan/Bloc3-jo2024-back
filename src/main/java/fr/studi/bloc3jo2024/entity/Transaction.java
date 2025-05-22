@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,6 +34,7 @@ public class Transaction {
     // statut de la transaction (REUSSI, ECHEC, EN_ATTENTE)
     @Enumerated(EnumType.STRING)
     @Column(name = "statut_transaction", nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private StatutTransaction statutTransaction;
 
     // Ajout : Date de validation du paiement si REUSSI

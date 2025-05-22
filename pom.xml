@@ -26,7 +26,9 @@
 		<surefire.plugin.version>3.5.3</surefire.plugin.version>
 		<failsafe.plugin.version>3.5.3</failsafe.plugin.version>
 		<commons-compress.version>1.26.2</commons-compress.version>
-		<lombok.version>1.18.38</lombok.version> </properties>
+		<lombok.version>1.18.38</lombok.version>
+		<hypersistence-utils.version>3.8.1</hypersistence-utils.version>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -71,6 +73,11 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>42.7.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.hypersistence</groupId>
+			<artifactId>hypersistence-utils-hibernate-63</artifactId>
+			<version>3.8.1</version>
 		</dependency>
 
 		<dependency>

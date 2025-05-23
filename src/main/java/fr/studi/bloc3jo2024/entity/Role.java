@@ -27,7 +27,7 @@ public class Role {
 
     // Type de rôle (ADMIN, USER)
     @Enumerated(EnumType.STRING)
-    @Column(name = "type_role",nullable = false)
+    @Column(name = "type_role",nullable = false, unique = true)
     @JdbcType(PostgreSQLEnumJdbcType.class)
     private TypeRole typeRole;
 

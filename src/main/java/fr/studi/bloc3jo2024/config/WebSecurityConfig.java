@@ -112,14 +112,26 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/management/health", "/management/info").permitAll()
                         .requestMatchers("/management/env").hasRole("ADMIN")
-                        .requestMatchers("/app-status").permitAll() // Nouvel endpoint autorisé
+                        .requestMatchers("/app-status").permitAll()
+
+
+                        // Pour la PROD, a /api/admin/auth/login
+                        .requestMatchers("/api/admin/auth/**").permitAll()
+
+                        // Pour la PROD, cette ligne DOIT IMPÉRATIVEMENT être remplacée par :
+                        // .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").permitAll() // TEMPORAIREMENT AJOUTÉ POUR LE DÉVERROUILLAGE FRONT-END
+
+                        // Pour la PROD, cette page DOIT IMPÉRATIVEMENT être protégée.
+                        .requestMatchers("/pages/home-admin.html").permitAll() // TEMPORAIREMENT AJOUTÉ POUR LE DÉVERROUILLAGE FRONT-END
+
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/password-reset-request", "/api/auth/password-reset").permitAll()
-                        .requestMatchers("/api/admin/auth/**").permitAll()
+
                         .requestMatchers("/api/test/secured").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(adminFilter, BasicAuthenticationFilter.class);
 

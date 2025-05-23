@@ -21,7 +21,7 @@ public class MethodePaiement {
 
     // Nom de la méthode de paiement (CB, PAYPAL, STRIP), doit être unique.
     @Enumerated(EnumType.STRING)
-    @Column(name = "nom_methode_paiement", nullable = false, length = 50)
+    @Column(name = "nom_methode_paiement", nullable = false, unique = true, length = 50)
     @JdbcType(PostgreSQLEnumJdbcType.class)
     private MethodePaiementEnum nomMethodePaiement;
 }

@@ -15,7 +15,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: ${JPA_SHOW_SQL:false} # Pour éviter des logs excessifs.
+    show-sql: ${JPA_SHOW_SQL:true} # Pour éviter des logs excessifs. (true pour vérifier logs suite erreurs)
     open-in-view: false
     properties:
       hibernate:

@@ -1,4 +1,4 @@
--- database : create_enums
+-- database/schema/create_enums
 
 DO $$
     BEGIN

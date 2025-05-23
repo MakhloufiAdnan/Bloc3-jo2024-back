@@ -113,8 +113,8 @@ public class WebSecurityConfig {
                         .requestMatchers("/management/health", "/management/info").permitAll()
                         .requestMatchers("/management/env").hasRole("ADMIN")
                         .requestMatchers("/app-status").permitAll() // Nouvel endpoint autorisé
-                        .requestMatchers("/auth/register", "/auth/login", "/auth/confirm").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/password-reset-request", "/auth/password-reset").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/confirm").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/password-reset-request", "/api/auth/password-reset").permitAll()
                         .requestMatchers("/api/admin/auth/**").permitAll()
                         .requestMatchers("/api/test/secured").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

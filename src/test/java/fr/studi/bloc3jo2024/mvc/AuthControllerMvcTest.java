@@ -83,7 +83,7 @@ class AuthControllerMvcTest {
         doNothing().when(utilisateurService).registerUser(any(RegisterRequestDto.class));
 
         // Act & Assert
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))) // Convertit l'objet en JSON
                 .andExpect(status().isCreated()) // Vérifie le statut HTTP 201
@@ -99,7 +99,7 @@ class AuthControllerMvcTest {
         doNothing().when(utilisateurService).confirmUser(token);
 
         // Act & Assert
-        mockMvc.perform(get("/auth/confirm")
+        mockMvc.perform(get("/api/auth/confirm")
                         .param("token", token)) // Ajoute le token comme paramètre de requête
                 .andExpect(status().isOk()) // Vérifie le statut HTTP 200
                 .andExpect(content().string("Compte activé. Vous pouvez désormais vous connecter.")); // Vérifie le corps de la réponse texte
@@ -116,7 +116,7 @@ class AuthControllerMvcTest {
         doThrow(new IllegalArgumentException(serviceErrorMessage)).when(utilisateurService).confirmUser(token);
 
         // Act & Assert
-        mockMvc.perform(get("/auth/confirm")
+        mockMvc.perform(get("/api/auth/confirm")
                         .param("token", token))
                 .andExpect(status().isBadRequest()) // Vérifie le statut HTTP 400
                 // Le corps de la réponse doit correspondre à ce que AuthController construit
@@ -133,7 +133,7 @@ class AuthControllerMvcTest {
         doThrow(new IllegalStateException(serviceErrorMessage)).when(utilisateurService).confirmUser(token);
 
         // Act & Assert
-        mockMvc.perform(get("/auth/confirm")
+        mockMvc.perform(get("/api/auth/confirm")
                         .param("token", token))
                 .andExpect(status().isConflict()) // Vérifie le statut HTTP 409
                 .andExpect(content().string("Ce compte est déjà activé ou le lien de confirmation a déjà été utilisé. " + serviceErrorMessage));
@@ -155,7 +155,7 @@ class AuthControllerMvcTest {
         when(jwtService.generateToken(request.getEmail())).thenReturn("mockJwtToken");
 
         // Act & Assert
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -178,7 +178,7 @@ class AuthControllerMvcTest {
                 .thenThrow(new BadCredentialsException("Email ou mot de passe invalide.")); // Le message doit correspondre à celui attendu
 
         // Act & Assert
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -195,7 +195,7 @@ class AuthControllerMvcTest {
         doNothing().when(utilisateurService).requestPasswordReset(email);
 
         // Act & Assert
-        mockMvc.perform(post("/auth/password-reset-request")
+        mockMvc.perform(post("/api/auth/password-reset-request")
                         .param("email", email)) // Envoi comme paramètre de requête
                 .andExpect(status().isNoContent()); // Vérifie le statut HTTP 204
 
@@ -210,7 +210,7 @@ class AuthControllerMvcTest {
         doNothing().when(utilisateurService).resetPassword(token, newPassword);
 
         // Act & Assert
-        mockMvc.perform(post("/auth/password-reset")
+        mockMvc.perform(post("/api/auth/password-reset")
                         .param("token", token)
                         .param("newPassword", newPassword))
                 .andExpect(status().isNoContent());
@@ -228,7 +228,7 @@ class AuthControllerMvcTest {
                 .when(utilisateurService).resetPassword(token, newPassword);
 
         // Act & Assert
-        mockMvc.perform(post("/auth/password-reset")
+        mockMvc.perform(post("/api/auth/password-reset")
                         .param("token", token)
                         .param("newPassword", newPassword))
                 .andExpect(status().isBadRequest()); // Attend un statut 400 Bad Request

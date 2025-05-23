@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/disciplines")
+@RequestMapping("/api/disciplines")
 public class DisciplineController {
 
     private final DisciplineService disciplineService;

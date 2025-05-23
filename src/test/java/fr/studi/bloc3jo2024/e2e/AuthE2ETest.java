@@ -147,7 +147,7 @@ class AuthE2ETest extends AbstractIntegrationTest {
         RegisterRequestDto registerDto = createSampleRegisterDto(userEmail, username, userPassword, "FullFlowUser", LocalDate.of(1992, 3, 15), "Canada");
 
         log.info("1. Inscription de l'utilisateur : {}", userEmail);
-        webTestClient.post().uri("/auth/register")
+        webTestClient.post().uri("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(registerDto)
                 .exchange()
@@ -181,7 +181,7 @@ class AuthE2ETest extends AbstractIntegrationTest {
         log.info("Token de confirmation extrait pour {}: {}", userEmail, confirmationToken);
 
         log.info("3. Confirmation du compte pour : {} avec le token", userEmail);
-        webTestClient.get().uri("/auth/confirm?token=" + confirmationToken)
+        webTestClient.get().uri("/api/auth/confirm?token=" + confirmationToken)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_PLAIN)
@@ -194,7 +194,7 @@ class AuthE2ETest extends AbstractIntegrationTest {
         loginDto.setPassword(userPassword);
 
         log.info("4. Tentative de connexion pour : {}", userEmail);
-        AuthReponseDto authResponse = webTestClient.post().uri("/auth/login")
+        AuthReponseDto authResponse = webTestClient.post().uri("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginDto)
                 .exchange()
@@ -231,14 +231,14 @@ class AuthE2ETest extends AbstractIntegrationTest {
 
         log.info("Test d'inscription avec email déjà existant : {}", email);
 
-        webTestClient.post().uri("/auth/register")
+        webTestClient.post().uri("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dto1)
                 .exchange()
                 .expectStatus().isCreated();
         log.info("Première inscription (201 Created) pour l'email dupliqué {} effectuée.", email);
 
-        webTestClient.post().uri("/auth/register")
+        webTestClient.post().uri("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dto2)
                 .exchange()
@@ -257,7 +257,7 @@ class AuthE2ETest extends AbstractIntegrationTest {
         loginDto.setEmail("nonexistent_" + UUID.randomUUID().toString().substring(0, 8) + "@example.com");
         loginDto.setPassword("WrongPassword123!");
 
-        webTestClient.post().uri("/auth/login")
+        webTestClient.post().uri("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginDto)
                 .exchange()

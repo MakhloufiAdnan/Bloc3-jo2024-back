@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Permet de consulter les offres disponibles avec pagination.
  */
 @RestController
-@RequestMapping("/offres")
+@RequestMapping("/api/offres")
 @RequiredArgsConstructor
 public class UtilisateurOffreController {
 

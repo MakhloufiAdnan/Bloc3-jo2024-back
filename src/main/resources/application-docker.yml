@@ -14,7 +14,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: ${JPA_SHOW_SQL:false} # Pour éviter des logs excessifs.
     open-in-view: false
     properties:

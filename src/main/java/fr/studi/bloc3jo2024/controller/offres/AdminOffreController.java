@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin/offres")
+@RequestMapping("/api/admin/offres")
 @RequiredArgsConstructor
 public class AdminOffreController {
 

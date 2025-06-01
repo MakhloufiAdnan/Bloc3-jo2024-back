@@ -72,7 +72,9 @@ public class WebSecurityConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "https://bloc3-jo2024-front-eff05b08aaa7.herokuapp.com",
                 "http://localhost:80",
-                "http://localhost:3000"
+                "http://localhost:3000",
+                "http://127.0.0.1:5500", // Ajouté pour le développement local
+                "http://127.0.0.1:3000"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of(

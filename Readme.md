@@ -45,13 +45,26 @@ Assurez-vous d'avoir une instance PostgreSQL en cours d'exécution.
 Créez une base de données pour l'application (ex: jo2024_db).
 Renseignez les informations de connexion à la base de données dans src/main/resources/application.yml ou via des variables d'environnement.
 Populer l'administrateur : Pour le login admin, assurez-vous qu'un utilisateur avec le rôle ADMIN et un mot de passe hashé avec BCrypt existe dans votre base de données.
+
+Pour valider les mails lors de l'inscription, vous pouvez télécharger : greenmail-standalone-2.1.0.jar depuisRéférentiel Maven GreenMail. 
+Ensuite, Ouvrez votre terminal ou votre invite de commande et naviguez jusqu'au répertoire où vous avez téléchargé le fichier et 
+exécutez la commande suivante : java -Dgreenmail.smtp.hostname=127.0.0.1 -Dgreenmail.smtp.port=3025 -Dgreenmail.api.hostname=127.0.0.1 -Dgreenmail.api.port=8025 -Dgreenmail.auth.disabled -jar greenmail-standalone-2.1.0.jar
+Votre appplication.yml ou application.properties doit contenir les configurations suivantes pour le serveur SMTP :
+spring.mail.host=localhost
+spring.mail.port=25
+spring.mail.properties.mail.smtp.auth=false
+spring.mail.properties.mail.smtp.starttls.enable=false
+spring.mail.properties.mail.smtp.starttls.required=false
+spring.mail.properties.mail.smtp.ssl.enable=false
+
 Lancer l'application Spring Boot :
 Ouvrez un terminal dans le répertoire racine de votre backend (C:) et exécutez :
 
 ./mvn spring-boot:run
 
-L'application démarrera et écoutera sur le port 8080 .
+L'application démarrera et écoutera sur le port 8080.
 
+ 
 Endpoints API Principaux
 Authentification Utilisateur :
 POST /api/auth/register : Inscription d'un nouvel utilisateur.

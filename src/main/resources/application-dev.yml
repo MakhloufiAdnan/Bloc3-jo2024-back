@@ -24,7 +24,7 @@ spring:
   # Configuration de Spring Mail
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
-    port: ${SPRING_MAIL_PORT:3025}
+    port: ${SPRING_MAIL_PORT:25}
     username: ${SPRING_MAIL_USERNAME:}
     password: ${SPRING_MAIL_PASSWORD:}
     protocol: smtp
@@ -41,7 +41,7 @@ server:
     include-message: always # Utile pour dev/test
 
 jwt:
-  secret: ${JWT_SECRET:valeurParDefautLocalPourSecretJWT}
+  secret: ${JWT_SECRET:Qh1p3H8gQ7UIe4uPUBLHMbj0RKFZYwnBo0pzwa3ZNWU}
   expiration: ${JWT_EXPIRATION:3600000}
 
 admin:
@@ -50,8 +50,8 @@ admin:
 
 app:
   frontend:
-    confirmation-base-url: ${FRONTEND_URL_CONF:http://localhost:3000/confirm-default}
-    reset-password-base-url: ${FRONTEND_URL_RESET:http://localhost:3000/reset-default}
+    confirmation-base-url: ${FRONTEND_URL_CONF:http://localhost:3000/confirm-default.html}
+    reset-password-base-url: ${FRONTEND_URL_RESET:http://localhost:3000/reset-default.html}
   email: # Structure personnalisée pour les templates d'email
     sujet:
       billet: "[DEV-E2E] Votre billet pour les Jeux Olympiques !"

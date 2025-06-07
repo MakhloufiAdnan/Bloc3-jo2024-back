@@ -1,17 +1,15 @@
 package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import lombok.*;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
 @Table(name = "authentifications")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -27,10 +25,26 @@ public class Authentification {
     private String motPasseHache;
 
     // Relation One-to-One vers l'entité Utilisateur. Chaque utilisateur a une authentification associée.
-    @OneToOne
-    @JoinColumn(name = "id_utilisateur_uuid", referencedColumnName = "id_utilisateur_uuid", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_utilisateur_uuid", referencedColumnName = "id_utilisateur_uuid", nullable = false, unique = true)
     private Utilisateur utilisateur;
 
-    // Instance de BCryptPasswordEncoder pour encoder et vérifier le mot de passe
-    private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Authentification that)) return false;
+        return Objects.equals(idToken, that.idToken);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idToken);
+    }
+
+    @Override
+    public String toString() {
+        return "Authentification{" +
+                ", utilisateurId=" + (utilisateur != null && utilisateur.getIdUtilisateur() != null ? utilisateur.getIdUtilisateur() : "null") +
+                '}';
+    }
 }

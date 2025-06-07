@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,7 +12,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -60,11 +58,11 @@ public class Utilisateur {
     @Builder.Default
     private boolean isVerified = false;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_role", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateurs_roles"))
     private Role role;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_adresse", nullable = false, foreignKey = @ForeignKey(name = "fk_utilisateurs_adresses"))
     private Adresse adresse;
 
@@ -86,9 +84,6 @@ public class Utilisateur {
     @OneToMany(mappedBy = "utilisateur")
     private List<Billet> billets;
 
-
-    // Dans fr.studi.bloc3jo2024.entity.Utilisateur.java
-
     @Override
     public String toString() {
         return "Utilisateur{" +
@@ -103,5 +98,21 @@ public class Utilisateur {
                 ", roleId=" + (role != null && role.getIdRole() != null ? role.getIdRole() : "null") +
                 ", adresseId=" + (adresse != null && adresse.getIdAdresse() != null ? adresse.getIdAdresse() : "null") +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Utilisateur that = (Utilisateur) o;
+        if (idUtilisateur == null || that.idUtilisateur == null) {
+            return false;
+        }
+        return idUtilisateur.equals(that.idUtilisateur);
+    }
+
+    @Override
+    public int hashCode() {
+        return idUtilisateur != null ? idUtilisateur.hashCode() : System.identityHashCode(this);
     }
 }

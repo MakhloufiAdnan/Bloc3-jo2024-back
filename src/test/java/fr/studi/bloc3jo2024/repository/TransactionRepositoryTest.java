@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class TransactionRepositoryTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
@@ -36,7 +38,7 @@ class TransactionRepositoryTest extends AbstractPostgresIntegrationTest {
     /**
      * Nettoie les données et prépare les entités de base pour les tests.
      */
-    @BeforeEach
+   @BeforeEach
     void setUp() {
         // --- Nettoyage des données ---
         entityManager.getEntityManager().createQuery("DELETE FROM Transaction").executeUpdate();

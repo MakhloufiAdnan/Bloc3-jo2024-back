@@ -1,0 +1,56 @@
+# Configuration spécifique pour l'environnement de TEST d'INTÉGRATION (Testcontainers/PostgreSQL)
+# Ce profil est activé via @ActiveProfiles("integration") sur les classes de test d'intégration.
+spring:
+  # Les propriétés de datasource seront DYNAMIQUEMENT fournies par AbstractPostgresIntegrationTest
+  # via @DynamicPropertySource. Ces valeurs ici sont des placeholders ou pour les tests sans Testcontainers.
+  datasource:
+    hikari:
+      leak-detection-threshold: 15000
+
+  # Configuration JPA/Hibernate pour les tests d'intégration
+  jpa:
+    hibernate:
+      ddl-auto: none #  Désactive la gestion du schéma par Hibernate, car init.sql le gère.
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  sql:
+    init:
+      mode: never # Désactive l'initialisation SQL de Spring pour éviter tout conflit avec init.sql de Testcontainers
+
+  main:
+    web-application-type: servlet
+
+  mail:
+    host: localhost
+    port: 25
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+            required: false
+
+jwt:
+  secret: dGhpc2lzYXJlYWxseWxvbmdhbmRzZWN1cmVqd3RzZWNyZXRrZXlmb3JqbzIwMjRjZXR0ZUNsZWRvaXRldHJlU3VwZXJlU2VTdXBlcnRjbG9uZ3VlSmUgbmUgc2FpcyBwbHVzIHF1b2lkaXJl
+  expiration: 100000
+
+admin:
+  email: "admin-integration-test@example.com"
+  password: "AdminIntegrationPass123!"
+
+app:
+  frontend:
+    confirmation-base-url: "http://localhost:12345/test-confirm" # URL factice pour les tests
+    reset-password-base-url: "http://localhost:12345/test-reset"
+  email:
+    sujet:
+      billet: "[TEST-INTEG] Votre billet pour les JO (Test)"
+    contenu:
+      billet: "Bonjour %s, (Test d'intégration) Voici votre clé de billet: %s."

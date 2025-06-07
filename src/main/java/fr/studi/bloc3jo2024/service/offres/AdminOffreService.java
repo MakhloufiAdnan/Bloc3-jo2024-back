@@ -21,6 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Service pour la gestion des offres par les administrateurs.
+ * Fournit des fonctionnalités CRUD complètes pour les offres, ainsi que des méthodes
+ * pour obtenir des statistiques de vente.
+ */
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -43,6 +48,12 @@ public class AdminOffreService {
                 });
     }
 
+    /**
+     * Crée une nouvelle offre et l'associe à une discipline.
+     *
+     * @param creerOffreDto DTO contenant les informations pour la création de l'offre.
+     * @return Le DTO de l'offre nouvellement créée.
+     */
     public OffreAdminDto ajouterOffre(CreerOffreDto creerOffreDto) {
         log.info("Ajout d'une nouvelle offre pour la discipline ID : {}", creerOffreDto.getIdDiscipline());
         Discipline discipline = findDisciplineByIdOrThrow(creerOffreDto.getIdDiscipline());
@@ -55,22 +66,37 @@ public class AdminOffreService {
         return convertToOffreAdminDtoWithDetails(offreCreee);
     }
 
+    /**
+     * Récupère une offre par son identifiant.
+     *
+     * @param idOffre L'identifiant de l'offre.
+     * @return Le DTO de l'offre correspondante.
+     * @throws ResourceNotFoundException si aucune offre n'est trouvée pour l'ID donné.
+     */
     @Transactional(readOnly = true)
     public OffreAdminDto obtenirOffreParId(Long idOffre) {
         log.debug("Récupération de l'offre ID : {}", idOffre);
         Offre offre = offreRepository.findById(idOffre)
                 .orElseThrow(() -> {
-                    log.warn(OFFRE_NON_TROUVEE_ID_PREFIX + "{}", idOffre);
+                    log.warn("Offre non trouvée avec l'ID : {}", idOffre);
                     return new ResourceNotFoundException(OFFRE_NON_TROUVEE_ID_PREFIX + idOffre);
                 });
         return convertToOffreAdminDtoWithDetails(offre);
     }
 
+    /**
+     * Met à jour une offre existante.
+     *
+     * @param idOffre L'identifiant de l'offre à mettre à jour.
+     * @param mettreAJourOffreDto DTO contenant les nouvelles informations de l'offre.
+     * @return Le DTO de l'offre mise à jour.
+     * @throws ResourceNotFoundException si aucune offre ou discipline n'est trouvée.
+     */
     public OffreAdminDto mettreAJourOffre(Long idOffre, MettreAJourOffreDto mettreAJourOffreDto) {
         log.info("Mise à jour de l'offre ID : {}", idOffre);
         Offre offreExistante = offreRepository.findById(idOffre)
                 .orElseThrow(() -> {
-                    log.warn(OFFRE_NON_TROUVEE_ID_PREFIX + "{}", idOffre);
+                    log.warn("Offre non trouvée avec l'ID : {}", idOffre);
                     return new ResourceNotFoundException(OFFRE_NON_TROUVEE_ID_PREFIX + idOffre);
                 });
 
@@ -84,6 +110,13 @@ public class AdminOffreService {
         return convertToOffreAdminDtoWithDetails(offreMiseAJour);
     }
 
+    /**
+     * Supprime une offre par son identifiant.
+     * Avant la suppression, l'offre est retirée de tous les paniers utilisateurs.
+     *
+     * @param idOffre L'identifiant de l'offre à supprimer.
+     * @throws ResourceNotFoundException si aucune offre n'est trouvée pour l'ID donné.
+     */
     public void supprimerOffre(Long idOffre) {
         log.info("Tentative de suppression de l'offre ID : {}", idOffre);
         Offre offre = offreRepository.findById(idOffre)
@@ -97,6 +130,12 @@ public class AdminOffreService {
         log.info("Offre ID : {} supprimée avec succès.", idOffre);
     }
 
+    /**
+     * Récupère une liste paginée de toutes les offres.
+     *
+     * @param pageable L'information de pagination.
+     * @return Une page de DTOs d'offres.
+     */
     @Transactional(readOnly = true)
     public Page<OffreAdminDto> obtenirToutesLesOffres(Pageable pageable) {
         log.debug("Récupération de toutes les offres (admin) avec pagination : {}", pageable);
@@ -104,25 +143,33 @@ public class AdminOffreService {
         return pageOffres.map(this::convertToOffreAdminDtoWithDetails);
     }
 
+    /**
+     * Calcule le nombre total de billets vendus pour chaque offre.
+     *
+     * @return Une Map associant l'ID de l'offre au nombre de billets vendus.
+     */
     @Transactional(readOnly = true)
     public Map<Long, Long> getNombreDeVentesParOffre() {
-        // ... (inchangé)
         log.debug("Calcul du nombre de ventes par offre.");
         return offreRepository.countBilletsByOffreId().stream()
                 .collect(Collectors.toMap(
-                        result -> (Long) result[0],
-                        result -> (Long) result[1]
+                        result -> (Long) ((Object[]) result)[0],
+                        result -> (Long) ((Object[]) result)[1]
                 ));
     }
 
+    /**
+     * Calcule le nombre total de billets vendus regroupés par type d'offre.
+     *
+     * @return Une Map associant le type d'offre (String) au nombre de billets vendus.
+     */
     @Transactional(readOnly = true)
     public Map<String, Long> getVentesParTypeOffre() {
-        // ... (inchangé)
         log.debug("Calcul du nombre de ventes par type d'offre.");
         return offreRepository.countBilletsByTypeOffre().stream()
                 .collect(Collectors.toMap(
-                        result -> (result[0] != null) ? result[0].toString() : "INCONNU",
-                        result -> (Long) result[1]
+                        result -> (((Object[]) result)[0] != null) ? ((Object[]) result)[0].toString() : "INCONNU",
+                        result -> (Long) ((Object[]) result)[1]
                 ));
     }
 

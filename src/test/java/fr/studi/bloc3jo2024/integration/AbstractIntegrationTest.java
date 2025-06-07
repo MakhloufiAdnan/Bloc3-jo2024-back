@@ -44,11 +44,11 @@ public abstract class AbstractIntegrationTest {
 
     public static Network sharedNetwork = Network.newNetwork();
 
-    @SuppressWarnings("resource")
+
     public static GenericContainer<?> greenMailContainer;
-    @SuppressWarnings("resource")
+
     public static PostgreSQLContainer<?> postgresDBContainer;
-    @SuppressWarnings("resource")
+
     public static GenericContainer<?> backendContainer;
 
     private static final Properties envFileProperties = new Properties();

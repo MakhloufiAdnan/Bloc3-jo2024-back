@@ -1,13 +1,13 @@
 package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.Objects;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -16,23 +16,42 @@ import lombok.NoArgsConstructor;
 })
 public class Comporter {
 
-    // Clé composite composée de l'ID de l'épreuve et de l'ID de la discipline
     @EmbeddedId
     private ComporterKey id;
 
-    // Attribut pour indiquer si c'est la journée de médaille.
     @Column(name = "jr_de_medaille")
     private Boolean jrDeMedaille;
 
-    // Relation vers l'entité Epreuve. Lier l'attribut idEpreuve de la clé composite à cette relation.
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idEpreuve")
     @JoinColumn(name = "id_epreuve", nullable = false)
     private Epreuve epreuve;
 
-    // Relation vers l'entité Discipline. Lier l'attribut idDiscipline de la clé composite à cette relation.
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idDiscipline")
     @JoinColumn(name = "id_discipline", nullable = false)
     private Discipline discipline;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Comporter comporter = (Comporter) o;
+        return Objects.equals(id, comporter.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Comporter{" +
+                "id=" + id +
+                ", jrDeMedaille=" + jrDeMedaille +
+                (epreuve != null ? ", epreuveId=" + epreuve.getIdEpreuve() : "") +
+                (discipline != null ? ", disciplineId=" + discipline.getIdDiscipline() : "") +
+                '}';
+    }
 }

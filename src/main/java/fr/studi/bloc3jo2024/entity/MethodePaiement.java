@@ -2,15 +2,16 @@ package fr.studi.bloc3jo2024.entity;
 
 import fr.studi.bloc3jo2024.entity.enums.MethodePaiementEnum;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "methodes_paiement")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class MethodePaiement {
@@ -24,4 +25,24 @@ public class MethodePaiement {
     @Column(name = "nom_methode_paiement", nullable = false, unique = true, length = 50)
     @JdbcType(PostgreSQLEnumJdbcType.class)
     private MethodePaiementEnum nomMethodePaiement;
+
+    @Override
+    public String toString() {
+        return "MethodePaiement{" +
+                "idMethode=" + idMethode +
+                ", nomMethodePaiement=" + nomMethodePaiement +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MethodePaiement that)) return false;
+        return idMethode != null && idMethode.equals(that.idMethode);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idMethode);
+    }
 }

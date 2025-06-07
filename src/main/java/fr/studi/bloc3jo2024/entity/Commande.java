@@ -1,13 +1,14 @@
 package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.Objects;
 
 @Entity
 @Table(name = "commandes")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Commande {
@@ -19,12 +20,32 @@ public class Commande {
     @Column(name = "num_commande", nullable = false, unique = true, length = 20)
     private String numCommande;
 
-    // Indique si l'email de confirmation de la commande a été envoyé.
     @Column(name = "envoye_mail", nullable = false)
     private boolean envoyeMail = false;
 
-    // Relation One-to-One vers l'entité Payement. Chaque commande est liée à un paiement unique.
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_payement", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_commande_payement"))
     private Paiement paiement;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Commande commande)) return false;
+        return Objects.equals(idCommande, commande.idCommande);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idCommande);
+    }
+
+    @Override
+    public String toString() {
+        return "Commande{" +
+                "idCommande=" + idCommande +
+                ", numCommande='" + numCommande + '\'' +
+                ", envoyeMail=" + envoyeMail +
+                ", paiementId=" + (paiement != null && paiement.getIdPaiement() != null ? paiement.getIdPaiement() : "null") +
+                '}';
+    }
 }

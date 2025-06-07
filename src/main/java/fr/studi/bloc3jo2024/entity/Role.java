@@ -2,17 +2,16 @@ package fr.studi.bloc3jo2024.entity;
 
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -32,7 +31,7 @@ public class Role {
     private TypeRole typeRole;
 
     // Relation One-to-Many vers l'entité Utilisateur. Un rôle peut être attribué à plusieurs utilisateurs.
-    @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "role", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private Set<Utilisateur> utilisateurs;
 
     @Override
@@ -41,5 +40,20 @@ public class Role {
                 "idRole=" + idRole +
                 ", typeRole=" + typeRole +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Role role)) return false;
+        if (idRole == null || role.idRole == null) {
+            return false;
+        }
+        return Objects.equals(idRole, role.idRole);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idRole);
     }
 }

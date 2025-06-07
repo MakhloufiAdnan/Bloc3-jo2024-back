@@ -1,16 +1,17 @@
 package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
 @Table(name = "athletes")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -20,15 +21,48 @@ public class Athlete {
     @Column(name = "id_athlete")
     private Long idAthlete;
 
-    @Column(name = "nom", nullable = false)
+    @Column(name = "nom", nullable = false, length = 100)
     private String nom;
 
-    @Column(name = "prenom", nullable = false)
+    @Column(name = "prenom", nullable = false, length = 100)
     private String prenom;
-    @ManyToOne
+
+    @Column(name = "date_naissance")
+    private LocalDate dateNaissance;
+
+    @Column(name = "genre", length = 10)
+    private String genre;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_pays", nullable = false)
     private Pays pays;
 
     @OneToMany(mappedBy = "athlete")
-    private Set<Pratiquer> epreuves;
+    @Builder.Default
+    private Set<Pratiquer> epreuves = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Athlete athlete)) return false;
+        return Objects.equals(idAthlete, athlete.idAthlete);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idAthlete);
+    }
+
+    @Override
+    public String toString() {
+        return "Athlete{" +
+                "idAthlete=" + idAthlete +
+                ", nom='" + nom + '\'' +
+                ", prenom='" + prenom + '\'' +
+                ", dateNaissance=" + dateNaissance +
+                ", genre='" + genre + '\'' +
+                ", paysId=" + (pays != null && pays.getIdPays() != null ? pays.getIdPays() : "null") +
+                ", epreuvesCount=" + (epreuves != null ? epreuves.size() : 0) +
+                '}';
+    }
 }

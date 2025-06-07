@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 @Embeddable
@@ -15,6 +16,9 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 public class ComporterKey implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     // Partie de la clé primaire composite référençant l'ID de l'épreuve.
     @Column(name = "id_epreuve")

@@ -2,10 +2,7 @@ package fr.studi.bloc3jo2024.entity;
 
 import fr.studi.bloc3jo2024.entity.enums.StatutPaiement;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
@@ -14,7 +11,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "paiements")
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Paiement {
@@ -32,7 +31,7 @@ public class Paiement {
     @Column(name = "date_paiement", nullable = false)
     private LocalDateTime datePaiement;
 
-    @Column(name = "montant", nullable = false)
+    @Column(name = "montant", nullable = false, precision = 38, scale = 2)
     private BigDecimal montant;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,16 +40,39 @@ public class Paiement {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_utilisateur", nullable = false, foreignKey = @ForeignKey(name = "fk_paiement_utilisateur"))
-    @EqualsAndHashCode.Exclude
     private Utilisateur utilisateur;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_panier", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_paiement_panier"))
-    @EqualsAndHashCode.Exclude
     private Panier panier;
 
     // Transaction est une entité avec une relation OneToOne vers Paiement
-    @OneToOne(mappedBy = "paiement", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
+    @OneToOne(mappedBy = "paiement", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Transaction transaction;
+
+    @Override
+    public String toString() {
+        return "Paiement{" +
+                "idPaiement=" + idPaiement +
+                ", statutPaiement=" + statutPaiement +
+                ", datePaiement=" + datePaiement +
+                ", montant=" + montant +
+                ", methodePaiementId=" + (methodePaiement != null ? methodePaiement.getIdMethode() : null) +
+                ", utilisateurId=" + (utilisateur != null ? utilisateur.getIdUtilisateur() : null) +
+                ", panierId=" + (panier != null ? panier.getIdPanier() : null) +
+                '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return idPaiement != null ? idPaiement.hashCode() : 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Paiement paiement = (Paiement) obj;
+        return idPaiement != null && idPaiement.equals(paiement.idPaiement);
+    }
 }

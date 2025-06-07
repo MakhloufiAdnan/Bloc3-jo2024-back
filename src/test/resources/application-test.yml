@@ -1,7 +1,8 @@
-# Configuration spécifique pour l'environnement de TEST (sauf test bout en bout)
+# Configuration spécifique pour l'environnement de TEST unitaire
 spring:
   application:
     name: jo2024-test
+
   sql:
     init:
       # Exécute les scripts SQL
@@ -38,3 +39,4 @@ spring:
 jwt:
   secret: dGhpc2lzYXJlYWxseWxvbmdhbmRzZWN1cmVqd3RzZWNyZXRrZXlmb3JqbzIwMjRjZXR0ZUNsZWRvaXRldHJlU3VwZXJlU2VTdXBlcnRjbG9uZ3VlSmUgbmUgc2FpcyBwbHVzIHF1b2lkaXJl
   expiration: 100000
+

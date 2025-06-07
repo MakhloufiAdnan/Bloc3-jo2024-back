@@ -3,7 +3,6 @@ package fr.studi.bloc3jo2024.service;
 import fr.studi.bloc3jo2024.dto.disciplines.CreerDisciplineDto;
 import fr.studi.bloc3jo2024.dto.disciplines.MettreAJourDisciplineDto;
 import fr.studi.bloc3jo2024.entity.Adresse;
-import fr.studi.bloc3jo2024.entity.Comporter;
 import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Epreuve;
 import fr.studi.bloc3jo2024.repository.AdresseRepository;
@@ -80,7 +79,7 @@ class DisciplineServiceTest {
 
         // Assert
         assertNotNull(createdDiscipline);
-        assertEquals("Natation", createdDiscipline.getNomDiscipline()); // Note: Returns dummyDiscipline, not the one built from DTO
+        assertEquals("Natation", createdDiscipline.getNomDiscipline());
         verify(adresseRepository, times(1)).findById(creerDisciplineDto.getIdAdresse());
         verify(disciplineRepository, times(1)).save(any(Discipline.class));
     }
@@ -169,17 +168,13 @@ class DisciplineServiceTest {
     void retirerPlaces_Successful() {
         // Arrange
         when(disciplineRepository.findById(1L)).thenReturn(Optional.of(dummyDiscipline));
-        when(disciplineRepository.decrementerPlaces(1L, 10)).thenReturn(1); // Indicates one row updated
-        // We don't need to re-stub findById for the second call inside getDisciplineOrThrow, Mockito handles this.
+        when(disciplineRepository.decrementerPlaces(1L, 10)).thenReturn(1);
 
         // Act
         Discipline updatedDiscipline = disciplineService.retirerPlaces(1L, 10);
 
         // Assert
         assertNotNull(updatedDiscipline);
-        // The actual place count change isn't reflected in dummyDiscipline here,
-        // but the repository method was called and the result is the fetched entity.
-        // Verified that findById is called twice by getDisciplineOrThrow (before and after decrement)
         verify(disciplineRepository, times(2)).findById(1L);
         verify(disciplineRepository, times(1)).decrementerPlaces(1L, 10);
     }
@@ -191,7 +186,6 @@ class DisciplineServiceTest {
 
         // Act & Assert
         assertThrows(EntityNotFoundException.class, () -> disciplineService.retirerPlaces(1L, 10));
-        // Verified that findById is called once by the first getDisciplineOrThrow
         verify(disciplineRepository, times(1)).findById(1L);
         verify(disciplineRepository, times(0)).decrementerPlaces(anyLong(), anyInt());
     }
@@ -204,7 +198,6 @@ class DisciplineServiceTest {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> disciplineService.retirerPlaces(1L, 0));
         assertThrows(IllegalArgumentException.class, () -> disciplineService.retirerPlaces(1L, -50));
-        // findById is called once for each call to retirerPlaces before the exception is thrown
         verify(disciplineRepository, times(2)).findById(1L);
         verify(disciplineRepository, times(0)).decrementerPlaces(anyLong(), anyInt());
     }
@@ -213,11 +206,10 @@ class DisciplineServiceTest {
     void retirerPlaces_NoRowsUpdated_ThrowsIllegalStateException() {
         // Arrange
         when(disciplineRepository.findById(1L)).thenReturn(Optional.of(dummyDiscipline));
-        when(disciplineRepository.decrementerPlaces(1L, 10)).thenReturn(0); // Indicates no rows updated
+        when(disciplineRepository.decrementerPlaces(1L, 10)).thenReturn(0);
 
         // Act & Assert
         assertThrows(IllegalStateException.class, () -> disciplineService.retirerPlaces(1L, 10));
-        // Verified that findById is called once by the first getDisciplineOrThrow
         verify(disciplineRepository, times(1)).findById(1L);
         verify(disciplineRepository, times(1)).decrementerPlaces(1L, 10);
     }
@@ -230,7 +222,7 @@ class DisciplineServiceTest {
         disciplineBeforeUpdate.setIdDiscipline(1L);
         disciplineBeforeUpdate.setNbPlaceDispo(100);
         when(disciplineRepository.findById(1L)).thenReturn(Optional.of(disciplineBeforeUpdate));
-        when(disciplineRepository.save(any(Discipline.class))).thenReturn(disciplineBeforeUpdate); // Returns the updated entity
+        when(disciplineRepository.save(any(Discipline.class))).thenReturn(disciplineBeforeUpdate);
 
         // Act
         Discipline updatedDiscipline = disciplineService.ajouterPlaces(1L, 50);
@@ -238,7 +230,6 @@ class DisciplineServiceTest {
         // Assert
         assertNotNull(updatedDiscipline);
         assertEquals(150, updatedDiscipline.getNbPlaceDispo());
-        // Verified that findById is called once by getDisciplineOrThrow
         verify(disciplineRepository, times(1)).findById(1L);
         verify(disciplineRepository, times(1)).save(any(Discipline.class));
     }
@@ -250,7 +241,6 @@ class DisciplineServiceTest {
 
         // Act & Assert
         assertThrows(EntityNotFoundException.class, () -> disciplineService.ajouterPlaces(1L, 50));
-        // Verified that findById is called once by getDisciplineOrThrow
         verify(disciplineRepository, times(1)).findById(1L);
         verify(disciplineRepository, times(0)).save(any(Discipline.class));
     }
@@ -263,7 +253,6 @@ class DisciplineServiceTest {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> disciplineService.ajouterPlaces(1L, 0));
         assertThrows(IllegalArgumentException.class, () -> disciplineService.ajouterPlaces(1L, -50));
-        // findById is called once for each call to ajouterPlaces before the exception is thrown
         verify(disciplineRepository, times(2)).findById(1L);
         verify(disciplineRepository, times(0)).save(any(Discipline.class));
     }
@@ -281,7 +270,6 @@ class DisciplineServiceTest {
         // Assert
         assertNotNull(updatedDiscipline);
         assertEquals(futureDate, updatedDiscipline.getDateDiscipline());
-        // Verified that findById is called once by getDisciplineOrThrow
         verify(disciplineRepository, times(1)).findById(1L);
         verify(disciplineRepository, times(1)).save(any(Discipline.class));
     }
@@ -290,13 +278,10 @@ class DisciplineServiceTest {
     void updateDate_DisciplineNotFound_ThrowsEntityNotFoundException() {
         // Arrange
         LocalDateTime futureDate = LocalDateTime.now().plusDays(30);
-        // Mock findById to return empty only when called with the specific ID
         when(disciplineRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        // Note: The date check passes here, so getDisciplineOrThrow is called
         assertThrows(EntityNotFoundException.class, () -> disciplineService.updateDate(1L, futureDate));
-        // Verified that findById is called once by getDisciplineOrThrow before the EntityNotFoundException
         verify(disciplineRepository, times(1)).findById(1L);
         verify(disciplineRepository, times(0)).save(any(Discipline.class));
     }
@@ -305,12 +290,10 @@ class DisciplineServiceTest {
     void updateDate_DateInPast_ThrowsIllegalArgumentException() {
         // Arrange
         LocalDateTime pastDate = LocalDateTime.now().minusDays(1);
-        // We don't need to mock findById here because it's never called when the date is in the past.
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> disciplineService.updateDate(1L, pastDate));
-        // Verified that findById was NOT called because the IllegalArgumentException was thrown first
-        verify(disciplineRepository, times(0)).findById(anyLong()); // Use anyLong() as findById(1L) is never called
+        verify(disciplineRepository, times(0)).findById(anyLong());
         verify(disciplineRepository, times(0)).save(any(Discipline.class));
     }
 
@@ -398,7 +381,7 @@ class DisciplineServiceTest {
     void findDisciplinesFiltered_NoFilters() {
         // Arrange
         List<Discipline> allDisciplines = Collections.singletonList(dummyDiscipline);
-        when(disciplineRepository.findAll()).thenReturn(allDisciplines);
+        when(disciplineRepository.findAllWithAdresse()).thenReturn(allDisciplines);
 
         // Act
         List<Discipline> result = disciplineService.findDisciplinesFiltered(null, null, null);
@@ -411,17 +394,12 @@ class DisciplineServiceTest {
         verify(disciplineRepository, times(0)).findDisciplinesByVille(anyString());
         verify(disciplineRepository, times(0)).findDisciplinesByDateDiscipline(any(LocalDateTime.class));
         verify(disciplineRepository, times(0)).findDisciplinesByEpreuveId(anyLong());
-        verify(disciplineRepository, times(1)).findAll();
+        verify(disciplineRepository, times(1)).findAllWithAdresse();
     }
 
     @Test
     void getDisciplinesEnVedette_Successful() {
         // Arrange
-        Epreuve epreuveEnVedette1 = new Epreuve();
-        epreuveEnVedette1.setIdEpreuve(1L);
-        Epreuve epreuveEnVedette2 = new Epreuve();
-        epreuveEnVedette2.setIdEpreuve(2L);
-
         Discipline discipline1 = new Discipline();
         discipline1.setIdDiscipline(1L);
         discipline1.setNomDiscipline("Danse");
@@ -430,34 +408,30 @@ class DisciplineServiceTest {
         discipline2.setIdDiscipline(2L);
         discipline2.setNomDiscipline("Boxe");
 
-        Comporter comporteur1 = new Comporter();
-        comporteur1.setDiscipline(discipline1);
-        comporteur1.setEpreuve(epreuveEnVedette1);
-
-        Comporter comporteur2 = new Comporter();
-        comporteur2.setDiscipline(discipline2);
-        comporteur2.setEpreuve(epreuveEnVedette1);
-
-        Comporter comporteur3 = new Comporter();
-        comporteur3.setDiscipline(discipline1); // Same discipline as comporteur1
-        comporteur3.setEpreuve(epreuveEnVedette2);
-
-        epreuveEnVedette1.setComporters(new HashSet<>(Arrays.asList(comporteur1, comporteur2)));
-        epreuveEnVedette2.setComporters(new HashSet<>(Collections.singletonList(comporteur3)));
+        Epreuve epreuveEnVedette1 = new Epreuve();
+        epreuveEnVedette1.setIdEpreuve(1L);
+        Epreuve epreuveEnVedette2 = new Epreuve();
+        epreuveEnVedette2.setIdEpreuve(2L);
 
         List<Epreuve> epreuvesEnVedetteList = Arrays.asList(epreuveEnVedette1, epreuveEnVedette2);
-
         when(epreuveService.getEpreuvesEnVedette()).thenReturn(epreuvesEnVedetteList);
+
+        List<Long> expectedEpreuveIdsArgument = Arrays.asList(1L, 2L);
+        Set<Discipline> expectedDisciplinesFromRepo = new HashSet<>(Arrays.asList(discipline1, discipline2));
+        when(disciplineRepository.findDisciplinesByEpreuveIdsWithAdresse(expectedEpreuveIdsArgument))
+                .thenReturn(expectedDisciplinesFromRepo);
 
         // Act
         Set<Discipline> result = disciplineService.getDisciplinesEnVedette();
 
         // Assert
         assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.contains(discipline1));
-        assertTrue(result.contains(discipline2));
+        assertEquals(2, result.size(), "The number of disciplines returned should be 2.");
+        assertTrue(result.contains(discipline1), "Result should contain discipline1");
+        assertTrue(result.contains(discipline2), "Result should contain discipline2");
+
         verify(epreuveService, times(1)).getEpreuvesEnVedette();
+        verify(disciplineRepository, times(1)).findDisciplinesByEpreuveIdsWithAdresse(expectedEpreuveIdsArgument);
     }
 
     @Test

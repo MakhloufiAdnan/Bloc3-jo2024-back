@@ -1,6 +1,5 @@
-/*package fr.studi.bloc3jo2024.integration;
+package fr.studi.bloc3jo2024.integration;
 
-import fr.studi.bloc3jo2024.integration.AbstractPostgresIntegrationTest;
 import fr.studi.bloc3jo2024.entity.*;
 import fr.studi.bloc3jo2024.entity.enums.TypeAuthTokenTemp;
 import fr.studi.bloc3jo2024.entity.enums.TypeRole;
@@ -12,11 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -26,9 +26,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@jakarta.transaction.Transactional
+
+@Transactional
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("integration")
 class AuthTokenTemporaireServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(AuthTokenTemporaireServiceIntegrationTest.class);
@@ -55,19 +56,17 @@ class AuthTokenTemporaireServiceIntegrationTest extends AbstractPostgresIntegrat
     private Environment env;
 
     private Utilisateur testUtilisateur;
+
     @BeforeEach
     void setUp() {
-
-        tokenRepository.deleteAllInBatch(); // Supprime tous les tokens temporaires
-        utilisateurRepository.deleteAllInBatch(); // Supprime tous les utilisateurs
-        adresseRepository.deleteAllInBatch(); // Supprime toutes les adresses
-        paysRepository.deleteAllInBatch(); // Supprime tous les pays
-        roleRepository.deleteAllInBatch(); // Supprime tous les rôles
+        tokenRepository.deleteAllInBatch();
+        utilisateurRepository.deleteAllInBatch();
+        adresseRepository.deleteAllInBatch();
+        paysRepository.deleteAllInBatch();
+        roleRepository.deleteAllInBatch();
 
         log.info("Spring Environment - Datasource URL from @BeforeEach: {}", env.getProperty("spring.datasource.url"));
         log.info("Spring Environment - Datasource Username from @BeforeEach: {}", env.getProperty("spring.datasource.username"));
-        // Vérifie que le conteneur PostgreSQL est bien démarré et que Spring y est connecté.
-        // Accès au conteneur via le nom de la classe de base.
         assertTrue(AbstractPostgresIntegrationTest.postgresDBContainer.isRunning(), "PostgreSQL container should be running before setup.");
         assertEquals(AbstractPostgresIntegrationTest.postgresDBContainer.getJdbcUrl(), env.getProperty("spring.datasource.url"), "Spring datasource URL should match Testcontainer URL.");
 
@@ -118,6 +117,7 @@ class AuthTokenTemporaireServiceIntegrationTest extends AbstractPostgresIntegrat
 
         assertEquals(rawTokenIdentifier, savedToken.getTokenIdentifier(), "L'identifiant du token ne correspond pas.");
         assertTrue(passwordEncoder.matches(rawTokenIdentifier, savedToken.getTokenHache()), "Le token brut doit correspondre au haché en base.");
+        // Assuming Utilisateur entity has getIdUtilisateur() mapping to id_utilisateur_uuid
         assertEquals(testUtilisateur.getIdUtilisateur(), savedToken.getUtilisateur().getIdUtilisateur(), "Le token doit être lié au bon utilisateur.");
         assertEquals(type, savedToken.getTypeToken(), "Le type du token doit être correct.");
         assertFalse(savedToken.isUsed(), "Le token doit être marqué comme non utilisé initialement.");
@@ -178,10 +178,8 @@ class AuthTokenTemporaireServiceIntegrationTest extends AbstractPostgresIntegrat
         AuthTokenTemporaire tokenEntity = tokenRepository.findByTokenIdentifier(rawTokenIdentifier)
                 .orElseThrow(() -> new AssertionError("Token non trouvé pour le test markAsUsed."));
 
-        AuthTokenTemporaire tokenParam = new AuthTokenTemporaire();
-        tokenParam.setIdTokenTemp(tokenEntity.getIdTokenTemp());
+        tokenService.markAsUsed(tokenEntity);
 
-        tokenService.markAsUsed(tokenParam);
 
         AuthTokenTemporaire updatedToken = tokenRepository.findById(tokenEntity.getIdTokenTemp())
                 .orElseThrow(() -> new AssertionError("Token non trouvé après markAsUsed."));
@@ -195,13 +193,16 @@ class AuthTokenTemporaireServiceIntegrationTest extends AbstractPostgresIntegrat
         String idValid = UUID.randomUUID().toString();
         String idValidUsed = UUID.randomUUID().toString();
 
+        Adresse existingAdresse = testUtilisateur.getAdresse();
+        Role existingRole = testUtilisateur.getRole();
+
         Utilisateur anotherUser = Utilisateur.builder()
                 .email("anotheruser_" + UUID.randomUUID().toString().substring(0,8) + "@example.com")
                 .nom("Another")
                 .prenom("User")
                 .dateNaissance(LocalDate.of(1995, 5, 5))
-                .adresse(testUtilisateur.getAdresse())
-                .role(testUtilisateur.getRole())
+                .adresse(existingAdresse)
+                .role(existingRole)
                 .isVerified(true)
                 .build();
         utilisateurRepository.saveAndFlush(anotherUser);
@@ -280,4 +281,4 @@ class AuthTokenTemporaireServiceIntegrationTest extends AbstractPostgresIntegrat
         assertEquals(0, purgedCount);
         assertEquals(2, tokenRepository.count());
     }
-}*/
+}

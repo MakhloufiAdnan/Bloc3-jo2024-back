@@ -3,11 +3,7 @@ package fr.studi.bloc3jo2024.entity;
 import fr.studi.bloc3jo2024.entity.enums.StatutOffre;
 import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
@@ -16,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -98,27 +95,21 @@ public class Offre {
     @Transient
     public LocalDateTime getEffectiveDateExpiration() {
         if (this.discipline == null || this.discipline.getDateDiscipline() == null) {
-            // Cas anormal, la discipline est @JoinColumn(nullable = false)
-            // mais sa dateDiscipline pourrait être null si l'entité Discipline le permet.
-            // Retourner la date d'expiration de l'offre si elle existe, sinon null (ou lever une exception).
             return this.dateExpiration;
         }
 
         LocalDateTime disciplineDate = this.discipline.getDateDiscipline();
 
         if (this.dateExpiration == null) {
-            return disciplineDate; // Expiration dictée par la discipline
+            return disciplineDate;
         }
-
-        // Si les deux dates existent, prendre la plus proche (la première qui arrive)
-        return this.dateExpiration.isBefore(disciplineDate) ? this.dateExpiration : disciplineDate;
+        return this.dateExpiration.isBefore(disciplineDate)? this.dateExpiration : disciplineDate;
     }
 
 
     @PreUpdate
     @PrePersist
     public void updateStatutOnChange() {
-        // Ne pas modifier un statut déjà terminal comme ANNULE
         if (this.statutOffre == StatutOffre.ANNULE) {
             return;
         }
@@ -132,7 +123,7 @@ public class Offre {
         // Gérer l'expiration par date, uniquement si l'offre est encore DISPONIBLE
         if (this.statutOffre == StatutOffre.DISPONIBLE) {
             LocalDateTime effectiveExpiration = getEffectiveDateExpiration();
-            if (effectiveExpiration != null && !effectiveExpiration.toLocalDate().isAfter(LocalDate.now())) {
+            if (effectiveExpiration!= null &&!effectiveExpiration.toLocalDate().isAfter(LocalDate.now())) {
                 // Si la date effective d'expiration est aujourd'hui ou passée
                 this.statutOffre = StatutOffre.EXPIRE;
             }
@@ -151,7 +142,7 @@ public class Offre {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true; // Même instance en mémoire
-        if (o == null || getClass() != o.getClass()) return false; // Null ou classe différente
+        if (o == null || getClass()!= o.getClass()) return false; // Null ou classe différente
 
         Offre autreOffre = (Offre) o;
         if (this.idOffre == null) {
@@ -186,7 +177,7 @@ public class Offre {
                 ", capacite=" + capacite +
                 ", featured=" + featured +
                 ", version=" + version +
-                (discipline != null ? ", disciplineId=" + discipline.getIdDiscipline() + ", dateDiscipline=" + discipline.getDateDiscipline() : ", disciplineId=null") +
+                (discipline!= null? ", disciplineId=" + discipline.getIdDiscipline() + ", dateDiscipline=" + discipline.getDateDiscipline() : ", disciplineId=null") +
                 '}';
     }
 }

@@ -103,8 +103,8 @@ class EpreuveControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals(epreuveExemple2.getIdEpreuve(), response.getBody().get(0).getIdEpreuve());
-        assertTrue(response.getBody().get(0).isFeatured());
+        assertEquals(epreuveExemple2.getIdEpreuve(), response.getBody().getFirst().getIdEpreuve());
+        assertTrue(response.getBody().getFirst().isFeatured());
         verify(epreuveService, times(1)).getEpreuvesEnVedette();
     }
 

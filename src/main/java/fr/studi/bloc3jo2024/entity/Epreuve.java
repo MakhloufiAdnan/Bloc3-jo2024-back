@@ -1,16 +1,14 @@
 package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -24,7 +22,7 @@ public class Epreuve {
     @Column(name = "id_epreuve")
     private Long idEpreuve;
 
-    @Column(name = "nom_epreuve")
+    @Column(name = "nom_epreuve", nullable = false, unique = true, length = 100)
     private String nomEpreuve;
 
     @Column(name = "is_featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
@@ -33,6 +31,27 @@ public class Epreuve {
 
     // Relation via l'entité d'association Comporter (association avec l'événement).
     @Builder.Default
-    @OneToMany(mappedBy = "epreuve", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "epreuve", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Comporter> comporters = new HashSet<>();
+
+    @Override
+    public String toString() {
+        return "Epreuve{" +
+                "idEpreuve=" + idEpreuve +
+                ", nomEpreuve='" + nomEpreuve + '\'' +
+                ", isFeatured=" + isFeatured +
+                '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return (idEpreuve != null) ? idEpreuve.hashCode() : 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+         if (this == obj) return true;
+         if (!(obj instanceof Epreuve epreuve)) return false;
+         return idEpreuve != null && idEpreuve.equals(epreuve.idEpreuve);
+    }
 }

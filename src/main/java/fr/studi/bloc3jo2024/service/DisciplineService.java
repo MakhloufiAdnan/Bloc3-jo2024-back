@@ -3,7 +3,6 @@ package fr.studi.bloc3jo2024.service;
 import fr.studi.bloc3jo2024.dto.disciplines.CreerDisciplineDto;
 import fr.studi.bloc3jo2024.dto.disciplines.MettreAJourDisciplineDto;
 import fr.studi.bloc3jo2024.entity.Adresse;
-import fr.studi.bloc3jo2024.entity.Comporter;
 import fr.studi.bloc3jo2024.entity.Discipline;
 import fr.studi.bloc3jo2024.entity.Epreuve;
 import fr.studi.bloc3jo2024.repository.AdresseRepository;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -44,6 +43,8 @@ public class DisciplineService {
     }
 
     public Discipline mettreAJourDiscipline(MettreAJourDisciplineDto mettreAJourDisciplineDto) {
+        // Le getDisciplineOrThrow récupérera déjà la discipline avec son adresse si la méthode a un JOIN FETCH par défaut.
+        // Sinon, assurez-vous que l'adresse est chargée ici si nécessaire pour la mise à jour.
         Discipline discipline = getDisciplineOrThrow(mettreAJourDisciplineDto.getIdDiscipline());
         Adresse adresse = adresseRepository.findById(mettreAJourDisciplineDto.getIdAdresse())
                 .orElseThrow(() -> new EntityNotFoundException("Adresse non trouvée avec l'id " + mettreAJourDisciplineDto.getIdAdresse()));
@@ -63,11 +64,13 @@ public class DisciplineService {
     }
 
     public Discipline retirerPlaces(Long idDiscipline, int nb) {
-        getDisciplineOrThrow(idDiscipline); // Vérifier que la discipline existe
+        getDisciplineOrThrow(idDiscipline); // Vérifier que la discipline existe avant de tenter la mise à jour
         if (nb <= 0) throw new IllegalArgumentException("Le nombre à retirer doit être positif.");
         int updatedRows = disciplineRepository.decrementerPlaces(idDiscipline, nb);
         if (updatedRows == 0) {
-            throw new IllegalStateException("Impossible de retirer les places. Vérifiez l'ID et le nombre de places disponibles.");
+            // Cela peut arriver si l'ID n'existe pas, ou si nbPlaceDispo est inférieur à nb.
+            // Puisque getDisciplineOrThrow() est appelé avant, c'est forcément un problème de places.
+            throw new IllegalStateException("Impossible de retirer les places. Vérifiez le nombre de places disponibles.");
         }
         return getDisciplineOrThrow(idDiscipline); // Récupérer l'entité mise à jour
     }
@@ -105,18 +108,19 @@ public class DisciplineService {
         } else if (epreuveId != null) {
             return disciplineRepository.findDisciplinesByEpreuveId(epreuveId);
         } else {
-            return disciplineRepository.findAll();
+            return disciplineRepository.findAllWithAdresse();
         }
     }
 
     public Set<Discipline> getDisciplinesEnVedette() {
         List<Epreuve> epreuvesEnVedette = epreuveService.getEpreuvesEnVedette();
-        Set<Discipline> disciplinesEnVedette = new HashSet<>();
-        for (Epreuve epreuve : epreuvesEnVedette) {
-            for (Comporter comporteur : epreuve.getComporters()) {
-                disciplinesEnVedette.add(comporteur.getDiscipline());
-            }
+        if (epreuvesEnVedette.isEmpty()) {
+            return Collections.emptySet();
         }
-        return disciplinesEnVedette;
+        // Extraire les IDs des épreuves en vedette
+        List<Long> epreuveIds = epreuvesEnVedette.stream()
+                .map(Epreuve::getIdEpreuve)
+                .toList();
+        return disciplineRepository.findDisciplinesByEpreuveIdsWithAdresse(epreuveIds);
     }
 }

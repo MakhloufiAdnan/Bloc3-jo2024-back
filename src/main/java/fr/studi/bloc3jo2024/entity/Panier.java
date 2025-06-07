@@ -3,21 +3,19 @@ package fr.studi.bloc3jo2024.entity;
 import fr.studi.bloc3jo2024.entity.enums.StatutPanier;
 import jakarta.persistence.*;
 import jakarta.persistence.Index;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -47,18 +45,15 @@ public class Panier {
     // Relation Many-to-One vers l'entité Utilisateur. Chaque panier appartient à un utilisateur.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_utilisateur_uuid", nullable = false)
-    @EqualsAndHashCode.Exclude
     private Utilisateur utilisateur;
 
     // Relation One-to-Many vers l'entité ContenuPanier (table d'association avec Offre).
     @Builder.Default
     @OneToMany(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
     private Set<ContenuPanier> contenuPaniers = new HashSet<>();
 
     // Relation One-to-One vers l'entité Payement. Un panier peut être associé à un paiement.
     @OneToOne(mappedBy = "panier", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @EqualsAndHashCode.Exclude
     private Paiement paiement;
 
     @Version
@@ -68,5 +63,31 @@ public class Panier {
     @PrePersist
     public void prePersist() {
         if (dateAjout == null) dateAjout = LocalDateTime.now();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Panier panier)) return false;
+        return Objects.equals(idPanier, panier.idPanier);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idPanier);
+    }
+
+    @Override
+    public String toString() {
+         return "Panier{" +
+                 "idPanier=" + idPanier +
+                 ", montantTotal=" + montantTotal +
+                 ", statut=" + statut +
+                 ", dateAjout=" + dateAjout +
+                 (utilisateur != null ? ", utilisateurId=" + utilisateur.getIdUtilisateur() : "") +
+                 ", contenuPaniersCount=" + (contenuPaniers != null ? contenuPaniers.size() : 0) +
+                 (paiement != null ? ", paiementId=" + paiement.getIdPaiement() : "") +
+                 ", version=" + version +
+                 '}';
     }
 }

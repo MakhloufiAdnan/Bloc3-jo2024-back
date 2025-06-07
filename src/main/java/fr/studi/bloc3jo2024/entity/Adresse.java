@@ -3,12 +3,7 @@ package fr.studi.bloc3jo2024.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -35,7 +30,7 @@ public class Adresse {
     @Column(name = "nom_rue", nullable = false, length = 250)
     private String nomRue;
 
-    @Column(name = "ville", nullable = false, length = 50)
+    @Column(name = "ville", nullable = false, length = 100)
     private String ville;
 
     @Column(name = "code_postal", nullable = false, length = 10)
@@ -47,7 +42,6 @@ public class Adresse {
      */
     @OneToMany(mappedBy = "adresse", fetch = FetchType.LAZY)
     @Builder.Default
-    @ToString.Exclude
     private Set<Discipline> disciplines = new HashSet<>();
 
     /**
@@ -56,7 +50,6 @@ public class Adresse {
      */
     @OneToMany(mappedBy = "adresse", fetch = FetchType.LAZY)
     @Builder.Default
-    @ToString.Exclude
     private Set<Utilisateur> utilisateurs = new HashSet<>();
 
     /**
@@ -64,15 +57,13 @@ public class Adresse {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_pays", nullable = false, foreignKey = @ForeignKey(name = "fk_adresse_pays"))
-    @ToString.Exclude
     private Pays pays;
 
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Adresse adresse = (Adresse) o;
+        if (!(o instanceof Adresse adresse)) return false;
         if (idAdresse == null && adresse.idAdresse == null) return super.equals(o);
         return Objects.equals(idAdresse, adresse.idAdresse);
     }

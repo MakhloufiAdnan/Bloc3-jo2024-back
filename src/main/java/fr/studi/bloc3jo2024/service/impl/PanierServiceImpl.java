@@ -20,8 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -509,7 +507,7 @@ public class PanierServiceImpl implements PanierService {
                     }
                 })
                 .filter(Objects::nonNull) // Supprimer les éléments null qui pourraient résulter du mappage d'éléments invalides
-                .collect(Collectors.toList()); // Collecter dans une liste
+                .toList(); // Collecter dans une liste
 
         // Assigner la liste des DTOs de contenu au PanierDto
         panierDto.setContenuPaniers(contenuPaniersDto);

@@ -27,7 +27,6 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -202,7 +201,7 @@ class OffreControllerTest {
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertNotNull(response.getBody());
             assertEquals(1, response.getBody().getContent().size());
-            assertEquals(offreAdminDto.getId(), response.getBody().getContent().get(0).getId());
+            assertEquals(offreAdminDto.getId(), response.getBody().getContent().getFirst().getId());
             verify(adminOffreService, times(1)).obtenirToutesLesOffres(any(Pageable.class));
         }
 
@@ -249,7 +248,7 @@ class OffreControllerTest {
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertNotNull(response.getBody());
             assertEquals(1, response.getBody().getContent().size());
-            assertEquals(offreDto.getId(), response.getBody().getContent().get(0).getId());
+            assertEquals(offreDto.getId(), response.getBody().getContent().getFirst().getId());
             verify(utilisateurOffreService, times(1)).obtenirToutesLesOffresDisponibles(any(Pageable.class));
         }
 

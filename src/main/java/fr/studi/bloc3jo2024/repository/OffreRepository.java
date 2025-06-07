@@ -23,23 +23,35 @@ public interface OffreRepository extends JpaRepository<Offre, Long> {
     Page<Offre> findByStatutOffre(StatutOffre statutOffre, Pageable pageable);
 
     @Query("SELECT o.idOffre, COUNT(b.idBillet) FROM Offre o LEFT JOIN o.billets b GROUP BY o.idOffre")
-    List<Object[]> countBilletsByOffreId();
+    List<Object> countBilletsByOffreId();
 
     @Query("SELECT o.typeOffre, COUNT(b.idBillet) FROM Offre o LEFT JOIN o.billets b GROUP BY o.typeOffre")
-    List<Object[]> countBilletsByTypeOffre();
+    List<Object> countBilletsByTypeOffre();
 
     @Modifying
-    @Query("UPDATE Offre o SET o.statutOffre = fr.studi.bloc3jo2024.entity.enums.StatutOffre.EXPIRE " +
-            "WHERE o.statutOffre = fr.studi.bloc3jo2024.entity.enums.StatutOffre.DISPONIBLE " +
+    @Query("UPDATE Offre o SET o.statutOffre = :newStatus " +
+            "WHERE o.statutOffre = :currentStatus " +
+            "AND o.quantite > 0 " +
             "AND (" +
             "  (o.dateExpiration IS NOT NULL AND o.dateExpiration < :nowDateTime) " +
             "  OR " +
-            "  (o.discipline IS NOT NULL AND CAST(o.discipline.dateDiscipline AS date) <= :currentDate)" +
+            "  (o.discipline IS NOT NULL AND o.discipline.dateDiscipline IS NOT NULL AND FUNCTION('DATE', o.discipline.dateDiscipline) <= :currentDate)" +
             ")")
-    int updateStatusForEffectivelyExpiredOffers(
+    int updateStatusForEffectivelyExpiredOffersWithParameters(
+            @Param("newStatus") StatutOffre newStatus,
+            @Param("currentStatus") StatutOffre currentStatus,
             @Param("nowDateTime") LocalDateTime nowDateTime,
             @Param("currentDate") LocalDate currentDate
     );
+
+    default int updateStatusForEffectivelyExpiredOffers(LocalDateTime nowDateTime, LocalDate currentDate) {
+        return updateStatusForEffectivelyExpiredOffersWithParameters(
+                fr.studi.bloc3jo2024.entity.enums.StatutOffre.EXPIRE,
+                fr.studi.bloc3jo2024.entity.enums.StatutOffre.DISPONIBLE,
+                nowDateTime,
+                currentDate
+        );
+    }
 
     @Query(value = "SELECT o FROM Offre o LEFT JOIN FETCH o.discipline d",
             countQuery = "SELECT count(o) FROM Offre o")

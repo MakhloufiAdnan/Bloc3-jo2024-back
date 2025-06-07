@@ -191,9 +191,9 @@ class BilletControllerTest {
 
         // Act & Assert
         // On s'attend à ce que le contrôleur lance une ResponseStatusException
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            billetController.verifierBillet(cleFinale);
-        });
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+            billetController.verifierBillet(cleFinale)
+        );
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertTrue(exception.getReason().contains("Billet non trouvé")); // Vérifier une partie du message
@@ -210,9 +210,9 @@ class BilletControllerTest {
 
         // Act & Assert
         // On s'attend à ce que le contrôleur lance une ResponseStatusException pour erreur interne
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            billetController.verifierBillet(cleFinale);
-        });
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+            billetController.verifierBillet(cleFinale)
+        );
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatusCode());
         assertTrue(exception.getReason().contains("Erreur interne lors de la vérification du billet.")); // Vérifier le message générique

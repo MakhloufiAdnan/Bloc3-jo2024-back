@@ -14,10 +14,7 @@ COPY pom.xml .
 # Copie du reste du code source de l'application
 COPY src ./src
 
-# Build de l'application
 RUN mvn clean package -DskipTests -Pdocker
-
-# =====================================================================
 
 # Étape 2 : Création de l'image finale d'exécution
 # Utilisation d'une image JRE Alpine légère pour réduire la taille de l'image finale.
@@ -29,13 +26,12 @@ WORKDIR /app
 # Copie du fichier WAR build vers l'image finale
 COPY --from=build /app/target/*.war app.war
 
-# Copie du script d'entrée dans l'image
-COPY entrypoint.sh .
-# Rend le script exécutable
-RUN chmod +x entrypoint.sh
-
 # Exposition du port sur lequel l'application Spring Boot écoute à l'intérieur du conteneur.
 EXPOSE 8080
 
+# Options de la JVM pour l'exécution
+ENV JAVA_OPTS="-Xmx350m -Xss512k -Duser.timezone=UTC"
+
 # Commande pour démarrer l'application lorsque le conteneur est lancé.
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["java", "-jar", "/app/app.war"]
+

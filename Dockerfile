@@ -30,5 +30,4 @@ COPY --from=build /app/target/*.war app.war
 EXPOSE 8080
 
 # Commande pour démarrer l'application lorsque le conteneur est lancé.
-ENTRYPOINT ["java", "-Xms300m", "-Xmx300m", "-XX:MaxMetaspaceSize=160m", "-Xss512k", "-jar", "/app/app.war"]
-
+ENTRYPOINT ["./entrypoint.sh"]

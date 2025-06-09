@@ -35,6 +35,9 @@ spring:
             enable: true
             required: true
 
+  flyway:
+    baseline-on-migrate: true
+
 server:
   port: ${PORT:8080}
 

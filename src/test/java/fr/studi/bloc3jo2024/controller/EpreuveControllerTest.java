@@ -93,7 +93,7 @@ class EpreuveControllerTest {
     @Test
     void getEpreuvesEnVedette_Success() {
         // Arrange
-        List<Epreuve> epreuvesVedetteList = Arrays.asList(epreuveExemple2);
+        List<Epreuve> epreuvesVedetteList = Collections.singletonList(epreuveExemple2);
         when(epreuveService.getEpreuvesEnVedette()).thenReturn(epreuvesVedetteList);
 
         // Act
@@ -143,7 +143,7 @@ class EpreuveControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(epreuveMiseAJour.getIdEpreuve(), response.getBody().getIdEpreuve());
-        assertEquals(true, response.getBody().isFeatured());
+        assertTrue(response.getBody().isFeatured());
         verify(epreuveService, times(1)).mettreAJourStatutVedette(mettreAJourEpreuveVedetteDto);
     }
 

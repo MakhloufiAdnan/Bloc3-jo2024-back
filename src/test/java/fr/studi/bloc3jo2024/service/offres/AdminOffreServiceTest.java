@@ -169,11 +169,11 @@ class AdminOffreServiceTest {
         List<Class<?>> targetClasses = targetClassCaptor.getAllValues();
 
         // Premier appel: CreerOffreDto -> Offre
-        assertTrue(sources.get(0) instanceof CreerOffreDto);
+        assertInstanceOf(CreerOffreDto.class, sources.get(0));
         assertEquals(Offre.class, targetClasses.get(0));
 
         // Deuxième appel: Offre -> OffreAdminDto
-        assertTrue(sources.get(1) instanceof Offre);
+        assertInstanceOf(Offre.class, sources.get(1));
         assertEquals(OffreAdminDto.class, targetClasses.get(1));
     }
 

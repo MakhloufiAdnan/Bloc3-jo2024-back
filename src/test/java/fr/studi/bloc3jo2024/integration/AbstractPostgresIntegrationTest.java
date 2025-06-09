@@ -34,8 +34,7 @@ public abstract class AbstractPostgresIntegrationTest {
                 .withDatabaseName("test_db_integration")
                 .withUsername("testuser")
                 .withPassword("testpass")
-                .withReuse(true) // Garder cette option pour réutiliser le conteneur entre les builds Maven/Gradle
-                .withInitScript("init.sql"); // Le script de création du schéma est toujours crucial
+                .withReuse(true); // Garder cette option pour réutiliser le conteneur entre les builds Maven
 
         // 2. Démarrage manuel du conteneur.
         // Il restera actif jusqu'à ce que la JVM s'arrête.

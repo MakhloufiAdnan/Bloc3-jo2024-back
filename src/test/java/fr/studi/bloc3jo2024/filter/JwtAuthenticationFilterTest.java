@@ -157,7 +157,7 @@ class JwtAuthenticationFilterTest {
             verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             verify(response).setContentType(MediaType.APPLICATION_JSON_VALUE);
             assertTrue(stringWriter.toString().contains(expectedErrorMessage),
-                    "Le message d'erreur '" + stringWriter.toString() + "' ne contient pas '" + expectedErrorMessage + "'");
+                    "Le message d'erreur '" + stringWriter + "' ne contient pas '" + expectedErrorMessage + "'");
         }
         verify(filterChain, never()).doFilter(request, response);
         assertNull(SecurityContextHolder.getContext().getAuthentication());

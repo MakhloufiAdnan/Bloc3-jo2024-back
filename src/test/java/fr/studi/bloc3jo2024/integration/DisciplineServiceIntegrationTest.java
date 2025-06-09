@@ -164,7 +164,7 @@ class DisciplineServiceIntegrationTest extends AbstractPostgresIntegrationTest {
         assertEquals(disciplineId, disciplineMiseAJour.getIdDiscipline());
         assertEquals("Judo Nouveau Nom", disciplineMiseAJour.getNomDiscipline());
         assertEquals(150, disciplineMiseAJour.getNbPlaceDispo());
-        assertTrue(disciplineMiseAJour.getDateDiscipline().getMonth().equals(LocalDateTime.now().plusMonths(2).getMonth()));
+        assertEquals(disciplineMiseAJour.getDateDiscipline().getMonth(), LocalDateTime.now().plusMonths(2).getMonth());
     }
 
     @Test

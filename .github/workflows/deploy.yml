@@ -46,7 +46,23 @@ jobs:
       - name: Set Backend Heroku config vars
         run: |
           heroku config:set SPRING_PROFILES_ACTIVE=docker \
-            # ... toutes vos variables d'environnement ...
+            ALWAYS_POSTGRES_HOST=${{ secrets.ALWAYS_POSTGRES_HOST }} \
+            ALWAYS_POSTGRES_PORT=${{ secrets.ALWAYS_POSTGRES_PORT }} \
+            ALWAYS_POSTGRES_DB=${{ secrets.ALWAYS_POSTGRES_DB }} \
+            ALWAYS_POSTGRES_USER=${{ secrets.ALWAYS_POSTGRES_USER }} \
+            ALWAYS_POSTGRES_PASSWORD=${{ secrets.ALWAYS_POSTGRES_PASSWORD }} \
+            JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION }} \
+            EMAIL_USERNAME=${{ secrets.EMAIL_USERNAME }} \
+            EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} \
+            ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+            SMTP_HOST=${{ secrets.SMTP_HOST }} \
+            SMTP_PORT=${{ secrets.SMTP_PORT }} \
+            ID_GOOGLE=${{ secrets.ID_GOOGLE }} \
+            MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} \
+            FRONTEND_URL_CONF=${{ secrets.FRONTEND_URL_CONF }} \
+            FRONTEND_URL_RESET=${{ secrets.FRONTEND_URL_RESET }} \
             --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       # 7. Build & Deploy Backend to Heroku
@@ -60,12 +76,15 @@ jobs:
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME_BE }}/web
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
-      # 8. Show Backend Heroku logs
+      # 8. Install PostgreSQL client for AlwaysData
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      # 9. Show Backend Heroku logs
       - name: Show Backend Heroku logs
         run: heroku logs --app ${{ secrets.HEROKU_APP_NAME_BE }} --num 100
 
-      # 9. Arrêter les dynos
+      # 10. Arrêter les dynos
       - name: Stop Heroku Dynos
         if: ${{ false }} # désactivé par défaut
         run: |
-          heroku ps:scale web=0 --app ${{ secrets.HEROKU_APP_NAME_BE }}

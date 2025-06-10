@@ -30,7 +30,7 @@ COPY --from=build /app/target/*.war app.war
 EXPOSE 8080
 
 # Options de la JVM pour l'exécution
-ENV JAVA_OPTS="-Xmx350m -Xss512k -Duser.timezone=UTC"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=60.0 -Xss512k -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=128m -XX:NativeMemoryTracking=summary -Duser.timezone=UTC -XX:+ExitOnOutOfMemoryError -XX:+UnlockDiagnosticVMOptions -XX:+PrintNMTStatistics -Xlog:gc*:file=/tmp/gc.log:time,level,tags:filecount=5,filesize=10m"
 
 # Commande pour démarrer l'application lorsque le conteneur est lancé.
 ENTRYPOINT ["java", "-jar", "/app/app.war"]

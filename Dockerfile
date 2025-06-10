@@ -29,9 +29,6 @@ COPY --from=build /app/target/*.war app.war
 # Exposition du port sur lequel l'application Spring Boot écoute à l'intérieur du conteneur.
 EXPOSE 8080
 
-# Options de la JVM pour l'exécution
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=60.0 -Xss512k -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=128m -XX:NativeMemoryTracking=summary -Duser.timezone=UTC -XX:+ExitOnOutOfMemoryError -XX:+UnlockDiagnosticVMOptions -XX:+PrintNMTStatistics -Xlog:gc*:file=/tmp/gc.log:time,level,tags:filecount=5,filesize=10m"
-
 # Commande pour démarrer l'application lorsque le conteneur est lancé.
 ENTRYPOINT ["java", "-jar", "/app/app.war"]
 

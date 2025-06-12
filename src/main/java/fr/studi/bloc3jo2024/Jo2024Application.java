@@ -14,6 +14,6 @@ public class Jo2024Application {
 	}
 
 	static {
-		log.info("=== Lancement application Jo2024 ===");
+		log.info("=== Lancement application Jo2024 Ok ===");
 	}
 }

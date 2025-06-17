@@ -112,25 +112,28 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/management/health", "/management/info").permitAll()
-                        .requestMatchers("/management/env").hasRole("ADMIN")
-                        .requestMatchers("/app-status").permitAll()
 
+                        // Endpoints publics divers
+                        .requestMatchers("/management/health", "/management/info", "/app-status").permitAll()
 
-                        // Pour la PROD, a /api/admin/auth/login
-                        .requestMatchers("/api/admin/auth/**").permitAll()
-
-                        // Pour la PROD, cette ligne DOIT IMPÉRATIVEMENT être remplacée par :
-                        // .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/**").permitAll() // TEMPORAIREMENT AJOUTÉ POUR LE DÉVERROUILLAGE FRONT-END
-
-                        // Pour la PROD, cette page DOIT IMPÉRATIVEMENT être protégée.
-                        .requestMatchers("/pages/home-admin.html").permitAll() // TEMPORAIREMENT AJOUTÉ POUR LE DÉVERROUILLAGE FRONT-END
-
+                        // Endpoints publics pour l'authentification des utilisateurs
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/password-reset-request", "/api/auth/password-reset").permitAll()
 
+                        // Endpoint public pour le login du personnel de scan
+                        .requestMatchers("/api/staff/login").permitAll()
+
+                        // Endpoints sécurisés pour le rôle SCANNER
+                        .requestMatchers("/api/billets/verifier/**").hasRole("SCANNER")
+                        .requestMatchers("/api/billets/sync/**").hasRole("SCANNER")
+
+                        // Endpoints sécurisés pour le rôle ADMIN
+                        .requestMatchers("/management/env", "/api/admin/**", "/pages/home-admin.html").hasRole("ADMIN")
+
+                        // Endpoints sécurisés pour les tests authentifiés
                         .requestMatchers("/api/test/secured").hasAnyRole("USER", "ADMIN")
+
+                        // Toutes les autres requêtes doivent être authentifiées
                         .anyRequest().authenticated()
                 )
 

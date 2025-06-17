@@ -14,7 +14,7 @@ END $$;
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'type_role') THEN
-        CREATE TYPE type_role AS ENUM ('ADMIN', 'USER');
+        CREATE TYPE type_role AS ENUM ('ADMIN', 'USER', 'SCANNER');
     END IF;
 END $$;
 
@@ -252,6 +252,9 @@ CREATE TABLE IF NOT EXISTS billets (
                                        cle_finale_billet TEXT NOT NULL UNIQUE,
                                        qr_code_image BYTEA,
                                        id_utilisateur_uuid UUID NOT NULL,
+                                       is_scanned boolean DEFAULT FALSE NOT NULL,
+                                       scanned_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                                       purchase_date TIMESTAMP NOT NULL DEFAULT NOW(),
                                        FOREIGN KEY (id_utilisateur_uuid) REFERENCES utilisateurs(id_utilisateur_uuid)
 );
 

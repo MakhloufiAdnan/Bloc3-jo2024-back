@@ -1,6 +1,7 @@
 package fr.studi.bloc3jo2024.service.impl;
 
 import fr.studi.bloc3jo2024.entity.*;
+import fr.studi.bloc3jo2024.entity.enums.StatutTransaction;
 import fr.studi.bloc3jo2024.service.BilletCreationService;
 import fr.studi.bloc3jo2024.service.BilletService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -36,6 +38,17 @@ public class BilletCreationServiceImpl implements BilletCreationService {
             return null;
         }
 
+        Transaction transaction = paiement.getTransaction();
+        if (transaction == null || transaction.getStatutTransaction() != StatutTransaction.REUSSI) {
+            logger.error("Cannot generate billet for paiement ID {} - Associated transaction is null or not successful.", paiement.getIdPaiement());
+            return null;
+        }
+
+        LocalDateTime dateValidation = transaction.getDateValidation();
+        if (dateValidation == null) {
+            logger.warn("Transaction ID {} for paiement ID {} has no validation date. Using current time for billet creation.", transaction.getIdTransaction(), paiement.getIdPaiement());
+            dateValidation = LocalDateTime.now(); // Fallback
+        }
 
         // Utilisez BilletService pour la génération de clés et les opérations de billetterie
         String cleAchat = billetService.genererCleAchat();
@@ -46,15 +59,16 @@ public class BilletCreationServiceImpl implements BilletCreationService {
         List<Offre> offres = panier.getContenuPaniers() != null ?
                 panier.getContenuPaniers().stream()
                         .map(ContenuPanier::getOffre)
-                        .toList() : List.of(); // Use .toList()
+                        .toList() : List.of();
 
         if (offres.isEmpty()) {
             logger.warn("No offers found in panier ID {} for billet generation.", panier.getIdPanier());
             return null;
         }
 
-        // Utilisez BilletService pour créer et finaliser le billet
-        Billet billet = billetService.creerEtEnregistrerBillet(utilisateur, offres, cleFinaleBillet);
+        // Créer et enregistrer le billet
+        Billet billet = billetService.creerEtEnregistrerBillet(utilisateur, offres, cleFinaleBillet, dateValidation);
+
         Billet finalBillet = billetService.finaliserBilletAvecQrCode(billet); // Ajouter un QR, enregistrer à nouveau, envoyer un e-mail
 
         logger.info("Billet ID : {} créé pour paiement ID : {}", finalBillet != null ? finalBillet.getIdBillet() : "N/A", paiement.getIdPaiement());

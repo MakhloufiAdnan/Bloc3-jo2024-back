@@ -1,6 +1,8 @@
 package fr.studi.bloc3jo2024.service.impl;
 
 import fr.studi.bloc3jo2024.entity.*;
+import fr.studi.bloc3jo2024.entity.enums.StatutTransaction;
+import fr.studi.bloc3jo2024.entity.enums.TypeOffre;
 import fr.studi.bloc3jo2024.service.BilletService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.UUID;
@@ -25,7 +28,6 @@ class BilletCreationServiceImplTest {
     @InjectMocks
     private BilletCreationServiceImpl billetCreationService;
 
-    // These are real dummy objects, NOT mocks
     private Paiement dummyPaiement;
     private Utilisateur dummyUtilisateur;
     private Panier dummyPanier;
@@ -33,167 +35,162 @@ class BilletCreationServiceImplTest {
     private Offre dummyOffre2;
     private Billet dummyBilletInitial;
     private Billet dummyBilletFinal;
+    private Transaction dummyTransaction;
 
     private final String dummyCleAchat = "CLE_ACHAT_TEST";
     private final String dummyCleUtilisateur = "CLE_UTILISATEUR_TEST";
     private final String dummyCleFinaleBillet = "CLE_FINALE_TEST";
     private final UUID dummyUtilisateurId = UUID.randomUUID();
+    private final LocalDateTime dummyDateValidation = LocalDateTime.of(2024, 7, 15, 10, 0);
 
     @BeforeEach
     void setUp() {
-        // Arrange common dummy data (real objects)
-        dummyUtilisateur = new Utilisateur();
-        dummyUtilisateur.setIdUtilisateur(dummyUtilisateurId);
-        dummyUtilisateur.setCleUtilisateur(dummyCleUtilisateur);
+        dummyUtilisateur = Utilisateur.builder()
+                .idUtilisateur(dummyUtilisateurId)
+                .cleUtilisateur(dummyCleUtilisateur)
+                .email("test@example.com")
+                .prenom("Jean")
+                .build();
 
-        dummyOffre1 = new Offre();
-        dummyOffre1.setIdOffre(10L);
+        dummyOffre1 = Offre.builder().idOffre(10L).typeOffre(TypeOffre.SOLO).build();
+        dummyOffre2 = Offre.builder().idOffre(20L).typeOffre(TypeOffre.DUO).build();
 
-        dummyOffre2 = new Offre();
-        dummyOffre2.setIdOffre(20L);
+        ContenuPanier dummyContenuPanier1 = ContenuPanier.builder().offre(dummyOffre1).build();
+        ContenuPanier dummyContenuPanier2 = ContenuPanier.builder().offre(dummyOffre2).build();
 
-        ContenuPanier dummyContenuPanier1;
-        dummyContenuPanier1 = new ContenuPanier();
-        dummyContenuPanier1.setOffre(dummyOffre1);
-
-        ContenuPanier dummyContenuPanier2;
-        dummyContenuPanier2 = new ContenuPanier();
-        dummyContenuPanier2.setOffre(dummyOffre2);
-
-        dummyPanier = new Panier();
-        dummyPanier.setIdPanier(1000L);
-        // Link ContenuPanier back to Panier and Offre relationships
+        dummyPanier = Panier.builder()
+                .idPanier(1000L)
+                .contenuPaniers(new HashSet<>(Arrays.asList(dummyContenuPanier1, dummyContenuPanier2)))
+                .build();
         dummyContenuPanier1.setPanier(dummyPanier);
         dummyContenuPanier2.setPanier(dummyPanier);
-        dummyPanier.setContenuPaniers(new HashSet<>(Arrays.asList(dummyContenuPanier1, dummyContenuPanier2)));
 
-        dummyPaiement = new Paiement();
-        dummyPaiement.setIdPaiement(10000L);
-        dummyPaiement.setUtilisateur(dummyUtilisateur);
-        dummyPaiement.setPanier(dummyPanier);
+        dummyTransaction = Transaction.builder()
+                .idTransaction(1L)
+                .dateValidation(dummyDateValidation)
+                .statutTransaction(StatutTransaction.REUSSI)
+                .build();
 
-        dummyBilletInitial = new Billet();
-        dummyBilletInitial.setIdBillet(1L);
-        dummyBilletInitial.setCleFinaleBillet(dummyCleFinaleBillet);
+        dummyPaiement = Paiement.builder()
+                .idPaiement(10000L)
+                .utilisateur(dummyUtilisateur)
+                .panier(dummyPanier)
+                .transaction(dummyTransaction)
+                .build();
+        dummyTransaction.setPaiement(dummyPaiement);
 
-        dummyBilletFinal = new Billet();
-        dummyBilletFinal.setIdBillet(1L);
-        dummyBilletFinal.setCleFinaleBillet(dummyCleFinaleBillet);
+
+        dummyBilletInitial = Billet.builder()
+                .idBillet(1L)
+                .cleFinaleBillet(dummyCleFinaleBillet)
+                .utilisateur(dummyUtilisateur)
+                .offres(Arrays.asList(dummyOffre1, dummyOffre2))
+                .purchaseDate(dummyDateValidation)
+                .build();
+
+        dummyBilletFinal = Billet.builder()
+                .idBillet(1L)
+                .cleFinaleBillet(dummyCleFinaleBillet)
+                .utilisateur(dummyUtilisateur)
+                .offres(Arrays.asList(dummyOffre1, dummyOffre2))
+                .purchaseDate(dummyDateValidation)
+                .qrCodeImage("dummy_qr_code".getBytes())
+                .build();
     }
 
     @Test
     void genererBilletApresTransactionReussie_Successful() {
-        // Arrange
         when(billetService.genererCleAchat()).thenReturn(dummyCleAchat);
         when(billetService.genererCleFinaleBillet(dummyCleUtilisateur, dummyCleAchat)).thenReturn(dummyCleFinaleBillet);
-        when(billetService.creerEtEnregistrerBillet(eq(dummyUtilisateur), anyList(), eq(dummyCleFinaleBillet))).thenReturn(dummyBilletInitial);
+        when(billetService.creerEtEnregistrerBillet(eq(dummyUtilisateur), anyList(), eq(dummyCleFinaleBillet), eq(dummyDateValidation)))
+                .thenReturn(dummyBilletInitial);
         when(billetService.finaliserBilletAvecQrCode(dummyBilletInitial)).thenReturn(dummyBilletFinal);
 
-        // Act
         Billet resultBillet = billetCreationService.genererBilletApresTransactionReussie(dummyPaiement);
 
-        // Assert
         assertNotNull(resultBillet);
         assertEquals(dummyBilletFinal, resultBillet);
 
-        // Verify interactions with the MOCKED BilletService
         verify(billetService, times(1)).genererCleAchat();
         verify(billetService, times(1)).genererCleFinaleBillet(dummyCleUtilisateur, dummyCleAchat);
-        // Verify the list passed to creerEtEnregistrerBillet contains the correct offers
-        verify(billetService, times(1)).creerEtEnregistrerBillet(eq(dummyUtilisateur), argThat(offers -> offers.contains(dummyOffre1) && offers.contains(dummyOffre2) && offers.size() == 2), eq(dummyCleFinaleBillet));
+        verify(billetService, times(1)).creerEtEnregistrerBillet(
+                eq(dummyUtilisateur),
+                argThat(offers -> offers.contains(dummyOffre1) && offers.contains(dummyOffre2) && offers.size() == 2),
+                eq(dummyCleFinaleBillet),
+                eq(dummyDateValidation)
+        );
         verify(billetService, times(1)).finaliserBilletAvecQrCode(dummyBilletInitial);
-
-        // Removed verifications on real dummy objects like dummyPaiement, dummyPanier, etc.
     }
 
     @Test
     void genererBilletApresTransactionReussie_NullUtilisateur_ReturnsNull() {
-        // Arrange
-        dummyPaiement.setUtilisateur(null); // Set user to null
+        dummyPaiement.setUtilisateur(null);
 
-        // Act
         Billet resultBillet = billetCreationService.genererBilletApresTransactionReussie(dummyPaiement);
 
-        // Assert
         assertNull(resultBillet);
-
-        // Verify interactions - No billet service methods should be called
         verifyNoInteractions(billetService);
-
-        // Removed verifications on real dummy objects like dummyPaiement
     }
 
     @Test
     void genererBilletApresTransactionReussie_NullPanier_ReturnsNull() {
-        // Arrange
-        dummyPaiement.setPanier(null); // Set panier to null
+        dummyPaiement.setPanier(null);
 
-        // Act
         Billet resultBillet = billetCreationService.genererBilletApresTransactionReussie(dummyPaiement);
 
-        // Assert
         assertNull(resultBillet);
-
-        // Verify interactions - No billet service methods should be called
         verifyNoInteractions(billetService);
+    }
 
-        // Removed verifications on real dummy objects like dummyPaiement
+    @Test
+    void genererBilletApresTransactionReussie_NullTransaction_ReturnsNull() {
+        dummyPaiement.setTransaction(null);
+
+        Billet resultBillet = billetCreationService.genererBilletApresTransactionReussie(dummyPaiement);
+
+        assertNull(resultBillet);
+        verifyNoInteractions(billetService);
+    }
+
+    @Test
+    void genererBilletApresTransactionReussie_FailedTransaction_ReturnsNull() {
+        dummyTransaction.setStatutTransaction(StatutTransaction.ECHEC);
+
+        Billet resultBillet = billetCreationService.genererBilletApresTransactionReussie(dummyPaiement);
+
+        assertNull(resultBillet);
+        verifyNoInteractions(billetService);
     }
 
     @Test
     void genererBilletApresTransactionReussie_EmptyOffersInPanier_ReturnsNull() {
-        // Arrange
-        dummyPanier.setContenuPaniers(new HashSet<>()); // Set an empty set of contenuPaniers
-        dummyPaiement.setPanier(dummyPanier); // Ensure panier is linked
-
-        // Key generation calls still happen before the empty check
+        dummyPanier.setContenuPaniers(new HashSet<>());
         when(billetService.genererCleAchat()).thenReturn(dummyCleAchat);
         when(billetService.genererCleFinaleBillet(dummyCleUtilisateur, dummyCleAchat)).thenReturn(dummyCleFinaleBillet);
 
-
-        // Act
         Billet resultBillet = billetCreationService.genererBilletApresTransactionReussie(dummyPaiement);
 
-        // Assert
         assertNull(resultBillet);
 
-        // Verify interactions with the MOCKED BilletService
-        // Key generation methods are called
         verify(billetService, times(1)).genererCleAchat();
         verify(billetService, times(1)).genererCleFinaleBillet(dummyCleUtilisateur, dummyCleAchat);
-
-        // Billet creation and finalization methods are NOT called
-        verify(billetService, times(0)).creerEtEnregistrerBillet(any(), anyList(), any());
+        verify(billetService, times(0)).creerEtEnregistrerBillet(any(), anyList(), any(), any());
         verify(billetService, times(0)).finaliserBilletAvecQrCode(any());
-
-        // Removed verifications on real dummy objects like dummyPaiement, dummyPanier, etc.
     }
 
     @Test
     void genererBilletApresTransactionReussie_NullContenuPaniers_ReturnsNull() {
-        // Arrange
-        dummyPanier.setContenuPaniers(null); // Set contenuPaniers to null
-        dummyPaiement.setPanier(dummyPanier); // Ensure panier is linked
-
-        // Key generation calls still happen before the empty check
+        dummyPanier.setContenuPaniers(null);
         when(billetService.genererCleAchat()).thenReturn(dummyCleAchat);
         when(billetService.genererCleFinaleBillet(dummyCleUtilisateur, dummyCleAchat)).thenReturn(dummyCleFinaleBillet);
 
-        // Act
         Billet resultBillet = billetCreationService.genererBilletApresTransactionReussie(dummyPaiement);
 
-        // Assert
         assertNull(resultBillet);
 
-        // Verify interactions with the MOCKED BilletService
-        // Key generation methods are called
         verify(billetService, times(1)).genererCleAchat();
         verify(billetService, times(1)).genererCleFinaleBillet(dummyCleUtilisateur, dummyCleAchat);
-
-        // Billet creation and finalization methods are NOT called
-        verify(billetService, times(0)).creerEtEnregistrerBillet(any(), anyList(), any());
+        verify(billetService, times(0)).creerEtEnregistrerBillet(any(), anyList(), any(), any());
         verify(billetService, times(0)).finaliserBilletAvecQrCode(any());
-
-        // Removed verifications on real dummy objects like dummyPaiement, dummyPanier, etc.
     }
 }

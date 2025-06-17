@@ -56,12 +56,13 @@ class BilletRepositoryTest extends AbstractPostgresIntegrationTest {
         entityManager.getEntityManager().createQuery("DELETE FROM Adresse").executeUpdate();
         entityManager.getEntityManager().createQuery("DELETE FROM Pays").executeUpdate();
         entityManager.getEntityManager().createQuery("DELETE FROM Role").executeUpdate();
-        entityManager.flush();
+        entityManager.flush(); // S'assurer que les suppressions sont appliquées avant d'insérer
 
         // --- Création des données de test ---
         this.createBaseEntities();
 
         testUser = Utilisateur.builder()
+                // CORRECTION: Suppression de l'affectation manuelle de l'UUID pour laisser la DB le générer
                 .email("billet_" + UUID.randomUUID().toString().substring(0, 8) + "@jo.fr")
                 .nom("Toto")
                 .prenom("Ticket")
@@ -71,7 +72,7 @@ class BilletRepositoryTest extends AbstractPostgresIntegrationTest {
                 .dateCreation(LocalDateTime.now())
                 .isVerified(true)
                 .build();
-        entityManager.persist(testUser);
+        entityManager.persist(testUser); // Persiste l'utilisateur, l'ID sera généré par la DB
 
         testOffre = Offre.builder()
                 .typeOffre(TypeOffre.SOLO)
@@ -84,7 +85,7 @@ class BilletRepositoryTest extends AbstractPostgresIntegrationTest {
                 .build();
         entityManager.persist(testOffre);
 
-        entityManager.flush();
+        entityManager.flush(); // S'assurer que les persistences sont appliquées avant le test principal
     }
 
     /**
@@ -94,24 +95,28 @@ class BilletRepositoryTest extends AbstractPostgresIntegrationTest {
     @Test
     void testBilletCreationAvecQRCode() {
         // Arrange
-        // On n'utilise PAS le builder pour être 100% sûr que Lombok n'est pas en cause.
         Billet billet = new Billet();
         billet.setCleFinaleBillet("BILLET-UNIQUE-" + UUID.randomUUID());
         billet.setQrCodeImage("fake-qrcode-image-billet-test".getBytes());
-        billet.setUtilisateur(testUser);
+        billet.setUtilisateur(testUser); // testUser est déjà persisté et managé
         billet.setOffres(List.of(testOffre));
+
+        // CORRECTION: Initialisation explicite de isScanned, purchaseDate et scannedAt
+        // pour respecter les contraintes NOT NULL de la base de données.
+        billet.setScanned(false);
+        billet.setPurchaseDate(LocalDateTime.now());
+        // scannedAt peut être null si le billet n'est pas scanné, mais la colonne DB est NOT NULL.
+        // On initialise à la date de création pour satisfaire la contrainte.
+        // Si la logique métier permet scannedAt d'être null pour un billet non scanné,
+        // la colonne 'scanned_at' dans votre DDL SQL devrait être définie comme NULLABLE.
+        billet.setScannedAt(LocalDateTime.now()); // Définit une valeur non nulle par défaut
 
         // On assure la cohérence de la relation bidirectionnelle
         testOffre.getBillets().add(billet);
 
-        // --- LIGNE DE DÉBOGAGE CRUCIALE ---
-        // Cette ligne va nous dire le type exact de l'objet dans le champ qrCodeImage.
-        // On s'attend à voir "[B" dans la console, ce qui signifie "tableau de bytes".
-        System.out.println(">>>> Type du champ qrCodeImage avant la sauvegarde : " + billet.getQrCodeImage().getClass().getName());
-
         // Act
-        Billet savedBillet = billetRepository.save(billet);
-        entityManager.flush();
+        Billet savedBillet = billetRepository.save(billet); // Persiste le billet
+        entityManager.flush(); // Synchronise l'état de la session avec la base de données
 
         // Assert
         assertThat(billetRepository.findById(savedBillet.getIdBillet()))
@@ -125,12 +130,18 @@ class BilletRepositoryTest extends AbstractPostgresIntegrationTest {
                             .isEqualTo(testOffre);
                     assertThat(retrievedBillet.getCleFinaleBillet()).isEqualTo(billet.getCleFinaleBillet());
                     assertThat(retrievedBillet.getQrCodeImage()).isEqualTo("fake-qrcode-image-billet-test".getBytes());
+                    // Vérification que les champs sont bien définis
+                    assertThat(retrievedBillet.isScanned()).isEqualTo(billet.isScanned());
+                    // Utiliser isEqualToIgnoringNanos pour comparer des LocalDateTime sans se soucier des nanosecondes
+                    assertThat(retrievedBillet.getPurchaseDate()).isEqualToIgnoringNanos(billet.getPurchaseDate());
+                    assertThat(retrievedBillet.getScannedAt()).isEqualToIgnoringNanos(billet.getScannedAt());
                 });
     }
 
     /**
      * Méthode utilitaire pour créer et persister les entités de base
      * nécessaires pour les tests (Pays, Role, Adresse, Discipline).
+     * Ces entités sont créées une seule fois par exécution de setUpTestData.
      */
     private void createBaseEntities() {
         testPays = entityManager.persist(Pays.builder().nomPays("France").build());

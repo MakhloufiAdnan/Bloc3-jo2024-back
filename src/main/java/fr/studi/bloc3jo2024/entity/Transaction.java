@@ -39,16 +39,16 @@ public class Transaction {
     @JdbcType(PostgreSQLEnumJdbcType.class)
     private StatutTransaction statutTransaction;
 
-    // Ajout : Date de validation du paiement si REUSSI
+    // Date de validation du paiement si REUSSI
     @Column(name = "date_validation")
     private LocalDateTime dateValidation;
 
-    // Ajout : Contenu JSON simulé de retour prestataire (Stripe par exemple)
+    // Contenu JSON simulé de retour prestataire (Stripe par exemple)
     @Lob
     @Column(name = "details_transaction", columnDefinition = "TEXT")
     private String details;
 
-    // Ajout : Indique s'il s'agit d'un test
+    // Indique s'il s'agit d'un test
     @Column(name = "is_test", nullable = false)
     @Builder.Default
     private boolean isTest = false;

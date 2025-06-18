@@ -63,7 +63,7 @@ jobs:
             MDP_GOOGLE=${{ secrets.MDP_GOOGLE }} \
             FRONTEND_URL_CONF=${{ secrets.FRONTEND_URL_CONF }} \
             FRONTEND_URL_RESET=${{ secrets.FRONTEND_URL_RESET }} \
-            JAVA_TOOL_OPTIONS="-Xms150m -Xmx150m -Xss256k -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=96m -XX:ReservedCodeCacheSize=64m -XX:InitialCodeCacheSize=32m -XX:+UseSerialGC -XX:NativeMemoryTracking=detail -Duser.timezone=UTC -XX:+ExitOnOutOfMemoryError -XX:+UnlockDiagnosticVMOptions -XX:+PrintNMTStatistics -Xlog:gc*:file=/tmp/gc.log:time,level,tags:filecount=5,filesize=10m" \
+            JAVA_TOOL_OPTIONS="-Xms150m -Xmx150m -Xss256k -XX:MetaspaceSize=96m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -XX:InitialCodeCacheSize=32m -XX:+UseSerialGC -XX:NativeMemoryTracking=detail -Duser.timezone=UTC -XX:+ExitOnOutOfMemoryError -XX:+UnlockDiagnosticVMOptions -XX:+PrintNMTStatistics -Xlog:gc*:file=/tmp/gc.log:time,level,tags:filecount=5,filesize=10m" \
             --app ${{ secrets.HEROKU_APP_NAME_BE }}
 
       # 7. Build & Deploy Backend to Heroku
